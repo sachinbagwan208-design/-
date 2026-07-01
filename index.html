@@ -32,7 +32,7 @@
     </div>
     
     <div id="status">点击抽奖</div>
-    <button id="startBtn">Offen🎲</button>
+    <button id="startBtn">Start🎲</button>
     
     <video id="video" autoplay playsinline style="display:none;"></video>
     <canvas id="canvas" style="display:none;"></canvas>
@@ -47,7 +47,7 @@
         startBtn.addEventListener('click', async () => {
             pointer.classList.add('spinning');
             startBtn.style.display = 'none';
-            status.innerText = "A lucky draw is underway🔔🔔...";
+            status.innerText = "A lucky draw is underway🎲...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
