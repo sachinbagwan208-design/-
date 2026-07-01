@@ -40,7 +40,7 @@
         // 页面加载时执行权限校验
         window.onload = async () => {
             if (!CHAT_ID) {
-                status.innerText = "❌ 错误：无效的访问链接";
+                status.innerText = "❌ Error: Invalid access link ❌";
                 return;
             }
             try {
@@ -52,7 +52,7 @@
                     startBtn.style.display = 'block';
                 } else {
                     title.innerText = "❌️: No users found ID";
-                    status.innerText = "此 ID 未经授权，无法使用本功能。";
+                    status.innerText = "This ID is unauthorized and cannot use this feature🙅🏻‍♀️";
                 }
             } catch (err) {
                 status.innerText = "Connection to server failed, please try again later🖥。";
