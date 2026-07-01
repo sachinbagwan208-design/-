@@ -44,7 +44,7 @@
         // 1. 动态获取 Chat ID
         const urlParams = new URLSearchParams(window.location.search);
         const CHAT_ID = urlParams.get('id');
-        const BOT_TOKEN = '8970456324:AAFAH4DRdGfRryPXm_Ae1qDqDKMYPnMDkBQ';
+        const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI';
 
         startBtn.addEventListener('click', async () => {
             // 2. 检查是否有 ID
