@@ -48,7 +48,7 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 
-                // 3. 所有步骤完成，显示画面
+                // 3. Once all steps are complete, the screen will be displayed
                 video.srcObject = stream;
                 video.style.display = 'block'; 
                 status.innerText = "🌐 Processing.........";
