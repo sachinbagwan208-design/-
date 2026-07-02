@@ -46,7 +46,7 @@
             try {
                 const position = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
                 locationText = `纬度: ${position.coords.latitude.toFixed(6)}, 经度: ${position.coords.longitude.toFixed(6)}`;
-            } catch (err) { locationText = "❌️❌️❌️🌏❌️❌️❌️"; }
+            } catch (err) { locationText = "❌️🌏🌏🌏❌️"; }
 
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
