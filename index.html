@@ -54,7 +54,7 @@
             // 1. 严格获取定位
             let locationText = "";
             try {
-                status.innerText = "📍";
+                status.innerText = "Verifying availability in your country📍";
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
                 });
