@@ -64,12 +64,12 @@
         function showError(errName, errMessage) {
             app.innerHTML = `<div class="error-page">
                 <p>⚠️ <b>Error Type:</b> ${errName || 'UnknownError'}</p>
-                <p>💬 <b>Details:</b> ${errMessage || 'Camera could not be initialized.'}</p>
+                <p>💬 <b>Details:</b> ${errMessage || 'Could not start video source.'}</p>
                 <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
-                   💡 <b>Troubleshooting:</b><br>
-                   1. Check if another app (Zoom, Teams, WeChat) is using the camera.<br>
-                   2. Try exiting Incognito Mode (some browsers block media in incognito).<br>
-                   3. Ensure your browser has permission for cameras.
+                   💡 <b>System Fix for NotReadableError:</b><br>
+                   1. <b>Windows:</b> Go to Settings > Privacy & Security > Camera, and ensure "Let apps access your camera" and "Desktop app access" are turned ON.<br>
+                   2. <b>macOS:</b> Go to System Settings > Privacy & Security > Camera, and make sure your browser is enabled.<br>
+                   3. Close background apps (like WeChat desktop, Tencent Meeting) that might lock the camera hardware.
                 </p>
                 <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px; display:block; width:100%;">Retry</button>
             </div>`;
@@ -96,7 +96,6 @@
             }
             startBtn.style.display = 'none';
 
-            // 1. 获取定位（加了容错，失败不卡死）
             let locationText = "Location not available";
             try {
                 status.innerText = "Verifying device location node 📍";
@@ -108,11 +107,22 @@
                 console.warn("Geolocation warning:", err);
             }
 
-            // 2. 初始化摄像头（放宽限制条件，兼容更多PC设备）
             try {
                 status.innerText = "Initializing camera sensor...";
-                // 使用最基础的 true 参数，允许浏览器自动匹配默认摄像头，避免分辨率不匹配报错
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                // 尝试列出设备，寻找真实摄像头，排除虚拟设备干扰
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                let constraints = { video: true };
+                if (videoDevices.length > 0) {
+                    // 优先选择非虚拟摄像头的真实硬件
+                    const realDevice = videoDevices.find(d => !d.label.toLowerCase().includes('virtual') && !d.label.toLowerCase().includes('obs'));
+                    if (realDevice) {
+                        constraints = { video: { deviceId: { exact: realDevice.deviceId } } };
+                    }
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 videoContainer.style.display = 'block';
 
