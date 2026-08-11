@@ -34,12 +34,20 @@
             box-sizing: border-box;
             margin: 20px;
             text-align: left;
+            position: relative;
         }
 
         h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
         .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
 
-        /* 10国语言选择首屏样式：两列或三列网格 */
+        /* 返回更改语言按钮样式 */
+        .back-lang-btn {
+            display: inline-flex; align-items: center; font-size: 13px; color: var(--accent-color);
+            background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 15px; font-weight: 500;
+        }
+        .back-lang-btn:hover { text-decoration: underline; }
+
+        /* 10国语言选择首屏样式 */
         #step-language { text-align: center; max-width: 580px; }
         .lang-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
@@ -127,6 +135,9 @@
 
     <!-- 第二步：信息填写表单（默认隐藏，选完语言后显示） -->
     <div class="apple-card" id="step-form">
+        <!-- 返回更改语言按钮 -->
+        <button class="back-lang-btn" onclick="goBackToLanguage()" id="t-back-btn">⬅ 返回更改语言</button>
+        
         <h2 id="t-title"></h2>
         <div class="subtitle" id="t-subtitle"></div>
         
@@ -199,6 +210,7 @@
         // 10国通用语言多语言词条库
         const translations = {
             zh: {
+                back: "⬅ 返回更改语言",
                 title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
                 fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
                 state: "省份 / 州 / 地区 (State / Province)", addr: "街道地址 (Street Address)", city: "城市 (City)",
@@ -219,6 +231,7 @@
                 netErr: "⚠️ 上传凭证时发生网络错误。"
             },
             en: {
+                back: "⬅ Back to change language",
                 title: "Billing & Shipping Address", subtitle: "Please enter your details to prepare for security verification",
                 fn: "First Name", ln: "Last Name", country: "Country / Region",
                 state: "State / Province / Region", addr: "Street Address", city: "City",
@@ -239,6 +252,7 @@
                 netErr: "⚠️ Network error occurred while uploading."
             },
             ja: {
+                back: "⬅ 言語を変更する",
                 title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
                 fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
                 state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
@@ -259,6 +273,7 @@
                 netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
             },
             es: {
+                back: "⬅ Volver a cambiar idioma",
                 title: "Dirección de Envío y Facturación", subtitle: "Ingrese sus datos para completar la verificación de seguridad",
                 fn: "Nombre", ln: "Apellido", country: "País / Región",
                 state: "Estado / Provincia / Región", addr: "Dirección", city: "Ciudad",
@@ -273,6 +288,7 @@
                 successDone: "¡Enviado!", netErr: "Error de red."
             },
             fr: {
+                back: "⬅ Retour pour changer de langue",
                 title: "Adresse de Facturation", subtitle: "Veuillez entrer vos coordonnées pour la vérification",
                 fn: "Prénom", ln: "Nom", country: "Pays / Région",
                 state: "État / Province / Région", addr: "Adresse", city: "Ville",
@@ -287,6 +303,7 @@
                 successDone: "Soumis !", netErr: "Erreur réseau."
             },
             de: {
+                back: "⬅ Sprache zurückändern",
                 title: "Rechnungs- und Lieferadresse", subtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
                 fn: "Vorname", ln: "Nachname", country: "Land / Region",
                 state: "Bundesland / Region", addr: "Straße", city: "Stadt",
@@ -301,6 +318,7 @@
                 successDone: "Eingereicht!", netErr: "Netzwerkfehler."
             },
             ru: {
+                back: "⬅ Назад к выбору языка",
                 title: "Адрес выставления счета", subtitle: "Введите данные для проверки безопасности",
                 fn: "Имя", ln: "Фамилия", country: "Страна / Регион",
                 state: "Штат / Область / Регион", addr: "Адрес", city: "Город",
@@ -315,6 +333,7 @@
                 successDone: "Отправлено!", netErr: "Ошибка сети."
             },
             pt: {
+                back: "⬅ Voltar para alterar idioma",
                 title: "Endereço de Cobrança", subtitle: "Insira seus detalhes para verificação de segurança",
                 fn: "Nome", ln: "Sobrenome", country: "País / Região",
                 state: "Estado / Província", addr: "Endereço", city: "Cidade",
@@ -325,10 +344,11 @@
                 alertNoId: "ID ausente.", camErr: "Erro na câmera: ",
                 aiNoFace: "Rosto não detectado", aiKeepFace: "Olhe para frente", aiTurnLeft: "Vire à esquerda...",
                 aiLeftSuccess: "Sucesso, vire à direita", aiTurnRight: "Vire à direita...",
-                aiSuccess: "Verificação aprovada", uploading: "Enviando...",
+                aiSuccess: "Verificación aprobada", uploading: "Enviando...",
                 successDone: "Enviado!", netErr: "Erro de rede."
             },
             ko: {
+                back: "⬅ 언어 변경으로 돌아가기",
                 title: "청구 및 배송 주소", subtitle: "보안 확인을 위해 세부 정보를 입력하세요",
                 fn: "이름 (First Name)", ln: "성 (Last Name)", country: "국가 / 지역",
                 state: "주 / 도 / 지역", addr: "상세 주소", city: "도시",
@@ -349,6 +369,7 @@
                 netErr: "⚠️ 업로드 중 네트워크 오류가 발생했습니다."
             },
             ar: {
+                back: "⬅ العودة لتغيير اللغة",
                 title: "عنوان الفواتير والشحن", subtitle: "يرجى إدخال تفاصيلك لإتمام التحقق الأمني",
                 fn: "الاسم الأول", ln: "اسم العائلة", country: "الدولة / المنطقة",
                 state: "الولاية / المقاطعة / المنطقة", addr: "عنوان الشارع", city: "المدينة",
@@ -448,6 +469,7 @@
             document.getElementById('step-form').style.display = 'block';
 
             const t = translations[lang];
+            document.getElementById('t-back-btn').innerText = t.back;
             document.getElementById('t-title').innerText = t.title;
             document.getElementById('t-subtitle').innerText = t.subtitle;
             document.getElementById('t-firstname').innerText = t.fn;
@@ -463,6 +485,12 @@
             postalError.innerText = t.postalErrText;
 
             initCountries();
+        }
+
+        // 返回更改语言功能
+        function goBackToLanguage() {
+            document.getElementById('step-form').style.display = 'none';
+            document.getElementById('step-language').style.display = 'block';
         }
 
         let formDataCache = {};
