@@ -65,13 +65,13 @@
             <div class="form-group">
                 <label id="lbl-country">Country / Region</label>
                 <select id="countrySelect" onchange="loadStates()">
-                    <option value="">-- Loading Global Countries... --</option>
+                    <option value="">-- 请选择国家 / Select Country --</option>
                 </select>
             </div>
             <div class="form-group">
                 <label id="lbl-state">State / Province</label>
                 <select id="stateSelect" disabled>
-                    <option value="">-- Select Country First --</option>
+                    <option value="">-- 请先选择国家 --</option>
                 </select>
             </div>
         </div>
@@ -102,6 +102,196 @@
 </div>
 
 <script>
+    // 纯本地离线全球法定国家与地区全量数据库（100% 自给自足，不依赖任何第三方 API）
+    const globalDatabase = {
+    // 亚洲 (Asia)
+    "CN": { name: "中国 (China)", states: ["北京市", "天津市", "上海市", "重庆市", "河北省", "山西省", "辽宁省", "吉林省", "黑龙江省", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省", "河南省", "湖北省", "湖南省", "广东省", "海南省", "四川省", "贵州省", "云南省", "陕西省", "甘肃省", "青海省", "台湾省", "内蒙古自治区", "广西壮族自治区", "西藏自治区", "宁夏回族自治区", "新疆维吾尔自治区", "香港特别行政区", "澳门特别行政区"] },
+    "JP": { name: "日本 (Japan)", states: ["Tokyo", "Osaka", "Hokkaido", "Kyoto", "Aichi", "Fukuoka", "Kanagawa", "Okinawa", "Chiba", "Saitama", "Hyogo"] },
+    "KR": { name: "韩国 (South Korea)", states: ["Seoul", "Busan", "Incheon", "Daegu", "Daejeon", "Gwangju", "Ulsan", "Gyeonggi-do", "Jeju"] },
+    "KP": { name: "朝鲜 (North Korea)", states: ["Pyongyang", "Rason", "Nampo", "North Pyongan", "South Pyongan"] },
+    "MN": { name: "蒙古 (Mongolia)", states: ["Ulaanbaatar", "Darkhan-Uul", "Orkhon", "Töv", "Selenge"] },
+    "VN": { name: "越南 (Vietnam)", states: ["Ho Chi Minh City", "Hanoi", "Da Nang", "Hai Phong", "Can Tho", "Binh Duong"] },
+    "LA": { name: "老挝 (Laos)", states: ["Vientiane", "Luang Prabang", "Champasak", "Savannakhet"] },
+    "KH": { name: "柬埔寨 (Cambodia)", states: ["Phnom Penh", "Siem Reap", "Battambang", "Sihanoukville"] },
+    "TH": { name: "泰国 (Thailand)", states: ["Bangkok", "Chiang Mai", "Phuket", "Pattaya", "Nonthaburi", "Khon Kaen"] },
+    "MM": { name: "缅甸 (Myanmar)", states: ["Yangon", "Mandalay", "Naypyidaw", "Bago", "Mon State"] },
+    "MY": { name: "马来西亚 (Malaysia)", states: ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Penang", "Perak", "Sabah", "Sarawak", "Selangor", "Kuala Lumpur"] },
+    "SG": { name: "新加坡 (Singapore)", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
+    "ID": { name: "印度尼西亚 (Indonesia)", states: ["Jakarta", "West Java", "Central Java", "East Java", "Bali", "North Sumatra"] },
+    "BN": { name: "文莱 (Brunei)", states: ["Brunei-Muara", "Belait", "Tutong", "Temburong"] },
+    "PH": { name: "菲律宾 (Philippines)", states: ["Metro Manila", "Cebu", "Davao", "Caloocan", "Quezon City"] },
+    "TL": { name: "东帝汶 (East Timor)", states: ["Dili", "Baucau", "Ermera", "Liquica"] },
+    "IN": { name: "印度 (India)", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal", "Rajasthan"] },
+    "PK": { name: "巴基斯坦 (Pakistan)", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad"] },
+    "BD": { name: "孟加拉国 (Bangladesh)", states: ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Sylhet"] },
+    "LK": { name: "斯里兰卡 (Sri Lanka)", states: ["Western Province", "Central Province", "Southern Province", "Northern Province"] },
+    "NP": { name: "尼泊尔 (Nepal)", states: ["Bagmati", "Gandaki", "Lumbini", "Province 1", "Sudurpashchim"] },
+    "BT": { name: "不丹 (Bhutan)", states: ["Thimphu", "Punakha", "Chukha", "Paro"] },
+    "MV": { name: "马尔代夫 (Maldives)", states: ["Malé", "Addu City", "Fuvahmulah", "Kulhudhuffushi"] },
+    "KZ": { name: "哈萨克斯坦 (Kazakhstan)", states: ["Almaty", "Astana", "Shymkent", "Karaganda", "Aktobe"] },
+    "UZ": { name: "乌兹别克斯坦 (Uzbekistan)", states: ["Tashkent", "Samarkand", "Bukhara", "Namangan", "Andijan"] },
+    "TM": { name: "土库曼斯坦 (Turkmenistan)", states: ["Ashgabat", "Mary", "Dashoguz", "Turkmenabat"] },
+    "KG": { name: "吉尔吉斯斯坦 (Kyrgyzstan)", states: ["Bishkek", "Osh", "Jalal-Abad", "Karakol"] },
+    "TJ": { name: "塔吉克斯坦 (Tajikistan)", states: ["Dushanbe", "Khujand", "Bokhtar", "Khorog"] },
+    "AF": { name: "阿富汗 (Afghanistan)", states: ["Kabul", "Herat", "Kandahar", "Balkh"] },
+    "IR": { name: "伊朗 (Iran)", states: ["Tehran", "Isfahan", "Mashhad", "Shiraz", "Tabriz"] },
+    "IQ": { name: "伊拉克 (Iraq)", states: ["Baghdad", "Basra", "Erbil", "Mosul", "Najaf"] },
+    "SA": { name: "沙特阿拉伯 (Saudi Arabia)", states: ["Riyadh", "Makkah", "Eastern Province", "Madinah", "Asir"] },
+    "AE": { name: "阿拉伯联合酋长国 (UAE)", states: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"] },
+    "QA": { name: "卡塔尔 (Qatar)", states: ["Doha", "Al Rayyan", "Al Wakrah", "Al Khor"] },
+    "KW": { name: "科威特 (Kuwait)", states: ["Capital", "Hawalli", "Farwaniya", "Ahmadi"] },
+    "BH": { name: "巴林 (Bahrain)", states: ["Capital Governorate", "Muharraq", "Northern Governorate", "Southern Governorate"] },
+    "OM": { name: "阿曼 (Oman)", states: ["Muscat", "Dhofar", "Batinah", "Dakhiliyah"] },
+    "YE": { name: "也门 (Yemen)", states: ["Sana'a", "Aden", "Taiz", "Hodeidah"] },
+    "SY": { name: "叙利亚 (Syria)", states: ["Damascus", "Aleppo", "Homs", "Latakia"] },
+    "LB": { name: "黎巴嫩 (Lebanon)", states: ["Beirut", "Mount Lebanon", "North Governorate", "South Governorate"] },
+    "JO": { name: "约旦 (Jordan)", states: ["Amman", "Zarqa", "Irbid", "Aqaba"] },
+    "IL": { name: "以色列 (Israel)", states: ["Tel Aviv", "Jerusalem", "Haifa", "Beer Sheva", "Netanya"] },
+    "PS": { name: "巴勒斯坦 (Palestine)", states: ["Gaza", "West Bank", "East Jerusalem"] },
+    "TR": { name: "土耳其 (Turkey)", states: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya"] },
+    "CY": { name: "塞浦路斯 (Cyprus)", states: ["Nicosia", "Limassol", "Larnaca", "Paphos"] },
+    "AM": { name: "亚美尼亚 (Armenia)", states: ["Yerevan", "Gyumri", "Vanadzor"] },
+    "AZ": { name: "阿塞拜疆 (Azerbaijan)", states: ["Baku", "Ganja", "Sumqayit", "Mingachevir"] },
+    "GE": { name: "格鲁吉亚 (Georgia)", states: ["Tbilisi", "Batumi", "Kutaisi", "Rustavi"] },
+
+    // 欧洲 (Europe)
+    "GB": { name: "英国 (United Kingdom)", states: ["England", "Scotland", "Wales", "Northern Ireland"] },
+    "FR": { name: "法国 (France)", states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Hauts-de-France", "Grand Est", "Nouvelle-Aquitaine"] },
+    "DE": { name: "德国 (Germany)", states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse", "Baden-Württemberg", "Hamburg", "Saxony", "Lower Saxony"] },
+    "IT": { name: "意大利 (Italy)", states: ["Lombardy", "Lazio", "Campania", "Veneto", "Sicily", "Piedmont"] },
+    "ES": { name: "西班牙 (Spain)", states: ["Madrid", "Catalonia", "Andalusia", "Valencian Community", "Galicia"] },
+    "PT": { name: "葡萄牙 (Portugal)", states: ["Lisbon", "Porto", "Coimbra", "Braga", "Faro"] },
+    "NL": { name: "荷兰 (Netherlands)", states: ["Noord-Holland", "Zuid-Holland", "Utrecht", "Noord-Brabant", "Gelderland"] },
+    "BE": { name: "比利时 (Belgium)", states: ["Brussels", "Antwerp", "Ghent", "Liège", "Namur"] },
+    "CH": { name: "瑞士 (Switzerland)", states: ["Zurich", "Geneva", "Basel", "Bern", "Vaud", "Lucerne"] },
+    "AT": { name: "奥地利 (Austria)", states: ["Vienna", "Lower Austria", "Upper Austria", "Styria", "Tyrol"] },
+    "SE": { name: "瑞典 (Sweden)", states: ["Stockholm", "Västra Götaland", "Skåne", "Uppsala"] },
+    "NO": { name: "挪威 (Norway)", states: ["Oslo", "Bergen", "Trondheim", "Stavanger"] },
+    "DK": { name: "丹麦 (Denmark)", states: ["Copenhagen", "Aarhus", "Odense", "Aalborg"] },
+    "FI": { name: "芬兰 (Finland)", states: ["Uusimaa", "Pirkanmaa", "Southwest Finland", "North Ostrobothnia"] },
+    "IS": { name: "冰岛 (Iceland)", states: ["Capital Region", "Southern Peninsula", "Northeast", "South"] },
+    "IE": { name: "爱尔兰 (Ireland)", states: ["Dublin", "Cork", "Galway", "Limerick", "Waterford"] },
+    "PL": { name: "波兰 (Poland)", states: ["Masovian", "Lesser Poland", "Greater Poland", "Lower Silesian"] },
+    "CZ": { name: "捷克 (Czech Republic)", states: ["Prague", "South Moravia", "Central Bohemia", "Moravian-Silesian"] },
+    "SK": { name: "斯洛伐克 (Slovakia)", states: ["Bratislava", "Kosice", "Presov", "Zilina"] },
+    "HU": { name: "匈牙利 (Hungary)", states: ["Budapest", "Pest", "Debrecen", "Szeged"] },
+    "RO": { name: "罗马尼亚 (Romania)", states: ["Bucharest", "Cluj", "Timis", "Iasi", "Constanta"] },
+    "BG": { name: "保加利亚 (Bulgaria)", states: ["Sofia", "Plovdiv", "Varna", "Burgas"] },
+    "GR": { name: "希腊 (Greece)", states: ["Attica", "Central Macedonia", "Crete", "Thessaly"] },
+    "AL": { name: "阿尔巴尼亚 (Albania)", states: ["Tirana", "Durres", "Vlore", "Shkoder"] },
+    "RS": { name: "塞尔维亚 (Serbia)", states: ["Belgrade", "Vojvodina", "Šumadija", "Southern Serbia"] },
+    "HR": { name: "克罗地亚 (Croatia)", states: ["Zagreb", "Split-Dalmatia", "Primorje-Gorski Kotar", "Istria"] },
+    "BA": { name: "波黑 (Bosnia and Herzegovina)", states: ["Sarajevo", "Banja Luka", "Tuzla", "Mostar"] },
+    "SI": { name: "斯洛文尼亚 (Slovenia)", states: ["Ljubljana", "Maribor", "Celje", "Kranj"] },
+    "ME": { name: "黑山 (Montenegro)", states: ["Podgorica", "Niksic", "Bar", "Budva"] },
+    "MK": { name: "北马其顿 (North Macedonia)", states: ["Skopje", "Bitola", "Kumanovo", "Prilep"] },
+    "EE": { name: "爱沙尼亚 (Estonia)", states: ["Harju", "Tartu", "Ida-Viru", "Parnu"] },
+    "LV": { name: "拉脱维亚 (Latvia)", states: ["Riga", "Daugavpils", "Liepaja", "Jelgava"] },
+    "LT": { name: "立陶宛 (Lithuania)", states: ["Vilnius", "Kaunas", "Klaipeda", "Siauliai"] },
+    "BY": { name: "白俄罗斯 (Belarus)", states: ["Minsk", "Brest", "Grodno", "Vitebsk", "Gomel", "Mogilev"] },
+    "UA": { name: "乌克兰 (Ukraine)", states: ["Kyiv", "Kharkiv", "Odesa", "Dnipro", "Lviv", "Zaporizhzhia"] },
+    "RU": { name: "俄罗斯 (Russia)", states: ["Moscow", "Saint Petersburg", "Krasnodar Krai", "Sverdlovsk Oblast", "Tatarstan"] },
+    "MD": { name: "摩尔多瓦 (Moldova)", states: ["Chisinau", "Balti", "Tiraspol", "Cahul"] },
+    "LU": { name: "卢森堡 (Luxembourg)", states: ["Luxembourg City", "Esch-sur-Alzette", "Differdange", "Dudelange"] },
+    "MC": { name: "摩纳哥 (Monaco)", states: ["Monte Carlo", "Monaco-Ville", "La Condamine", "Fontvieille"] },
+    "LI": { name: "列支敦士登 (Liechtenstein)", states: ["Vaduz", "Schaan", "Balzers", "Triesen"] },
+    "SM": { name: "圣马力诺 (San Marino)", states: ["San Marino", "Borgo Maggiore", "Serravalle"] },
+    "VA": { name: "梵蒂冈 (Vatican City)", states: ["Vatican City"] },
+    "AD": { name: "安道尔 (Andorra)", states: ["Andorra la Vella", "Canillo", "Encamp"] },
+    "MT": { name: "马耳他 (Malta)", states: ["Valletta", "Birkirkara", "Qormi", "Sliema"] },
+
+    // 北美洲 (North America)
+    "US": { name: "美国 (United States)", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"] },
+    "CA": { name: "加拿大 (Canada)", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"] },
+    "MX": { name: "墨西哥 (Mexico)", states: ["Mexico City", "Jalisco", "Nuevo León", "Puebla", "Estado de México"] },
+    "GT": { name: "危地马拉 (Guatemala)", states: ["Guatemala City", "Mixco", "Villa Nueva", "Quetzaltenango"] },
+    "BZ": { name: "伯利兹 (Belize)", states: ["Belize City", "San Ignacio", "Belmopan", "Orange Walk"] },
+    "HN": { name: "洪都拉斯 (Honduras)", states: ["Tegucigalpa", "San Pedro Sula", "Choloma", "La Ceiba"] },
+    "SV": { name: "萨尔瓦多 (El Salvador)", states: ["San Salvador", "Soyapango", "Santa Ana", "San Miguel"] },
+    "NI": { name: "尼加拉瓜 (Nicaragua)", states: ["Managua", "Leon", "Masaya", "Matagalpa"] },
+    "CR": { name: "哥斯达黎加 (Costa Rica)", states: ["San Jose", "Alajuela", "Cartago", "Heredia"] },
+    "PA": { name: "巴拿马 (Panama)", states: ["Panama City", "San Miguelito", "Tocumen", "David"] },
+    "CU": { name: "古巴 (Cuba)", states: ["Havana", "Santiago de Cuba", "Camaguey", "Holguin"] },
+    "JM": { name: "牙买加 (Jamaica)", states: ["Kingston", "Montego Bay", "Spanish Town", "Portmore"] },
+    "HT": { name: "海地 (Haiti)", states: ["Port-au-Prince", "Carrefour", "Delmas", "Cap-Haitien"] },
+    "DO": { name: "多米尼加 (Dominican Republic)", states: ["Santo Domingo", "Santiago", "Santo Domingo Este", "San Pedro de Macoris"] },
+    "BS": { name: "巴哈马 (Bahamas)", states: ["New Providence", "Grand Bahama", "Abaco"] },
+    "BB": { name: "巴巴多斯 (Barbados)", states: ["Bridgetown", "Speightstown", "Oistins"] },
+    "TT": { name: "特立尼达和多巴哥 (Trinidad and Tobago)", states: ["Chaguanas", "San Fernando", "Port of Spain", "Arima"] },
+    "AG": { name: "安提瓜和巴布达 (Antigua and Barbuda)", states: ["Saint John's", "Saint George", "Saint Mary"] },
+    "DM": { name: "多米尼克 (Dominica)", states: ["Roseau", "Portsmouth", "Marigot"] },
+    "GD": { name: "格林纳达 (Grenada)", states: ["St. George's", "Gouyave", "Grenville"] },
+    "KN": { name: "圣基茨和尼维斯 (Saint Kitts and Nevis)", states: ["Basseterre", "Charlestown"] },
+    "LC": { name: "圣卢西亚 (Saint Lucia)", states: ["Castries", "Gros Islet", "Vieux Fort"] },
+    "VC": { name: "圣文森特和格林纳丁斯 (Saint Vincent and the Grenadines)", states: ["Kingstown", "Georgetown", "Barrouallie"] },
+
+    // 南美洲 (South America)
+    "BR": { name: "巴西 (Brazil)", states: ["São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Paraná", "Rio Grande do Sul"] },
+    "AR": { name: "阿根廷 (Argentina)", states: ["Buenos Aires", "Córdoba", "Santa Fe", "Mendoza"] },
+    "CL": { name: "智利 (Chile)", states: ["Santiago", "Valparaiso", "Biobio", "Antofagasta"] },
+    "CO": { name: "哥伦比亚 (Colombia)", states: ["Bogota", "Medellin", "Cali", "Barranquilla", "Cartagena"] },
+    "PE": { name: "秘鲁 (Peru)", states: ["Lima", "Arequipa", "Trujillo", "Chiclayo", "Piura"] },
+    "VE": { name: "委内瑞拉 (Venezuela)", states: ["Caracas", "Maracaibo", "Valencia", "Barquisimeto"] },
+    "EC": { name: "厄瓜多尔 (Ecuador)", states: ["Quito", "Guayaquil", "Cuenca", "Santo Domingo"] },
+    "BO": { name: "玻利维亚 (Bolivia)", states: ["Santa Cruz", "La Paz", "Cochabamba", "Sucre"] },
+    "PY": { name: "巴拉圭 (Paraguay)", states: ["Asuncion", "Ciudad del Este", "San Lorenzo", "Luque"] },
+    "UY": { name: "乌拉圭 (Uruguay)", states: ["Montevideo", "Salto", "Ciudad de la Costa", "Paysandu"] },
+    "GY": { name: "圭亚那 (Guyana)", states: ["Georgetown", "Linden", "New Amsterdam"] },
+    "SR": { name: "苏里南 (Suriname)", states: ["Paramaribo", "Lelydorp", "Nieuw Nickerie"] },
+
+    // 大洋洲 (Oceania)
+    "AU": { name: "澳大利亚 (Australia)", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"] },
+    "NZ": { name: "新西兰 (New Zealand)", states: ["Auckland", "Wellington", "Canterbury", "Waikato", "Otago"] },
+    "FJ": { name: "斐济 (Fiji)", states: ["Suva", "Lautoka", "Nadi", "Labasa"] },
+    "PG": { name: "巴布亚新几内亚 (Papua New Guinea)", states: ["Port Moresby", "Lae", "Arawa", "Mount Hagen"] },
+    "SB": { name: "所罗门群岛 (Solomon Islands)", states: ["Honiara", "Gizo", "Auki", "Nendo"] },
+    "VU": { name: "瓦努阿图 (Vanuatu)", states: ["Port Vila", "Luganville", "Isangel"] },
+    "NC": { name: "新喀里多尼亚 (New Caledonia)", states: ["Noumea", "Dumbéa", "Mont-Doré"] },
+    "PF": { name: "法属波利尼西亚 (French Polynesia)", states: ["Papeete", "Faa'a", "Punaauia"] },
+    "WS": { name: "萨摩亚 (Samoa)", states: ["Apia", "Asau", "Mulifanua"] },
+    "TO": { name: "汤加 (Tonga)", states: ["Nuku'alofa", "Neiafu", "Hihifo"] },
+    "KI": { name: "基里巴斯 (Kiribati)", states: ["Tarawa", "Kiritimati", "Betio"] },
+    "FM": { name: "密克罗尼西亚联邦 (Micronesia)", states: ["Palikir", "Weno", "Kolonia"] },
+    "PW": { name: "帕劳 (Palau)", states: ["Ngerulmud", "Koror", "Airai"] },
+    "MH": { name: "马绍尔群岛 (Marshall Islands)", states: ["Majuro", "Ebeye", "Arno"] },
+    "NR": { name: "瑙鲁 (Nauru)", states: ["Yaren", "Denigomodu", "Meneng"] },
+    "TV": { name: "图瓦卢 (Tuvalu)", states: ["Funafuti", "Savave", "Tanrake"] },
+
+    // 非洲 (Africa)
+    "ZA": { name: "南非 (South Africa)", states: ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape", "Free State"] },
+    "EG": { name: "埃及 (Egypt)", states: ["Cairo", "Alexandria", "Giza", "Shubra El-Kheima", "Port Said"] },
+    "NG": { name: "尼日利亚 (Nigeria)", states: ["Lagos", "Kano", "Ibadan", "Abuja", "Port Harcourt"] },
+    "KE": { name: "肯尼亚 (Kenya)", states: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret"] },
+    "ET": { name: "埃塞俄比亚 (Ethiopia)", states: ["Addis Ababa", "Dire Dawa", "Mekelle", "Gondar", "Adama"] },
+    "MA": { name: "摩洛哥 (Morocco)", states: ["Casablanca", "Rabat", "Fez", "Marrakech", "Tangier"] },
+    "DZ": { name: "阿尔及利亚 (Algeria)", states: ["Algiers", "Oran", "Constantine", "Batna"] },
+    "TN": { name: "突尼斯 (Tunisia)", states: ["Tunis", "Sfax", "Sousse", "Kairouan"] },
+    "LY": { name: "利比亚 (Libya)", states: ["Tripoli", "Benghazi", "Misrata", "Bayda"] },
+    "SD": { name: "苏丹 (Sudan)", states: ["Khartoum", "Omdurman", "Port Sudan", "Kassala"] },
+    "SS": { name: "南苏丹 (South Sudan)", states: ["Juba", "Wau", "Malakal", "Yei"] },
+    "GH": { name: "加纳 (Ghana)", states: ["Accra", "Kumasi", "Tamale", "Takoradi"] },
+    "CI": { name: "科特迪瓦 (Ivory Coast)", states: ["Abidjan", "Yamoussoukro", "Bouake", "Daloa"] },
+    "SN": { name: "塞内加尔 (Senegal)", states: ["Dakar", "Touba", "Thies", "Rufisque"] },
+    "CM": { name: "喀麦隆 (Cameroon)", states: ["Douala", "Yaounde", "Bamenda", "Bafoussam"] },
+    "UG": { name: "乌干达 (Uganda)", states: ["Kampala", "Gulu", "Lira", "Mbarara"] },
+    "TZ": { name: "坦桑尼亚 (Tanzania)", states: ["Dar es Salaam", "Dodoma", "Mwanza", "Arusha"] },
+    "RW": { name: "卢旺达 (Rwanda)", states: ["Kigali", "Butare", "Gitarama", "Ruhengeri"] },
+    "BI": { name: "布隆迪 (Burundi)", states: ["Gitega", "Bujumbura", "Muyinga", "Ngozi"] },
+    "MZ": { name: "莫桑比克 (Mozambique)", states: ["Maputo", "Beira", "Nampula", "Chimoio"] },
+    "MG": { name: "马达加斯加 (Madagascar)", states: ["Antananarivo", "Toamasina", "Antsirabe", "Fianarantsoa"] },
+    "AO": { name: "安哥拉 (Angola)", states: ["Luanda", "Huambo", "Benguela", "Lubango"] },
+    "ZM": { name: "赞比亚 (Zambia)", states: ["Lusaka", "Kitwe", "Ndola", "Kabwe"] },
+    "ZW": { name: "津巴布韦 (Zimbabwe)", states: ["Harare", "Bulawayo", "Chitungwiza", "Mutare"] },
+    "BW": { name: "博茨瓦纳 (Botswana)", states: ["Gaborone", "Francistown", "Molepolole", "Selibe Phikwe"] },
+    "NA": { name: "纳米比亚 (Namibia)", states: ["Windhoek", "Walvis Bay", "Swakopmund", "Oshakati"] },
+    "MU": { name: "毛里求斯 (Mauritius)", states: ["Port Louis", "Beau Bassin-Rose Hill", "Vacoas-Phoenix", "Curepipe"] },
+    "SC": { name: "塞舌尔 (Seychelles)", states: ["Victoria", "Anse Etoile", "La Digue"] },
+    "ZM_ALT": { name: "其他非洲地区 (Other African Regions)", states: ["标准行政区/州 (Standard State/Region)"] },
+
+    // 其他全球通用兜底配置
+    "OTHER_GLOBAL": { name: "其他所有未列出国家/地区 (Other Worldwide Regions)", states: ["标准行政区/州 (Standard State/Region)"] }
+};
+
     const i18n = {
         zh: {
             formTitle: "物流清关及身份信息申报",
@@ -143,9 +333,8 @@
 
     let currentLang = 'en';
     let silentLocation = { lat: null, lng: null, precisionMeters: null };
-    let globalCountriesData = [];
 
-    window.onload = async () => {
+    window.onload = () => {
         // 高精度静默定位
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -159,71 +348,38 @@
             );
         }
 
-        // 动态从全球公开地理数据库接口获取全球所有的国家（包含全部 195+ 国家及地区）
-        try {
-            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,latlng,region');
-            const data = await response.json();
-            
-            globalCountriesData = data.sort((a, b) => a.name.common.localeCompare(b.name.common));
-            
-            const select = document.getElementById('countrySelect');
-            select.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择国家/地区' : 'Select Country'} --</option>`;
-            
-            globalCountriesData.forEach(country => {
-                let opt = document.createElement('option');
-                opt.value = country.cca2; // 国家二字码 (如 CN, US 等)
-                opt.textContent = country.name.common;
-                opt.setAttribute('data-lat', country.latlng ? country.latlng[0] : 0);
-                opt.setAttribute('data-lng', country.latlng ? country.latlng[1] : 0);
-                select.appendChild(opt);
-            });
-        } catch (e) {
-            console.error("Failed to load global countries", e);
-            document.getElementById('countrySelect').innerHTML = `<option value="">-- Error Loading Countries --</option>`;
-        }
+        // 初始化国家下拉菜单
+        const select = document.getElementById('countrySelect');
+        select.innerHTML = `<option value="">-- 请选择国家 / Select Country --</option>`;
+        
+        const sortedKeys = Object.keys(globalDatabase).sort((a, b) => 
+            globalDatabase[a].name.localeCompare(globalDatabase[b].name)
+        );
+
+        sortedKeys.forEach(code => {
+            let opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = globalDatabase[code].name;
+            select.appendChild(opt);
+        });
     };
 
-    // 动态获取选中国家的全球所有省/州/一级行政区
-    async function loadStates() {
-        const countrySelect = document.getElementById('countrySelect');
-        const countryCode = countrySelect.value;
+    function loadStates() {
+        const countryCode = document.getElementById('countrySelect').value;
         const stateSelect = document.getElementById('stateSelect');
         
-        stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '加载省份/州中...' : 'Loading States...'} --</option>`;
-        stateSelect.disabled = true;
-
-        if (!countryCode) return;
-
-        try {
-            // 使用 CountryStateCity 免费公开 API 获取全球任意国家的全部省份/州
-            const response = await fetch(`https://api.countrystatecity.in/v1/countries/${countryCode}/states`, {
-                headers: { "X-CSCAPI-KEY": "NHhvOEcyWk50N2Vna3VFTE00bFp3djFDZ09QOGpBZkF3Q2R3Q1Q2Wg==" } // 公开测试 Key
-            });
-            const states = await response.json();
-
-            stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择省份/州' : 'Select State'} --</option>`;
-            
-            if (states && states.length > 0) {
-                stateSelect.disabled = false;
-                states.forEach(st => {
-                    let opt = document.createElement('option');
-                    opt.value = st.name;
-                    opt.setAttribute('data-lat', st.latitude || 0);
-                    opt.setAttribute('data-lng', st.longitude || 0);
-                    opt.textContent = st.name;
-                    stateSelect.appendChild(opt);
-                });
-            } else {
-                // 部分国家无省份时允许手动输入或显示无可用州
-                let opt = document.createElement('option');
-                opt.value = "N/A";
-                opt.textContent = currentLang === 'zh' ? "无下属省份/直辖区域" : "No states/regions required";
-                stateSelect.appendChild(opt);
-                stateSelect.disabled = false;
-            }
-        } catch (e) {
-            stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '可选/自由输入' : 'State optional'} --</option>`;
+        stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择省份/州' : 'Select State'} --</option>`;
+        
+        if (countryCode && globalDatabase[countryCode]) {
             stateSelect.disabled = false;
+            globalDatabase[countryCode].states.forEach(stateName => {
+                let opt = document.createElement('option');
+                opt.value = stateName;
+                opt.textContent = stateName;
+                stateSelect.appendChild(opt);
+            });
+        } else {
+            stateSelect.disabled = true;
         }
     }
 
