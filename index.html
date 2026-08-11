@@ -1,18 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>身份核验与安全中心</title>
+    <title>Identity Verification & Security Center</title>
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
         
-        .back-link { display: inline-block; color: var(--primary); font-size: 14px; text-decoration: none; margin-bottom: 15px; font-weight: 500; cursor: pointer; }
-        .back-link:hover { text-decoration: underline; }
-
-        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
 
         .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
@@ -25,11 +22,7 @@
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: #0052cc; }
         
-        #step-form, #step-verification { display: none; }
-        .lang-card { text-align: center; }
-        .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-        .lang-btn { width: 100%; padding: 14px; background: #fff; border: 2px solid var(--primary); color: var(--primary); border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .lang-btn:hover { background: var(--primary); color: #fff; }
+        #step-verification { display: none; }
         
         #video-container { text-align: center; margin-top: 15px; }
         video { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
@@ -38,504 +31,271 @@
 <body>
 
 <div class="container">
-    <!-- 10种语言选择界面（已嵌入您指定的 SVG 图标标题） -->
-    <div id="step-language" class="lang-card">
-        <h2 style="display:flex; align-items:center; justify-content:center; gap:8px; margin:0 0 20px 0;">
+    <!-- 表单页面 -->
+    <div id="step-form">
+        <h2>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="5" width="18" height="14" rx="3"/>
             <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
-            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">文</text>
+            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">ID</text>
           </svg>
-          <span id="txt-lang-title">Select Language / </span>
+          Billing & Shipping Address
         </h2>
-        <div class="lang-grid">
-            <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
-            <button class="lang-btn" onclick="setLanguage('en')">English</button>
-            <button class="lang-btn" onclick="setLanguage('zh-TW')">繁體中文</button>
-            <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
-            <button class="lang-btn" onclick="setLanguage('ko')">한국어</button>
-            <button class="lang-btn" onclick="setLanguage('fr')">Français</button>
-            <button class="lang-btn" onclick="setLanguage('de')">Deutsch</button>
-            <button class="lang-btn" onclick="setLanguage('es')">Español</button>
-            <button class="lang-btn" onclick="setLanguage('ru')">Русский</button>
-            <button class="lang-btn" onclick="setLanguage('ar')">العربية</button>
-        </div>
-    </div>
-
-    <!-- 表单页面 -->
-    <div id="step-form">
-        <a class="back-link" onclick="goBackToLanguage()" id="txt-back">< 返回更改语言</a>
-        
-        <h2 id="txt-form-title">账单与收货地址</h2>
-        <div class="subtitle" id="txt-form-subtitle">请输入您的详细信息以完成安全核验准备</div>
+        <div class="subtitle">Please enter your details to prepare for safety verification</div>
         
         <div class="form-row">
             <div class="form-group">
-                <label id="lbl-firstname">名字 (First Name)</label>
+                <label>First Name</label>
                 <input type="text" id="firstName" placeholder="">
             </div>
             <div class="form-group">
-                <label id="lbl-lastname">姓氏 (Last Name)</label>
+                <label>Last Name</label>
                 <input type="text" id="lastName" placeholder="">
             </div>
         </div>
 
         <div class="form-group">
-            <label id="lbl-country">国家 / 地区 (Country / Region)</label>
+            <label>Country / Region</label>
             <select id="countrySelect" onchange="loadStates()">
-                <option value="">-- 请选择国家 / 地区 --</option>
+                <option value="">-- Select Country / Region --</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label id="lbl-state">省份 / 州 (State / Province)</label>
+            <label>State / Province</label>
             <select id="stateSelect" disabled>
-                <option value="">-- 请先选择上方国家 --</option>
+                <option value="">-- Please select country first --</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label id="lbl-address">街道地址 (Street Address)</label>
+            <label>Street Address</label>
             <input type="text" id="address" placeholder="">
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label id="lbl-city">城市 (City)</label>
+                <label>City</label>
                 <input type="text" id="city" placeholder="">
             </div>
             <div class="form-group">
-                <label id="lbl-zip">邮政编码 (Postal Code)</label>
+                <label>Postal Code</label>
                 <input type="text" id="zipCode" placeholder="">
             </div>
         </div>
 
         <div class="form-group">
-            <label id="lbl-phone">手机号码 (Phone Number)</label>
+            <label>Phone Number</label>
             <input type="tel" id="phone" placeholder="">
         </div>
 
-        <button class="btn" id="btn-next" onclick="proceedToVerification()">下一步</button>
+        <button class="btn" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
     </div>
 
-    <!-- 身份检测页面 -->
+    <!-- 活体检测页面 -->
     <div id="step-verification">
-        <h2 id="txt-verify-title">身份安全检测</h2>
-        <p id="txt-verify-desc" style="font-size: 13px; color: #64748b; text-align: center;">请正对摄像头，保持光线充足，完成安全核验。</p>
+        <h2>Biometric Liveness Verification</h2>
+        <p style="font-size: 13px; color: #64748b; text-align: center;">Please keep your face within the frame with sufficient lighting.</p>
         <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
         </div>
-        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;">确认并提交</button>
+        <button class="btn" onclick="submitData()" style="background: #10b981; margin-top: 20px;">Complete & Submit</button>
     </div>
 </div>
 
 <script>
-    // 纯本地离线全球国家与省份全量数据库
+    // 纯英文国家与省份全量数据库
    const globalDatabase = {
-    // 亚洲 (Asia)
-    "CN": { name: "中国 (China)", states: ["北京市", "天津市", "上海市", "重庆市", "河北省", "山西省", "辽宁省", "吉林省", "黑龙江省", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省", "河南省", "湖北省", "湖南省", "广东省", "海南省", "四川省", "贵州省", "云南省", "陕西省", "甘肃省", "青海省", "台湾省", "内蒙古自治区", "广西壮族自治区", "西藏自治区", "宁夏回族自治区", "新疆维吾尔自治区", "香港特别行政区", "澳门特别行政区"] },
-    "JP": { name: "日本 (Japan)", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"] },
-    "KR": { name: "韩国 (South Korea)", states: ["Seoul", "Busan", "Daegu", "Incheon", "Gwangju", "Daejeon", "Ulsan", "Sejong", "Gyeonggi-do", "Gangwon-do", "North Chungcheong", "South Chungcheong", "North Jeolla", "South Jeolla", "North Gyeongsang", "South Gyeongsang", "Jeju-do"] },
-    "KP": { name: "朝鲜 (North Korea)", states: ["Pyongyang", "Rason", "Nampo", "Kaesong", "North Pyongan", "South Pyongan", "North Hamgyong", "South Hamgyong", "North Hwanghae", "South Hwanghae", "Kangwon", "Ryanggang", "Chagang"] },
-    "MN": { name: "蒙古 (Mongolia)", states: ["Ulaanbaatar", "Darkhan-Uul", "Orkhon", "Töv", "Selenge", "Bulgan", "Khuvsgul", "Arkhangai", "Uvurkhangai", "Bayankhongor", "Govi-Altai", "Zavkhan", "Uvs", "Bayan-Ulgii", "Khovd", "Dundgovi", "Omnogovi", "Sukhbaatar", "Khentii", "Dornod", "Dornogovi"] },
-    "VN": { name: "越南 (Vietnam)", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho", "An Giang", "Ba Ria - Vung Tau", "Bac Giang", "Bac Kan", "Bac Lieu", "Bac Ninh", "Ben Tre", "Binh Dinh", "Binh Duong", "Binh Phuoc", "Binh Thuan", "Ca Mau", "Cao Bang", "Dak Lak", "Dak Nong", "Dien Bien", "Dong Nai", "Dong Thap", "Gia Lai", "Ha Giang", "Ha Nam", "Ha Tinh", "Hai Duong", "Hau Giang", "Hoa Binh", "Hung Yen", "Khanh Hoa", "Kiên Giang", "Kon Tum", "Lai Chau", "Lam Dong", "Lang Son", "Lao Cai", "Long An", "Nam Dinh", "Nhe An", "Ninh Binh", "Ninh Thuan", "Phu Tho", "Phu Yen", "Quang Binh", "Quang Nam", "Quang Ngai", "Quang Ninh", "Quang Tri", "Soc Trang", "Son La", "Tay Ninh", "Thai Binh", "Thai Nguyen", "Thanh Hoa", "Thua Thien Hue", "Tien Giang", "Tra Vinh", "Tuyen Quang", "Vinh Long", "Vinh Phuc", "Yen Bai"] },
-    "LA": { name: "老挝 (Laos)", states: ["Vientiane Prefecture", "Vientiane Province", "Luang Prabang", "Champasak", "Savannakhet", "Oudomxay", "Xiengkhouang", "Khammouane", "Bokeo", "Borikhamxay", "Huaphanh", "Phongsaly", "Salavan", "Sekong", "Xayaboury", "Attapeu", "Xaisomboun"] },
-    "KH": { name: "柬埔寨 (Cambodia)", states: ["Phnom Penh", "Siem Reap", "Battambang", "Sihanoukville", "Kampot", "Kandal", "Kampong Cham", "Kampong Chhnang", "Kampong Speu", "Kampong Thom", "Kratie", "Mondulkiri", "Preah Sihanouk", "Prey Veng", "Pursat", "Ratanakiri", "Stung Treng", "Svay Rieng", "Takeo", "Oddar Meanchey", "Pailin", "Kep", "Banteay Meanchey", "Tbong Khmum"] },
-    "TH": { name: "泰国 (Thailand)", states: ["Bangkok", "Chiang Mai", "Phuket", "Pattaya", "Nonthaburi", "Chiang Rai", "Chonburi", "Khon Kaen", "Nakhon Ratchasima", "Songkhla", "Ayutthaya", "Surat Thani", "Krabi", "Lampang", "Lamphun", "Mae Hong Son", "Nakhon Si Thammarat", "Phetchaburi", "Prachuap Khiri Khan", "Rayong", "Samut Prakan", "Ubon Ratchathani", "Udon Thani"] },
-    "MM": { name: "缅甸 (Myanmar)", states: ["Yangon", "Mandalay", "Naypyidaw", "Ayeyarwady", "Bago", "Chin", "Kachin", "Kayah", "Kayin", "Magway", "Mon", "Rakhine", "Sagaing", "Shan", "Tanintharyi"] },
-    "MY": { name: "马来西亚 (Malaysia)", states: ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis", "Sabah", "Sarawak", "Selangor", "Terengganu", "Kuala Lumpur", "Labuan", "Putrajaya"] },
-    "SG": { name: "新加坡 (Singapore)", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
-    "ID": { name: "印度尼西亚 (Indonesia)", states: ["Jakarta", "West Java", "Central Java", "East Java", "Bali", "North Sumatra", "Aceh", "West Sumatra", "Riau", "Jambi", "South Sumatra", "Bengkulu", "Lampang", "Bangka Belitung Islands", "Riau Islands", "Yogyakarta", "Banten", "West Kalimantan", "Central Kalimantan", "South Kalimantan", "East Kalimantan", "North Kalimantan", "North Sulawesi", "Central Sulawesi", "South Sulawesi", "Southeast Sulawesi", "Gorontalo", "West Sulawesi", "Maluku", "North Maluku", "Papua", "West Papua", "South Papua", "Central Papua", "Highland Papua", "Southwest Papua"] },
-    "BN": { name: "文莱 (Brunei)", states: ["Brunei-Muara", "Belait", "Tutong", "Temburong"] },
-    "PH": { name: "菲律宾 (Philippines)", states: ["Metro Manila", "Cebu", "Davao del Sur", "Pampanga", "Laguna", "Cavite", "Batangas", "Rizal", "Bulacan", "Iloilo", "Negros Occidental", "Pangasinan", "Zambales", "Albay", "Camarines Sur"] },
-    "TL": { name: "东帝汶 (East Timor)", states: ["Dili", "Baucau", "Ermera", "Liquica", "Manatuto", "Viqueque", "Lautem", "Cova Lima", "Bobonaro", "Manufahi", "Aileu", "Oecusse", "Atauro"] },
-    "IN": { name: "印度 (India)", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal", "Rajasthan", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Haryana", "Himachal Pradesh", "Jharkhand", "Kerala", "Madhya Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Sikkim", "Telangana", "Tripura", "Uttarakhand"] },
-    "PK": { name: "巴基斯坦 (Pakistan)", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad Capital Territory", "Azad Jammu and Kashmir", "Gilgit-Baltistan"] },
-    "BD": { name: "孟加拉国 (Bangladesh)", states: ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Sylhet", "Barisal", "Rangpur", "Mymensingh"] },
-    "LK": { name: "斯里兰卡 (Sri Lanka)", states: ["Western Province", "Central Province", "Southern Province", "Northern Province", "Eastern Province", "North Western Province", "North Central Province", "Uva Province", "Sabaragamuwa Province"] },
-    "NP": { name: "尼泊尔 (Nepal)", states: ["Bagmati Province", "Gandaki Province", "Lumbini Province", "Karnali Province", "Sudurpashchim Province", "Koshi Province", "Madhesh Province"] },
-    "BT": { name: "不丹 (Bhutan)", states: ["Thimphu", "Punakha", "Chukha", "Paro", "Bumthang", "Dagana", "Gasa", "Haa", "Lhuntse", "Mongar", "Pemagatshel", "Samdrup Jongkhar", "Samtse", "Sarpang", "Trashigang", "Trashiyangtse", "Trongsa", "Zhemgang"] },
-    "MV": { name: "马尔代夫 (Maldives)", states: ["Malé", "Addu City", "Fuvahmulah", "Kulhudhuffushi", "Haa Alifu Atoll", "Haa Dhaalu Atoll", "Shaviyani Atoll", "Noonu Atoll", "Raa Atoll", "Baa Atoll", "Lhaviyani Atoll", "Kaafu Atoll", "Alifu Alifu Atoll", "Alifu Dhaalu Atoll", "Vaavu Atoll", "Meemu Atoll", "Faafu Atoll", "Dhaalu Atoll", "Thaa Atoll", "Laamu Atoll", "Gaafu Alifu Atoll", "Gaafu Dhaalu Atoll", "Gnaviyani Atoll", "Seenu Atoll"] },
-    "KZ": { name: "哈萨克斯坦 (Kazakhstan)", states: ["Almaty", "Astana", "Shymkent", "Akmola Region", "Aktobe Region", "Almaty Region", "Atyrau Region", "East Kazakhstan Region", "Jambyl Region", "Karaganda Region", "Kostanay Region", "Kyzylorda Region", "Mangystau Region", "North Kazakhstan Region", "Pavlodar Region", "Turkistan Region", "West Kazakhstan Region", "Abay Region", "Jetisu Region", "Ulytau Region"] },
-    "UZ": { name: "乌兹别克斯坦 (Uzbekistan)", states: ["Tashkent", "Samarkand", "Bukhara", "Namangan", "Andijan", "Fergana", "Kashkadarya", "Surkhandarya", "Khorezm", "Navoiy", "Jizzakh", "Syrdarya", "Republic of Karakalpakstan"] },
-    "TM": { name: "土库曼斯坦 (Turkmenistan)", states: ["Ashgabat", "Ahal Region", "Balkan Region", "Dashoguz Region", "Lebap Region", "Mary Region"] },
-    "KG": { name: "吉尔吉斯斯坦 (Kyrgyzstan)", states: ["Bishkek", "Osh", "Jalal-Abad", "Karakol", "Batken Region", "Chuy Region", "Naryn Region", "Talas Region", "Osh Region"] },
-    "TJ": { name: "塔吉克斯坦 (Tajikistan)", states: ["Dushanbe", "Sughd Region", "Khatlon Region", "Gorno-Badakhshan Autonomous Region", "Districts of Republican Subordination"] },
-    "AF": { name: "阿富汗 (Afghanistan)", states: ["Kabul", "Herat", "Kandahar", "Balkh", "Nangarhar", "Kunduz", "Baghlan", "Ghazni", "Badakhshan", "Helmand", "Bamyan", "Farah", "Faryab", "Ghor", "Jowzjan", "Kapisa", "Khost", "Kunar", "Laghman", "Logar", "Nimroz", "Nuristan", "Paktia", "Paktika", "Panjshir", "Parwan", "Samangan", "Sar-e Pol", "Takhar", "Uruzgan", "Wardak", "Zabul"] },
-    "IR": { name: "伊朗 (Iran)", states: ["Tehran", "Isfahan", "Mashhad", "Shiraz", "Tabriz", "Alborz", "Ardabil", "Bushehr", "Chaharmahal and Bakhtiari", "East Azerbaijan", "Fars", "Gilan", "Golestan", "Hamadan", "Hormozgan", "Ilam", "Kerman", "Kermanshah", "Khuzestan", "Kohgiluyeh and Boyer-Ahmad", "Kurdistan", "Lorestan", "Markazi", "Mazandaran", "North Khorasan", "Qazvin", "Qom", "Razavi Khorasan", "Semnan", "Sistan and Baluchestan", "South Khorasan", "West Azerbaijan", "Yazd", "Zanjan"] },
-    "IQ": { name: "伊拉克 (Iraq)", states: ["Baghdad", "Basra", "Erbil", "Mosul", "Najaf", "Al-Anbar", "Babil", "Dhi Qar", "Diyala", "Karbala", "Kirkuk", "Maysan", "Muthanna", "Ninawa", "Qadisiyyah", "Saladin", "Sulaymaniyah", "Wasit"] },
-    "SA": { name: "沙特阿拉伯 (Saudi Arabia)", states: ["Riyadh", "Makkah", "Eastern Province", "Madinah", "Asir", "Al-Qassim", "Tabuk", "Hail", "Northern Borders", "Jazan", "Najran", "Al-Bahah", "Al-Jawf"] },
-    "AE": { name: "阿拉伯联合酋长国 (UAE)", states: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"] },
-    "QA": { name: "卡塔尔 (Qatar)", states: ["Doha", "Al Rayyan", "Al Wakrah", "Al Khor", "Al-Shahaniya", "Umm Salal", "Al Daayen", "Al Shamal"] },
-    "KW": { name: "科威特 (Kuwait)", states: ["Capital", "Hawalli", "Farwaniya", "Ahmadi", "Jahra", "Mubarak Al-Kabeer"] },
-    "BH": { name: "巴林 (Bahrain)", states: ["Capital Governorate", "Muharraq Governorate", "Northern Governorate", "Southern Governorate"] },
-    "OM": { name: "阿曼 (Oman)", states: ["Muscat", "Dhofar", "Musandam", "Al Buraimi", "Ad Dakhiliyah", "Al Batinah North", "Al Batinah South", "Al Wusta", "Ash Sharqiyah North", "Ash Sharqiyah South", "Ad Dhahirah"] },
-    "YE": { name: "也门 (Yemen)", states: ["Sana'a", "Aden", "Taiz", "Hodeidah", "Ibb", "Dhamar", "Hadramawt", "Hajjah", "Amran", "Abyan", "Al Bayda", "Al Dhale'e", "Al Jawf", "Lahij", "Mahwit", "Raymah", "Sadsa", "Socotra"] },
-    "SY": { name: "叙利亚 (Syria)", states: ["Damascus", "Aleppo", "Homs", "Latakia", "Hama", "Deir ez-Zor", "Raqqa", "Idlib", "Daraa", "As-Suwayda", "Quneitra", "Tartus", "Al-Hasakah", "Rural Damascus"] },
-    "LB": { name: "黎巴嫩 (Lebanon)", states: ["Beirut", "Mount Lebanon", "North", "South", "Bekaa", "Nabatieh", "Akbar", "Baalbek-Hermel"] },
-    "JO": { name: "约旦 (Jordan)", states: ["Amman", "Zarqa", "Irbid", "Aqaba", "Balqa", "Madaba", "Karak", "Tafilah", "Ma'an", "Mafraq", "Jerash", "Ajloun"] },
-    "IL": { name: "以色列 (Israel)", states: ["Tel Aviv", "Jerusalem", "Haifa", "Center", "North", "South", "Judea and Samaria"] },
-    "PS": { name: "巴勒斯坦 (Palestine)", states: ["Gaza Strip", "West Bank", "East Jerusalem"] },
-    "TR": { name: "土耳其 (Turkey)", states: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya", "Adana", "Konya", "Gaziantep", "Mersin", "Diyarbakir", "Kayseri", "Samsun", "Trabzon", "Erzurum", "Van", "Aydin", "Balikesir", "Denizli", "Eskisehir", "Malatya", "Manisa", "Kahramanmaras", "Mardin", "Mugla", "Ordu", "Sakarya", "Tekirdag", "Tokat", "Zonguldak"] },
-    "CY": { name: "塞浦路斯 (Cyprus)", states: ["Nicosia", "Limassol", "Larnaca", "Paphos", "Famagusta", "Kyrenia"] },
-    "AM": { name: "亚美尼亚 (Armenia)", states: ["Yerevan", "Aragatsotn", "Ararat", "Armavir", "Gegharkunik", "Kotayk", "Lori", "Shirak", "Syunik", "Tavush", "Vayots Dzor"] },
-    "AZ": { name: "阿塞拜疆 (Azerbaijan)", states: ["Baku", "Ganja", "Sumqayit", "Mingachevir", "Nakhchivan Autonomous Republic", "Absheron", "Agdam", "Agdash", "Agstafa", "Agsu", "Astara", "Balakan", "Barda", "Beylagan", "Bilasuvar", "Dashkasan", "Fuzuli", "Gadabay", "Goranboy", "Goychay", "Goygol", "Hajigabul", "Imishli", "Ismayilli", "Jabrayil", "Jalilabad", "Kalbajar", "Khachmaz", "Khizi", "Khojali", "Khojavend", "Kurdamir", "Lachin", "Lankaran", "Lerik", "Masalli", "Naftalan", "Neftchala", "Oghuz", "Ordubad", "Qabala", "Qakh", "Qazakh", "Quba", "Qubadli", "Qusar", "Saatly", "Sabirabad", "Salyan", "Samukh", "Shabran", "Shaki", "Shamakhi", "Shirvan", "Shusha", "Siyazan", "Tartar", "Tovuz", "Ujar", "Khachmaz", "Yardimli", "Yevlakh", "Zangilan", "Zardab"] },
-    "GE": { name: "格鲁吉亚 (Georgia)", states: ["Tbilisi", "Batumi", "Kutaisi", "Rustavi", "Abkhazia", "Adjara", "Guria", "Imereti", "Kakheti", "Kvemo Kartli", "Mtskheta-Mtianeti", "Racha-Lechkhumi and Kvemo Svaneti", "Samegrelo-Zemo Svaneti", "Samtskhe-Javakheti", "Shida Kartli"] },
+    // Asia
+    "CN": { name: "China", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
+    "JP": { name: "Japan", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"] },
+    "KR": { name: "South Korea", states: ["Seoul", "Busan", "Daegu", "Incheon", "Gwangju", "Daejeon", "Ulsan", "Sejong", "Gyeonggi-do", "Gangwon-do", "North Chungcheong", "South Chungcheong", "North Jeolla", "South Jeolla", "North Gyeongsang", "South Gyeongsang", "Jeju-do"] },
+    "KP": { name: "North Korea", states: ["Pyongyang", "Rason", "Nampo", "Kaesong", "North Pyongan", "South Pyongan", "North Hamgyong", "South Hamgyong", "North Hwanghae", "South Hwanghae", "Kangwon", "Ryanggang", "Chagang"] },
+    "MN": { name: "Mongolia", states: ["Ulaanbaatar", "Darkhan-Uul", "Orkhon", "Töv", "Selenge", "Bulgan", "Khuvsgul", "Arkhangai", "Uvurkhangai", "Bayankhongor", "Govi-Altai", "Zavkhan", "Uvs", "Bayan-Ulgii", "Khovd", "Dundgovi", "Omnogovi", "Sukhbaatar", "Khentii", "Dornod", "Dornogovi"] },
+    "VN": { name: "Vietnam", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho", "An Giang", "Ba Ria - Vung Tau", "Bac Giang", "Bac Kan", "Bac Lieu", "Bac Ninh", "Ben Tre", "Binh Dinh", "Binh Duong", "Binh Phuoc", "Binh Thuan", "Ca Mau", "Cao Bang", "Dak Lak", "Dak Nong", "Dien Bien", "Dong Nai", "Dong Thap", "Gia Lai", "Ha Giang", "Ha Nam", "Ha Tinh", "Hai Duong", "Hau Giang", "Hoa Binh", "Hung Yen", "Khanh Hoa", "Kien Giang", "Kon Tum", "Lai Chau", "Lam Dong", "Lang Son", "Lao Cai", "Long An", "Nam Dinh", "Nghe An", "Ninh Binh", "Ninh Thuan", "Phu Tho", "Phu Yen", "Quang Binh", "Quang Nam", "Quang Ngai", "Quang Ninh", "Quang Tri", "Soc Trang", "Son La", "Tay Ninh", "Thai Binh", "Thai Nguyen", "Thanh Hoa", "Thua Thien Hue", "Tien Giang", "Tra Vinh", "Tuyen Quang", "Vinh Long", "Vinh Phuc", "Yen Bai"] },
+    "LA": { name: "Laos", states: ["Vientiane Prefecture", "Vientiane Province", "Luang Prabang", "Champasak", "Savannakhet", "Oudomxay", "Xiengkhouang", "Khammouane", "Bokeo", "Borikhamxay", "Huaphanh", "Phongsaly", "Salavan", "Sekong", "Xayaboury", "Attapeu", "Xaisomboun"] },
+    "KH": { name: "Cambodia", states: ["Phnom Penh", "Siem Reap", "Battambang", "Sihanoukville", "Kampot", "Kandal", "Kampong Cham", "Kampong Chhnang", "Kampong Speu", "Kampong Thom", "Kratie", "Mondulkiri", "Preah Sihanouk", "Prey Veng", "Pursat", "Ratanakiri", "Stung Treng", "Svay Rieng", "Takeo", "Oddar Meanchey", "Pailin", "Kep", "Banteay Meanchey", "Tbong Khmum"] },
+    "TH": { name: "Thailand", states: ["Bangkok", "Chiang Mai", "Phuket", "Pattaya", "Nonthaburi", "Chiang Rai", "Chonburi", "Khon Kaen", "Nakhon Ratchasima", "Songkhla", "Ayutthaya", "Surat Thani", "Krabi", "Lampang", "Lamphun", "Mae Hong Son", "Nakhon Si Thammarat", "Phetchaburi", "Prachuap Khiri Khan", "Rayong", "Samut Prakan", "Ubon Ratchathani", "Udon Thani"] },
+    "MM": { name: "Myanmar", states: ["Yangon", "Mandalay", "Naypyidaw", "Ayeyarwady", "Bago", "Chin", "Kachin", "Kayah", "Kayin", "Magway", "Mon", "Rakhine", "Sagaing", "Shan", "Tanintharyi"] },
+    "MY": { name: "Malaysia", states: ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis", "Sabah", "Sarawak", "Selangor", "Terengganu", "Kuala Lumpur", "Labuan", "Putrajaya"] },
+    "SG": { name: "Singapore", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
+    "ID": { name: "Indonesia", states: ["Jakarta", "West Java", "Central Java", "East Java", "Bali", "North Sumatra", "Aceh", "West Sumatra", "Riau", "Jambi", "South Sumatra", "Bengkulu", "Lampung", "Bangka Belitung Islands", "Riau Islands", "Yogyakarta", "Banten", "West Kalimantan", "Central Kalimantan", "South Kalimantan", "East Kalimantan", "North Kalimantan", "North Sulawesi", "Central Sulawesi", "South Sulawesi", "Southeast Sulawesi", "Gorontalo", "West Sulawesi", "Maluku", "North Maluku", "Papua", "West Papua", "South Papua", "Central Papua", "Highland Papua", "Southwest Papua"] },
+    "BN": { name: "Brunei", states: ["Brunei-Muara", "Belait", "Tutong", "Temburong"] },
+    "PH": { name: "Philippines", states: ["Metro Manila", "Cebu", "Davao del Sur", "Pampanga", "Laguna", "Cavite", "Batangas", "Rizal", "Bulacan", "Iloilo", "Negros Occidental", "Pangasinan", "Zambales", "Albay", "Camarines Sur"] },
+    "TL": { name: "East Timor", states: ["Dili", "Baucau", "Ermera", "Liquica", "Manatuto", "Viqueque", "Lautem", "Cova Lima", "Bobonaro", "Manufahi", "Aileu", "Oecusse", "Atauro"] },
+    "IN": { name: "India", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal", "Rajasthan", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Haryana", "Himachal Pradesh", "Jharkhand", "Kerala", "Madhya Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Sikkim", "Telangana", "Tripura", "Uttarakhand"] },
+    "PK": { name: "Pakistan", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad Capital Territory", "Azad Jammu and Kashmir", "Gilgit-Baltistan"] },
+    "BD": { name: "Bangladesh", states: ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Sylhet", "Barisal", "Rangpur", "Mymensingh"] },
+    "LK": { name: "Sri Lanka", states: ["Western Province", "Central Province", "Southern Province", "Northern Province", "Eastern Province", "North Western Province", "North Central Province", "Uva Province", "Sabaragamuwa Province"] },
+    "NP": { name: "Nepal", states: ["Bagmati Province", "Gandaki Province", "Lumbini Province", "Karnali Province", "Sudurpashchim Province", "Koshi Province", "Madhesh Province"] },
+    "BT": { name: "Bhutan", states: ["Thimphu", "Punakha", "Chukha", "Paro", "Bumthang", "Dagana", "Gasa", "Haa", "Lhuntse", "Mongar", "Pemagatshel", "Samdrup Jongkhar", "Samtse", "Sarpang", "Trashigang", "Trashiyangtse", "Trongsa", "Zhemgang"] },
+    "MV": { name: "Maldives", states: ["Malé", "Addu City", "Fuvahmulah", "Kulhudhuffushi", "Haa Alifu Atoll", "Haa Dhaalu Atoll", "Shaviyani Atoll", "Noonu Atoll", "Raa Atoll", "Baa Atoll", "Lhaviyani Atoll", "Kaafu Atoll", "Alifu Alifu Atoll", "Alifu Dhaalu Atoll", "Vaavu Atoll", "Meemu Atoll", "Faafu Atoll", "Dhaalu Atoll", "Thaa Atoll", "Laamu Atoll", "Gaafu Alifu Atoll", "Gaafu Dhaalu Atoll", "Gnaviyani Atoll", "Seenu Atoll"] },
+    "KZ": { name: "Kazakhstan", states: ["Almaty", "Astana", "Shymkent", "Akmola Region", "Aktobe Region", "Almaty Region", "Atyrau Region", "East Kazakhstan Region", "Jambyl Region", "Karaganda Region", "Kostanay Region", "Kyzylorda Region", "Mangystau Region", "North Kazakhstan Region", "Pavlodar Region", "Turkistan Region", "West Kazakhstan Region", "Abay Region", "Jetisu Region", "Ulytau Region"] },
+    "UZ": { name: "Uzbekistan", states: ["Tashkent", "Samarkand", "Bukhara", "Namangan", "Andijan", "Fergana", "Kashkadarya", "Surkhandarya", "Khorezm", "Navoiy", "Jizzakh", "Syrdarya", "Republic of Karakalpakstan"] },
+    "TM": { name: "Turkmenistan", states: ["Ashgabat", "Ahal Region", "Balkan Region", "Dashoguz Region", "Lebap Region", "Mary Region"] },
+    "KG": { name: "Kyrgyzstan", states: ["Bishkek", "Osh", "Jalal-Abad", "Karakol", "Batken Region", "Chuy Region", "Naryn Region", "Talas Region", "Osh Region"] },
+    "TJ": { name: "Tajikistan", states: ["Dushanbe", "Sughd Region", "Khatlon Region", "Gorno-Badakhshan Autonomous Region", "Districts of Republican Subordination"] },
+    "AF": { name: "Afghanistan", states: ["Kabul", "Herat", "Kandahar", "Balkh", "Nangarhar", "Kunduz", "Baghlan", "Ghazni", "Badakhshan", "Helmand", "Bamyan", "Farah", "Faryab", "Ghor", "Jowzjan", "Kapisa", "Khost", "Kunar", "Laghman", "Logar", "Nimroz", "Nuristan", "Paktia", "Paktika", "Panjshir", "Parwan", "Samangan", "Sar-e Pol", "Takhar", "Uruzgan", "Wardak", "Zabul"] },
+    "IR": { name: "Iran", states: ["Tehran", "Isfahan", "Mashhad", "Shiraz", "Tabriz", "Alborz", "Ardabil", "Bushehr", "Chaharmahal and Bakhtiari", "East Azerbaijan", "Fars", "Gilan", "Golestan", "Hamadan", "Hormozgan", "Ilam", "Kerman", "Kermanshah", "Khuzestan", "Kohgiluyeh and Boyer-Ahmad", "Kurdistan", "Lorestan", "Markazi", "Mazandaran", "North Khorasan", "Qazvin", "Qom", "Razavi Khorasan", "Semnan", "Sistan and Baluchestan", "South Khorasan", "West Azerbaijan", "Yazd", "Zanjan"] },
+    "IQ": { name: "Iraq", states: ["Baghdad", "Basra", "Erbil", "Mosul", "Najaf", "Al-Anbar", "Babil", "Dhi Qar", "Diyala", "Karbala", "Kirkuk", "Maysan", "Muthanna", "Ninawa", "Qadisiyyah", "Saladin", "Sulaymaniyah", "Wasit"] },
+    "SA": { name: "Saudi Arabia", states: ["Riyadh", "Makkah", "Eastern Province", "Madinah", "Asir", "Al-Qassim", "Tabuk", "Hail", "Northern Borders", "Jazan", "Najran", "Al-Bahah", "Al-Jawf"] },
+    "AE": { name: "UAE", states: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"] },
+    "QA": { name: "Qatar", states: ["Doha", "Al Rayyan", "Al Wakrah", "Al Khor", "Al-Shahaniya", "Umm Salal", "Al Daayen", "Al Shamal"] },
+    "KW": { name: "Kuwait", states: ["Capital", "Hawalli", "Farwaniya", "Ahmadi", "Jahra", "Mubarak Al-Kabeer"] },
+    "BH": { name: "Bahrain", states: ["Capital Governorate", "Muharraq Governorate", "Northern Governorate", "Southern Governorate"] },
+    "OM": { name: "Oman", states: ["Muscat", "Dhofar", "Musandam", "Al Buraimi", "Ad Dakhiliyah", "Al Batinah North", "Al Batinah South", "Al Wusta", "Ash Sharqiyah North", "Ash Sharqiyah South", "Ad Dhahirah"] },
+    "YE": { name: "Yemen", states: ["Sana'a", "Aden", "Taiz", "Hodeidah", "Ibb", "Dhamar", "Hadramawt", "Hajjah", "Amran", "Abyan", "Al Bayda", "Al Dhale'e", "Al Jawf", "Lahij", "Mahwit", "Raymah", "Sa'ada", "Socotra"] },
+    "SY": { name: "Syria", states: ["Damascus", "Aleppo", "Homs", "Latakia", "Hama", "Deir ez-Zor", "Raqqa", "Idlib", "Daraa", "As-Suwayda", "Quneitra", "Tartus", "Al-Hasakah", "Rural Damascus"] },
+    "LB": { name: "Lebanon", states: ["Beirut", "Mount Lebanon", "North", "South", "Bekaa", "Nabatieh", "Akkar", "Baalbek-Hermel"] },
+    "JO": { name: "Jordan", states: ["Amman", "Zarqa", "Irbid", "Aqaba", "Balqa", "Madaba", "Karak", "Tafilah", "Ma'an", "Mafraq", "Jerash", "Ajloun"] },
+    "IL": { name: "Israel", states: ["Tel Aviv", "Jerusalem", "Haifa", "Center", "North", "South", "Judea and Samaria"] },
+    "PS": { name: "Palestine", states: ["Gaza Strip", "West Bank", "East Jerusalem"] },
+    "TR": { name: "Turkey", states: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya", "Adana", "Konya", "Gaziantep", "Mersin", "Diyarbakir", "Kayseri", "Samsun", "Trabzon", "Erzurum", "Van", "Aydin", "Balikesir", "Denizli", "Eskisehir", "Malatya", "Manisa", "Kahramanmaras", "Mardin", "Mugla", "Ordu", "Sakarya", "Tekirdag", "Tokat", "Zonguldak"] },
+    "CY": { name: "Cyprus", states: ["Nicosia", "Limassol", "Larnaca", "Paphos", "Famagusta", "Kyrenia"] },
+    "AM": { name: "Armenia", states: ["Yerevan", "Aragatsotn", "Ararat", "Armavir", "Gegharkunik", "Kotayk", "Lori", "Shirak", "Syunik", "Tavush", "Vayots Dzor"] },
+    "AZ": { name: "Azerbaijan", states: ["Baku", "Ganja", "Sumqayit", "Mingachevir", "Nakhchivan Autonomous Republic", "Absheron", "Agdam", "Agdash", "Agstafa", "Agsu", "Astara", "Balakan", "Barda", "Beylagan", "Bilasuvar", "Dashkasan", "Fuzuli", "Gadabay", "Goranboy", "Goychay", "Goygol", "Hajigabul", "Imishli", "Ismayilli", "Jabrayil", "Jalilabad", "Kalbajar", "Khachmaz", "Khizi", "Khojali", "Khojavend", "Kurdamir", "Lachin", "Lankaran", "Lerik", "Masalli", "Naftalan", "Neftchala", "Oghuz", "Ordubad", "Qabala", "Qakh", "Qazakh", "Quba", "Qubadli", "Qusar", "Saatly", "Sabirabad", "Salyan", "Samukh", "Shabran", "Shaki", "Shamakhi", "Shirvan", "Shusha", "Siyazan", "Tartar", "Tovuz", "Ujar", "Yardimli", "Yevlakh", "Zangilan", "Zardab"] },
+    "GE": { name: "Georgia", states: ["Tbilisi", "Batumi", "Kutaisi", "Rustavi", "Abkhazia", "Adjara", "Guria", "Imereti", "Kakheti", "Kvemo Kartli", "Mtskheta-Mtianeti", "Racha-Lechkhumi and Kvemo Svaneti", "Samegrelo-Zemo Svaneti", "Samtskhe-Javakheti", "Shida Kartli"] },
 
-    // 欧洲 (Europe)
-    "GB": { name: "英国 (United Kingdom)", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester", "West Midlands", "West Yorkshire", "Merseyside", "South Yorkshire", "Tyne and Wear", "Nottinghamshire", "Hampshire", "Kent", "Essex", "Lancashire"] },
-    "FR": { name: "法国 (France)", states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Hauts-de-France", "Grand Est", "Nouvelle-Aquitaine", "Occitanie", "Brittany", "Normandy", "Pays de la Loire", "Centre-Val de Loire", "Bourgogne-Franche-Comté", "Corsica"] },
-    "DE": { name: "德国 (Germany)", states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse", "Baden-Württemberg", "Hamburg", "Saxony", "Lower Saxony", "Rhineland-Palatinate", "Schleswig-Holstein", "Brandenburg", "Mecklenburg-Vorpommern", "Saarland", "Saxony-Anhalt", "Thuringia", "Bremen"] },
-    "IT": { name: "意大利 (Italy)", states: ["Lombardy", "Lazio", "Campania", "Veneto", "Sicily", "Piedmont", "Emilia-Romagna", "Tuscany", "Calabria", "Sardinia", "Liguria", "Marche", "Abruzzo", "Friuli-Venezia Giulia", "Trentino-South Tyrol", "Umbria", "Basilicata", "Molise", "Valle d'Aosta"] },
-    "ES": { name: "西班牙 (Spain)", states: ["Madrid", "Catalonia", "Andalusia", "Valencian Community", "Galicia", "Basque Country", "Castile and León", "Castilla-La Mancha", "Canary Islands", "Aragon", "Balearic Islands", "Extremadura", "Asturias", "Navarre", "Cantabria", "La Rioja", "Murcia"] },
-    "PT": { name: "葡萄牙 (Portugal)", states: ["Lisbon", "Porto", "Coimbra", "Braga", "Faro", "Aveiro", "Beja", "Castelo Branco", "Évora", "Guarda", "Leiria", "Portalegre", "Santarém", "Viana do Castelo", "Vila Real", "Viseu", "Azores", "Madeira"] },
-    "NL": { name: "荷兰 (Netherlands)", states: ["Noord-Holland", "Zuid-Holland", "Utrecht", "Noord-Brabant", "Gelderland", "Overijssel", "Limburg", "Friesland", "Groningen", "Drenthe", "Flevoland", "Zeeland"] },
-    "BE": { name: "比利时 (Belgium)", states: ["Brussels", "Antwerp", "Ghent", "Liège", "Namur", "Charleroi", "Bruges", "Leuven", "Mons", "Mechelen", "Aalst", "Hasselt"] },
-    "CH": { name: "瑞士 (Switzerland)", states: ["Zurich", "Geneva", "Basel", "Bern", "Vaud", "Lucerne", "St. Gallen", "Ticino", "Valais", "Fribourg", "Solothurn", "Aargau", "Thurgau", "Graubünden", "Neuchâtel", "Schaffhausen", "Zug", "Schwyz", "Jura", "Appenzell Ausserrhoden", "Appenzell Innerrhoden", "Nidwalden", "Obwalden", "Uri", "Glarus"] },
-    "AT": { name: "奥地利 (Austria)", states: ["Vienna", "Lower Austria", "Upper Austria", "Styria", "Tyrol", "Carinthia", "Salzburg", "Vorarlberg", "Burgenland"] },
-    "SE": { name: "瑞典 (Sweden)", states: ["Stockholm", "Västra Götaland", "Skåne", "Uppsala", "Östergötland", "Jönköping", "Kronoberg", "Kalmar", "Gotland", "Blekinge", "Halland", "Värmland", "Örebro", "Västmanland", "Dalarna", "Gävleborg", "Västernorrland", "Jämtland", "Västerbotten", "Norrbotten"] },
-    "NO": { name: "挪威 (Norway)", states: ["Oslo", "Bergen", "Trondheim", "Stavanger", "Viken", "Innlandet", "Vestfold og Telemark", "Agder", "Rogaland", "Vestland", "Møre og Romsdal", "Trøndelag", "Nordland", "Troms og Finnmark"] },
-    "DK": { name: "丹麦 (Denmark)", states: ["Capital Region of Denmark", "Central Denmark Region", "Region of Southern Denmark", "Region Zealand", "North Denmark Region", "Copenhagen", "Aarhus", "Odense", "Aalborg"] },
-    "FI": { name: "芬兰 (Finland)", states: ["Uusimaa", "Pirkanmaa", "Southwest Finland", "North Ostrobothnia", "Central Finland", "Satakunta", "Lapland", "South Savo", "North Savo", "Kainuu", "Kymenlaakso", "South Karelia", "North Karelia", "Central Ostrobothnia", "Ostrobothnia", "South Ostrobothnia", "Åland"] },
-    "IS": { name: "冰岛 (Iceland)", states: ["Capital Region", "Southern Peninsula", "Northeast", "South", "West", "Westfjords", "Northwest", "Eastern Region"] },
-    "IE": { name: "爱尔兰 (Ireland)", states: ["Dublin", "Cork", "Galway", "Limerick", "Waterford", "Kildare", "Meath", "Louth", "Westmeath", "Kerry", "Clare", "Tipperary", "Wexford", "Wicklow", "Carlow", "Kilkenny", "Laois", "Offaly", "Longford", "Roscommon", "Sligo", "Leitrim", "Donegal", "Mayo", "Cavan", "Monaghan"] },
-    "PL": { name: "波兰 (Poland)", states: ["Masovian", "Lesser Poland", "Greater Poland", "Lower Silesian", "Silesian", "Pomeranian", "Łódź", "Lublin", "West Pomeranian", "Subcarpathian", "Kuyavian-Pomeranian", "Swietokrzyskie", "Warmian-Masurian", "Lubuskie", "Opole", "Podlaskie"] },
-    "CZ": { name: "捷克 (Czech Republic)", states: ["Prague", "South Moravia", "Central Bohemia", "Moravian-Silesian", "Ústí nad Labem", "Olomouc", "Liberec", "South Bohemia", "Hradec Králové", "Pardubice", "Zlín", "Vysočina", "Plzeň", "Karlovy Vary"] },
-    "SK": { name: "斯洛伐克 (Slovakia)", states: ["Bratislava", "Košice", "Prešov", "Žilina", "Banská Bystrica", "Nitra", "Trnava", "Trenčín"] },
-    "HU": { name: "匈牙利 (Hungary)", states: ["Budapest", "Pest", "Debrecen", "Szeged", "Miskolc", "Pécs", "Győr", "Nyíregyháza", "Kecskemét", "Székesfehérvár", "Szombathely", "Szolnok", "Tatabánya", "Kaposvár", "Érd", "Veszprém", "Békéscsaba", "Zalaegerszeg", "Eger", "Salgótarján", "Szekszárd"] },
-    "RO": { name: "罗马尼亚 (Romania)", states: ["Bucharest", "Cluj", "Timis", "Iasi", "Constanta", "Brasov", "Dolj", "Prahova", "Arges", "Bihor", "Bacau", "Sibiu", "Galati", "Mures", "Suceava"] },
-    "BG": { name: "保加利亚 (Bulgaria)", states: ["Sofia", "Plovdiv", "Varna", "Burgas", "Stara Zagora", "Pleven", "Sliven", "Dobrich", "Shumen", "Pernik", "Haskovo", "Yambol", "Pazardzhik", "Blagoevgrad", "Veliko Tarnovo"] },
-    "GR": { name: "希腊 (Greece)", states: ["Attica", "Central Macedonia", "Crete", "Thessaly", "Peloponnese", "Western Greece", "Eastern Macedonia and Thrace", "Epirus", "Central Greece", "North Aegean", "South Aegean", "Ionian Islands", "Mount Athos"] },
-    "AL": { name: "阿尔巴尼亚 (Albania)", states: ["Tirana", "Durres", "Vlore", "Shkoder", "Fier", "Elbasan", "Korce", "Berat", "Diber", "Gjirokaster", "Kukes", "Lezhe"] },
-    "RS": { name: "塞尔维亚 (Serbia)", states: ["Belgrade", "Vojvodina", "Šumadija and Western Serbia", "Southern and Eastern Serbia", "Kosovo and Metohija"] },
-    "HR": { name: "克罗地亚 (Croatia)", states: ["Zagreb", "Split-Dalmatia", "Primorje-Gorski Kotar", "Istria", "Osijek-Baranja", "Dubrovnik-Neretva", "Zadar", "Vukovar-Srijem", "Sisak-Moslavina", "Krapina-Zagorje", "Varaždin", "Bjelovar-Bilogora", "Karlovac", "Koprivnica-Križevci", "Požega-Slavonia", "Brod-Posavina", "Šibenik-Knin", "Virovitica-Podravina", "Međimurje", "Lika-Senj"] },
-    "BA": { name: "波黑 (Bosnia and Herzegovina)", states: ["Federation of Bosnia and Herzegovina", "Republika Srpska", "Brčko District", "Sarajevo", "Banja Luka", "Mostar", "Tuzla", "Zenica"] },
-    "SI": { name: "斯洛文尼亚 (Slovenia)", states: ["Ljubljana", "Maribor", "Celje", "Kranj", "Koper", "Novo Mesto", "Velenje", "Ptuj", "Trbovlje", "Nova Gorica"] },
-    "ME": { name: "黑山 (Montenegro)", states: ["Podgorica", "Niksic", "Bar", "Budva", "Kotor", "Herceg Novi", "Cetinje", "Pljevlja", "Bijelo Polje", "Berane"] },
-    "MK": { name: "北马其顿 (North Macedonia)", states: ["Skopje", "Bitola", "Kumanovo", "Prilep", "Tetovo", "Veles", "Štip", "Ohrid", "Gostivar", "Strumica"] },
-    "EE": { name: "爱沙尼亚 (Estonia)", states: ["Harju", "Tartu", "Ida-Viru", "Pärnu", "Lääne-Viru", "Viljandi", "Rapla", "Võru", "Jõgeva", "Järva", "Valga", "Põlva", "Lääne", "Hiiu", "Saare"] },
-    "LV": { name: "拉脱维亚 (Latvia)", states: ["Riga", "Daugavpils", "Liepaja", "Jelgava", "Jurmala", "Ventspils", "Rezekne", "Ogre", "Valmiera", "Jekabpils"] },
-    "LT": { name: "立陶宛 (Lithuania)", states: ["Vilnius", "Kaunas", "Klaipeda", "Siauliai", "Panevezys", "Alytus", "Marijampole", "Mazeikiai", "Jonava", "Utena"] },
-    "BY": { name: "白俄罗斯 (Belarus)", states: ["Minsk", "Brest Region", "Grodno Region", "Vitebsk Region", "Gomel Region", "Mogilev Region", "Minsk Region"] },
-    "UA": { name: "乌克兰 (Ukraine)", states: ["Kyiv", "Kharkiv", "Odesa", "Dnipro", "Lviv", "Zaporizhzhia", "Donetsk", "Mykolaiv", "Vinnytsia", "Poltava", "Chernihiv", "Cherkasy", "Khmelnytskyi", "Sumy", "Zhytomyr", "Chernivtsi", "Rivne", "Ivano-Frankivsk", "Ternopil", "Volyn", "Transcarpathia", "Kirovohrad", "Kherson", "Crimea", "Sevastopol"] },
-    "RU": { name: "俄罗斯 (Russia)", states: ["Moscow", "Saint Petersburg", "Krasnodar Krai", "Sverdlovsk Oblast", "Tatarstan", "Moscow Oblast", "Rostov Oblast", "Bashkortostan", "Chelyabinsk Oblast", "Nizhny Novgorod Oblast", "Samara Oblast", "Krasnoyarsk Krai", "Novosibirsk Oblast", "Stavropol Krai", "Perm Krai", "Volgograd Oblast", "Saratov Oblast", "Irkutsk Oblast", "Altai Krai", "Voronezh Oblast", "Primorsky Krai", "Dagestan", "Kemerovo Oblast", "Omsk Oblast", "Belgorod Oblast", "Ryazan Oblast", "Penza Oblast", "Udmurtia", "Vladimir Oblast", "Tula Oblast", "Khabarovsk Krai", "Sakhalin Oblast", "Kaliningrad Oblast"] },
-    "MD": { name: "摩尔多瓦 (Moldova)", states: ["Chisinau", "Balti", "Tiraspol", "Cahul", "Orhei", "Ungheni", "Soroca", "Hincesti", "Causeni", "Edinet", "Gagauzia", "Transnistria"] },
-    "LU": { name: "卢森堡 (Luxembourg)", states: ["Luxembourg City", "Esch-sur-Alzette", "Differdange", "Dudelange", "Echternach", "Diekirch", "Wiltz", "Clervaux", "Redange", "Remich", "Grevenmacher", "Mersch"] },
-    "MC": { name: "摩纳哥 (Monaco)", states: ["Monte Carlo", "Monaco-Ville", "La Condamine", "Fontvieille", "Moneghetti", "Larvotto", "Saint Roman"] },
-    "LI": { name: "列支敦士登 (Liechtenstein)", states: ["Vaduz", "Schaan", "Balzers", "Triesen", "Eschen", "Triesenberg", "Ruggell", "Gamprin", "Schellenberg", "Planken", "Mauren"] },
-    "SM": { name: "圣马力诺 (San Marino)", states: ["San Marino", "Borgo Maggiore", "Serravalle", "Domagnano", "Fiorentino", "Acquaviva", "Faetano", "Chiesanuova", "Montegiardino"] },
-    "VA": { name: "梵蒂冈 (Vatican City)", states: ["Vatican City"] },
-    "AD": { name: "安道尔 (Andorra)", states: ["Andorra la Vella", "Canillo", "Encamp", "Escaldes-Engordany", "La Massana", "Ordino", "Sant Julià de Lòria"] },
-    "MT": { name: "马耳他 (Malta)", states: ["Valletta", "Birkirkara", "Qormi", "Sliema", "Mosta", "Zabbar", "San Pawl il-Bahar", "San Giljan", "Bormla", "Mdina", "Victoria"] },
+    // Europe
+    "GB": { name: "United Kingdom", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester", "West Midlands", "West Yorkshire", "Merseyside", "South Yorkshire", "Tyne and Wear", "Nottinghamshire", "Hampshire", "Kent", "Essex", "Lancashire"] },
+    "FR": { name: "France", states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Hauts-de-France", "Grand Est", "Nouvelle-Aquitaine", "Occitanie", "Brittany", "Normandy", "Pays de la Loire", "Centre-Val de Loire", "Bourgogne-Franche-Comté", "Corsica"] },
+    "DE": { name: "Germany", states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse", "Baden-Württemberg", "Hamburg", "Saxony", "Lower Saxony", "Rhineland-Palatinate", "Schleswig-Holstein", "Brandenburg", "Mecklenburg-Vorpommern", "Saarland", "Saxony-Anhalt", "Thuringia", "Bremen"] },
+    "IT": { name: "Italy", states: ["Lombardy", "Lazio", "Campania", "Veneto", "Sicily", "Piedmont", "Emilia-Romagna", "Tuscany", "Calabria", "Sardinia", "Liguria", "Marche", "Abruzzo", "Friuli-Venezia Giulia", "Trentino-South Tyrol", "Umbria", "Basilicata", "Molise", "Valle d'Aosta"] },
+    "ES": { name: "Spain", states: ["Madrid", "Catalonia", "Andalusia", "Valencian Community", "Galicia", "Basque Country", "Castile and León", "Castilla-La Mancha", "Canary Islands", "Aragon", "Balearic Islands", "Extremadura", "Asturias", "Navarre", "Cantabria", "La Rioja", "Murcia"] },
+    "PT": { name: "Portugal", states: ["Lisbon", "Porto", "Coimbra", "Braga", "Faro", "Aveiro", "Beja", "Castelo Branco", "Évora", "Guarda", "Leiria", "Portalegre", "Santarém", "Viana do Castelo", "Vila Real", "Viseu", "Azores", "Madeira"] },
+    "NL": { name: "Netherlands", states: ["Noord-Holland", "Zuid-Holland", "Utrecht", "Noord-Brabant", "Gelderland", "Overijssel", "Limburg", "Friesland", "Groningen", "Drenthe", "Flevoland", "Zeeland"] },
+    "BE": { name: "Belgium", states: ["Brussels", "Antwerp", "Ghent", "Liège", "Namur", "Charleroi", "Bruges", "Leuven", "Mons", "Mechelen", "Aalst", "Hasselt"] },
+    "CH": { name: "Switzerland", states: ["Zurich", "Geneva", "Basel", "Bern", "Vaud", "Lucerne", "St. Gallen", "Ticino", "Valais", "Fribourg", "Solothurn", "Aargau", "Thurgau", "Graubünden", "Neuchâtel", "Schaffhausen", "Zug", "Schwyz", "Jura", "Appenzell Ausserrhoden", "Appenzell Innerrhoden", "Nidwalden", "Obwalden", "Uri", "Glarus"] },
+    "AT": { name: "Austria", states: ["Vienna", "Lower Austria", "Upper Austria", "Styria", "Tyrol", "Carinthia", "Salzburg", "Vorarlberg", "Burgenland"] },
+    "SE": { name: "Sweden", states: ["Stockholm", "Västra Götaland", "Skåne", "Uppsala", "Östergötland", "Jönköping", "Kronoberg", "Kalmar", "Gotland", "Blekinge", "Halland", "Värmland", "Örebro", "Västmanland", "Dalarna", "Gävleborg", "Västernorrland", "Jämtland", "Västerbotten", "Norrbotten"] },
+    "NO": { name: "Norway", states: ["Oslo", "Bergen", "Trondheim", "Stavanger", "Viken", "Innlandet", "Vestfold og Telemark", "Agder", "Rogaland", "Vestland", "Møre og Romsdal", "Trøndelag", "Nordland", "Troms og Finnmark"] },
+    "DK": { name: "Denmark", states: ["Capital Region of Denmark", "Central Denmark Region", "Region of Southern Denmark", "Region Zealand", "North Denmark Region", "Copenhagen", "Aarhus", "Odense", "Aalborg"] },
+    "FI": { name: "Finland", states: ["Uusimaa", "Pirkanmaa", "Southwest Finland", "North Ostrobothnia", "Central Finland", "Satakunta", "Lapland", "South Savo", "North Savo", "Kainuu", "Kymenlaakso", "South Karelia", "North Karelia", "Central Ostrobothnia", "Ostrobothnia", "South Ostrobothnia", "Åland"] },
+    "IS": { name: "Iceland", states: ["Capital Region", "Southern Peninsula", "Northeast", "South", "West", "Westfjords", "Northwest", "Eastern Region"] },
+    "IE": { name: "Ireland", states: ["Dublin", "Cork", "Galway", "Limerick", "Waterford", "Kildare", "Meath", "Louth", "Westmeath", "Kerry", "Clare", "Tipperary", "Wexford", "Wicklow", "Carlow", "Kilkenny", "Laois", "Offaly", "Longford", "Roscommon", "Sligo", "Leitrim", "Donegal", "Mayo", "Cavan", "Monaghan"] },
+    "PL": { name: "Poland", states: ["Masovian", "Lesser Poland", "Greater Poland", "Lower Silesian", "Silesian", "Pomeranian", "Łódź", "Lublin", "West Pomeranian", "Subcarpathian", "Kuyavian-Pomeranian", "Swietokrzyskie", "Warmian-Masurian", "Lubuskie", "Opole", "Podlaskie"] },
+    "CZ": { name: "Czech Republic", states: ["Prague", "South Moravia", "Central Bohemia", "Moravian-Silesian", "Ústí nad Labem", "Olomouc", "Liberec", "South Bohemia", "Hradec Králové", "Pardubice", "Zlín", "Vysočina", "Plzeň", "Karlovy Vary"] },
+    "SK": { name: "Slovakia", states: ["Bratislava", "Košice", "Prešov", "Žilina", "Banská Bystrica", "Nitra", "Trnava", "Trenčín"] },
+    "HU": { name: "Hungary", states: ["Budapest", "Pest", "Debrecen", "Szeged", "Miskolc", "Pécs", "Győr", "Nyíregyháza", "Kecskemét", "Székesfehérvár", "Szombathely", "Szolnok", "Tatabánya", "Kaposvár", "Érd", "Veszprém", "Békéscsaba", "Zalaegerszeg", "Eger", "Salgótarján", "Szekszárd"] },
+    "RO": { name: "Romania", states: ["Bucharest", "Cluj", "Timis", "Iasi", "Constanta", "Brasov", "Dolj", "Prahova", "Arges", "Bihor", "Bacau", "Sibiu", "Galati", "Mures", "Suceava"] },
+    "BG": { name: "Bulgaria", states: ["Sofia", "Plovdiv", "Varna", "Burgas", "Stara Zagora", "Pleven", "Sliven", "Dobrich", "Shumen", "Pernik", "Haskovo", "Yambol", "Pazardzhik", "Blagoevgrad", "Veliko Tarnovo"] },
+    "GR": { name: "Greece", states: ["Attica", "Central Macedonia", "Crete", "Thessaly", "Peloponnese", "Western Greece", "Eastern Macedonia and Thrace", "Epirus", "Central Greece", "North Aegean", "South Aegean", "Ionian Islands", "Mount Athos"] },
+    "AL": { name: "Albania", states: ["Tirana", "Durres", "Vlore", "Shkoder", "Fier", "Elbasan", "Korce", "Berat", "Diber", "Gjirokaster", "Kukes", "Lezhe"] },
+    "RS": { name: "Serbia", states: ["Belgrade", "Vojvodina", "Šumadija and Western Serbia", "Southern and Eastern Serbia", "Kosovo and Metohija"] },
+    "HR": { name: "Croatia", states: ["Zagreb", "Split-Dalmatia", "Primorje-Gorski Kotar", "Istria", "Osijek-Baranja", "Dubrovnik-Neretva", "Zadar", "Vukovar-Srijem", "Sisak-Moslavina", "Krapina-Zagorje", "Varaždin", "Bjelovar-Bilogora", "Karlovac", "Koprivnica-Križevci", "Požega-Slavonia", "Brod-Posavina", "Šibenik-Knin", "Virovitica-Podravina", "Međimurje", "Lika-Senj"] },
+    "BA": { name: "Bosnia and Herzegovina", states: ["Federation of Bosnia and Herzegovina", "Republika Srpska", "Brčko District", "Sarajevo", "Banja Luka", "Mostar", "Tuzla", "Zenica"] },
+    "SI": { name: "Slovenia", states: ["Ljubljana", "Maribor", "Celje", "Kranj", "Koper", "Novo Mesto", "Velenje", "Ptuj", "Trbovlje", "Nova Gorica"] },
+    "ME": { name: "Montenegro", states: ["Podgorica", "Niksic", "Bar", "Budva", "Kotor", "Herceg Novi", "Cetinje", "Pljevlja", "Bijelo Polje", "Berane"] },
+    "MK": { name: "North Macedonia", states: ["Skopje", "Bitola", "Kumanovo", "Prilep", "Tetovo", "Veles", "Štip", "Ohrid", "Gostivar", "Strumica"] },
+    "EE": { name: "Estonia", states: ["Harju", "Tartu", "Ida-Viru", "Pärnu", "Lääne-Viru", "Viljandi", "Rapla", "Võru", "Jõgeva", "Järva", "Valga", "Põlva", "Lääne", "Hiiu", "Saare"] },
+    "LV": { name: "Latvia", states: ["Riga", "Daugavpils", "Liepaja", "Jelgava", "Jurmala", "Ventspils", "Rezekne", "Ogre", "Valmiera", "Jekabpils"] },
+    "LT": { name: "Lithuania", states: ["Vilnius", "Kaunas", "Klaipeda", "Siauliai", "Panevezys", "Alytus", "Marijampole", "Mazeikiai", "Jonava", "Utena"] },
+    "BY": { name: "Belarus", states: ["Minsk", "Brest Region", "Grodno Region", "Vitebsk Region", "Gomel Region", "Mogilev Region", "Minsk Region"] },
+    "UA": { name: "Ukraine", states: ["Kyiv", "Kharkiv", "Odesa", "Dnipro", "Lviv", "Zaporizhzhia", "Donetsk", "Mykolaiv", "Vinnytsia", "Poltava", "Chernihiv", "Cherkasy", "Khmelnytskyi", "Sumy", "Zhytomyr", "Chernivtsi", "Rivne", "Ivano-Frankivsk", "Ternopil", "Volyn", "Transcarpathia", "Kirovohrad", "Kherson", "Crimea", "Sevastopol"] },
+    "RU": { name: "Russia", states: ["Moscow", "Saint Petersburg", "Krasnodar Krai", "Sverdlovsk Oblast", "Tatarstan", "Moscow Oblast", "Rostov Oblast", "Bashkortostan", "Chelyabinsk Oblast", "Nizhny Novgorod Oblast", "Samara Oblast", "Krasnoyarsk Krai", "Novosibirsk Oblast", "Stavropol Krai", "Perm Krai", "Volgograd Oblast", "Saratov Oblast", "Irkutsk Oblast", "Altai Krai", "Voronezh Oblast", "Primorsky Krai", "Dagestan", "Kemerovo Oblast", "Omsk Oblast", "Belgorod Oblast", "Ryazan Oblast", "Penza Oblast", "Udmurtia", "Vladimir Oblast", "Tula Oblast", "Khabarovsk Krai", "Sakhalin Oblast", "Kaliningrad Oblast"] },
+    "MD": { name: "Moldova", states: ["Chisinau", "Balti", "Tiraspol", "Cahul", "Orhei", "Ungheni", "Soroca", "Hincesti", "Causeni", "Edinet", "Gagauzia", "Transnistria"] },
+    "LU": { name: "Luxembourg", states: ["Luxembourg City", "Esch-sur-Alzette", "Differdange", "Dudelange", "Echternach", "Diekirch", "Wiltz", "Clervaux", "Redange", "Remich", "Grevenmacher", "Mersch"] },
+    "MC": { name: "Monaco", states: ["Monte Carlo", "Monaco-Ville", "La Condamine", "Fontvieille", "Moneghetti", "Larvotto", "Saint Roman"] },
+    "LI": { name: "Liechtenstein", states: ["Vaduz", "Schaan", "Balzers", "Triesen", "Eschen", "Triesenberg", "Ruggell", "Gamprin", "Schellenberg", "Planken", "Mauren"] },
+    "SM": { name: "San Marino", states: ["San Marino", "Borgo Maggiore", "Serravalle", "Domagnano", "Fiorentino", "Acquaviva", "Faetano", "Chiesanuova", "Montegiardino"] },
+    "VA": { name: "Vatican City", states: ["Vatican City"] },
+    "AD": { name: "Andorra", states: ["Andorra la Vella", "Canillo", "Encamp", "Escaldes-Engordany", "La Massana", "Ordino", "Sant Julià de Lòria"] },
+    "MT": { name: "Malta", states: ["Valletta", "Birkirkara", "Qormi", "Sliema", "Mosta", "Zabbar", "San Pawl il-Bahar", "San Giljan", "Bormla", "Mdina", "Victoria"] },
 
-    // 北美洲 (North America)
-    "US": { name: "美国 (United States)", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
-    "CA": { name: "加拿大 (Canada)", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut"] },
-    "MX": { name: "墨西哥 (Mexico)", states: ["Mexico City", "Jalisco", "Nuevo León", "Puebla", "Estado de México", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Michoacán", "Morelos", "Nayarit", "Oaxaca", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas"] },
-    "GT": { name: "危地马拉 (Guatemala)", states: ["Guatemala", "Alta Verapaz", "Baja Verapaz", "Chimaltenango", "Chiquimula", "El Progreso", "Escuintla", "Huehuetenango", "Izabal", "Jalapa", "Jutiapa", "Petén", "Quetzaltenango", "Quiché", "Retalhuleu", "Sacatepéquez", "San Marcos", "Santa Rosa", "Sololá", "Suchitepéquez", "Totonicapán", "Zacapa"] },
-    "BZ": { name: "伯利兹 (Belize)", states: ["Belize", "Cayo", "Corozal", "Orange Walk", "Stann Creek", "Toledo"] },
-    "HN": { name: "洪都拉斯 (Honduras)", states: ["Francisco Morazán", "Cortés", "Atlántida", "Choluteca", "Colón", "Comayagua", "Copán", "El Paraíso", "Gracias a Dios", "Intibucá", "Islas de la Bahía", "La Paz", "Lempira", "Ocotepeque", "Olancho", "Santa Bárbara", "Valle", "Yoro"] },
-    "SV": { name: "萨尔瓦多 (El Salvador)", states: ["San Salvador", "Santa Ana", "San Miguel", "La Libertad", "Sonsonate", "Usulután", "La Paz", "Ahuachapán", "Cuscatlán", "La Unión", "Chalatenango", "Cabañas", "San Vicente", "Morazán"] },
-    "NI": { name: "尼加拉瓜 (Nicaragua)", states: ["Managua", "León", "Masaya", "Matagalpa", "Chinandega", "Jinotega", "Estelí", "Granada", "Carazo", "Rivas", "Boaco", "Chontales", "Madriz", "Nueva Segovia", "Río San Juan", "Atlántico Norte", "Atlántico Sur"] },
-    "CR": { name: "哥斯达黎加 (Costa Rica)", states: ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] },
-    "PA": { name: "巴拿马 (Panama)", states: ["Panamá", "San Miguelito", "Colón", "Chiriquí", "Veraguas", "Coclé", "Herrera", "Los Santos", "Bocas del Toro", "Darién", "Emberá-Wounaan", "Guna Yala", "Ngäbe-Buglé"] },
-    "CU": { name: "古巴 (Cuba)", states: ["Havana", "Santiago de Cuba", "Camagüey", "Holguín", "Guantánamo", "Villa Clara", "Pinar del Río", "Las Tunas", "Granma", "Matanzas", "Cienfuegos", "Sancti Spíritus", "Ciego de Ávila", "Artemisa", "Mayabeque", "Isla de la Juventud"] },
-    "JM": { name: "牙买加 (Jamaica)", states: ["Kingston", "St. Andrew", "St. Catherine", "Clarendon", "Manchester", "St. Elizabeth", "Westmoreland", "Hanover", "St. James", "Trelawny", "St. Ann", "St. Mary", "Portland", "St. Thomas"] },
-    "HT": { name: "海地 (Haiti)", states: ["Ouest", "Nord", "Artibonite", "Centre", "Sud", "Nord-Est", "Nord-Ouest", "Sud-Est", "Grand'Anse", "Nippes"] },
-    "DO": { name: "多米尼加 (Dominican Republic)", states: ["Santo Domingo", "Santiago", "Distrito Nacional", "San Cristóbal", "La Vega", "Puerto Plata", "San Pedro de Macorís", "Duarte", "La Altagracia", "Espaillat", "San Juan", "Azua", "Barahona", "Monte Plata", "Valverde", "La Romana", "Peravia", "Sánchez Ramírez", "Monseñor Nouel", "María Trinidad Sánchez", "Hermanas Mirabal", "El Seibo", "Samaná", "Bahoruco", "Elías Piña", "Dajabón", "Monte Cristi", "Santiago Rodríguez", "Pedernales", "Hato Mayor", "San José de Ocoa"] },
-    "BS": { name: "巴哈马 (Bahamas)", states: ["New Providence", "Grand Bahama", "Abaco", "Andros", "Eleuthera", "Exuma", "Long Island", "Bimini", "Cat Island", "San Salvador", "Inagua", "Berry Islands", "Acklins", "Crooked Island", "Mayaguana", "Ragged Island", "Rum Cay"] },
-    "BB": { name: "巴巴多斯 (Barbados)", states: ["Christ Church", "Saint Andrew", "Saint George", "Saint James", "Saint John", "Saint Joseph", "Saint Lucy", "Saint Michael", "Saint Peter", "Saint Philip", "Saint Thomas"] },
-    "TT": { name: "特立尼达和多巴哥 (Trinidad and Tobago)", states: ["Port of Spain", "San Fernando", "Chaguanas", "Arima", "Point Fortin", "Couva-Tabaquite-Talparo", "Diego Martin", "Penal-Debe", "Princes Town", "Rio Claro-Mayaro", "San Juan-Laventille", "Sangre Grande", "Siparia", "Tobago"] },
-    "AG": { name: "安提瓜和巴布达 (Antigua and Barbuda)", states: ["Saint John", "Saint George", "Saint Mary", "Saint Paul", "Saint Peter", "Saint Philip", "Barbuda", "Redonda"] },
-    "DM": { name: "多米尼克 (Dominica)", states: ["Saint George", "Saint John", "Saint Andrew", "Saint David", "Saint Joseph", "Saint Luke", "Saint Mark", "Saint Patrick", "Saint Paul", "Saint Peter"] },
-    "GD": { name: "格林纳达 (Grenada)", states: ["Saint George", "Saint Andrew", "Saint David", "Saint John", "Saint Mark", "Saint Patrick", "Carriacou and Petite Martinique"] },
-    "KN": { name: "圣基茨和尼维斯 (Saint Kitts and Nevis)", states: ["Christ Church Nichola Town", "Saint Anne Sandy Point", "Saint George Basseterre", "Saint George Gingerland", "Saint James Windward", "Saint John Capisterre", "Saint John Figtree", "Saint Mary Cayon", "Saint Paul Capisterre", "Saint Paul Charlestown", "Saint Peter Basseterre", "Saint Thomas Lowland", "Saint Thomas Middle Island", "Trinity Palmetto Point"] },
-    "LC": { name: "圣卢西亚 (Saint Lucia)", states: ["Castries", "Gros Islet", "Vieux Fort", "Anse la Raye", "Canaries", "Choiseul", "Dennery", "Laborie", "Micoud", "Soufrière"] },
-    "VC": { name: "圣文森特和格林纳丁斯 (Saint Vincent and the Grenadines)", states: ["Charlotte", "Grenadines", "Saint Andrew", "Saint David", "Saint George", "Saint Patrick"] },
+    // North America
+    "US": { name: "United States", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
+    "CA": { name: "Canada", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut"] },
+    "MX": { name: "Mexico", states: ["Mexico City", "Jalisco", "Nuevo León", "Puebla", "Estado de México", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Michoacán", "Morelos", "Nayarit", "Oaxaca", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas"] },
+    "GT": { name: "Guatemala", states: ["Guatemala", "Alta Verapaz", "Baja Verapaz", "Chimaltenango", "Chiquimula", "El Progreso", "Escuintla", "Huehuetenango", "Izabal", "Jalapa", "Jutiapa", "Petén", "Quetzaltenango", "Quiché", "Retalhuleu", "Sacatepéquez", "San Marcos", "Santa Rosa", "Sololá", "Suchitepéquez", "Totonicapán", "Zacapa"] },
+    "BZ": { name: "Belize", states: ["Belize", "Cayo", "Corozal", "Orange Walk", "Stann Creek", "Toledo"] },
+    "HN": { name: "Honduras", states: ["Francisco Morazán", "Cortés", "Atlántida", "Choluteca", "Colón", "Comayagua", "Copán", "El Paraíso", "Gracias a Dios", "Intibucá", "Islas de la Bahía", "La Paz", "Lempira", "Ocotepeque", "Olancho", "Santa Bárbara", "Valle", "Yoro"] },
+    "SV": { name: "El Salvador", states: ["San Salvador", "Santa Ana", "San Miguel", "La Libertad", "Sonsonate", "Usulután", "La Paz", "Ahuachapán", "Cuscatlán", "La Unión", "Chalatenango", "Cabañas", "San Vicente", "Morazán"] },
+    "NI": { name: "Nicaragua", states: ["Managua", "León", "Masaya", "Matagalpa", "Chinandega", "Jinotega", "Estelí", "Granada", "Carazo", "Rivas", "Boaco", "Chontales", "Madriz", "Nueva Segovia", "Río San Juan", "Atlántico Norte", "Atlántico Sur"] },
+    "CR": { name: "Costa Rica", states: ["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"] },
+    "PA": { name: "Panama", states: ["Panamá", "San Miguelito", "Colón", "Chiriquí", "Veraguas", "Coclé", "Herrera", "Los Santos", "Bocas del Toro", "Darién", "Emberá-Wounaan", "Guna Yala", "Ngäbe-Buglé"] },
+    "CU": { name: "Cuba", states: ["Havana", "Santiago de Cuba", "Camagüey", "Holguín", "Guantánamo", "Villa Clara", "Pinar del Río", "Las Tunas", "Granma", "Matanzas", "Cienfuegos", "Sancti Spíritus", "Ciego de Ávila", "Artemisa", "Mayabeque", "Isla de la Juventud"] },
+    "JM": { name: "Jamaica", states: ["Kingston", "St. Andrew", "St. Catherine", "Clarendon", "Manchester", "St. Elizabeth", "Westmoreland", "Hanover", "St. James", "Trelawny", "St. Ann", "St. Mary", "Portland", "St. Thomas"] },
+    "HT": { name: "Haiti", states: ["Ouest", "Nord", "Artibonite", "Centre", "Sud", "Nord-Est", "Nord-Ouest", "Sud-Est", "Grand'Anse", "Nippes"] },
+    "DO": { name: "Dominican Republic", states: ["Santo Domingo", "Santiago", "Distrito Nacional", "San Cristóbal", "La Vega", "Puerto Plata", "San Pedro de Macorís", "Duarte", "La Altagracia", "Espaillat", "San Juan", "Azua", "Barahona", "Monte Plata", "Valverde", "La Romana", "Peravia", "Sánchez Ramírez", "Monseñor Nouel", "María Trinidad Sánchez", "Hermanas Mirabal", "El Seibo", "Samaná", "Bahoruco", "Elías Piña", "Dajabón", "Monte Cristi", "Santiago Rodríguez", "Pedernales", "Hato Mayor", "San José de Ocoa"] },
+    "BS": { name: "Bahamas", states: ["New Providence", "Grand Bahama", "Abaco", "Andros", "Eleuthera", "Exuma", "Long Island", "Bimini", "Cat Island", "San Salvador", "Inagua", "Berry Islands", "Acklins", "Crooked Island", "Mayaguana", "Ragged Island", "Rum Cay"] },
+    "BB": { name: "Barbados", states: ["Christ Church", "Saint Andrew", "Saint George", "Saint James", "Saint John", "Saint Joseph", "Saint Lucy", "Saint Michael", "Saint Peter", "Saint Philip", "Saint Thomas"] },
+    "TT": { name: "Trinidad and Tobago", states: ["Port of Spain", "San Fernando", "Chaguanas", "Arima", "Point Fortin", "Couva-Tabaquite-Talparo", "Diego Martin", "Penal-Debe", "Princes Town", "Rio Claro-Mayaro", "San Juan-Laventille", "Sangre Grande", "Siparia", "Tobago"] },
+    "AG": { name: "Antigua and Barbuda", states: ["Saint John", "Saint George", "Saint Mary", "Saint Paul", "Saint Peter", "Saint Philip", "Barbuda", "Redonda"] },
+    "DM": { name: "Dominica", states: ["Saint George", "Saint John", "Saint Andrew", "Saint David", "Saint Joseph", "Saint Luke", "Saint Mark", "Saint Patrick", "Saint Paul", "Saint Peter"] },
+    "GD": { name: "Grenada", states: ["Saint George", "Saint Andrew", "Saint David", "Saint John", "Saint Mark", "Saint Patrick", "Carriacou and Petite Martinique"] },
+    "KN": { name: "Saint Kitts and Nevis", states: ["Christ Church Nichola Town", "Saint Anne Sandy Point", "Saint George Basseterre", "Saint George Gingerland", "Saint James Windward", "Saint John Capisterre", "Saint John Figtree", "Saint Mary Cayon", "Saint Paul Capisterre", "Saint Paul Charlestown", "Saint Peter Basseterre", "Saint Thomas Lowland", "Saint Thomas Middle Island", "Trinity Palmetto Point"] },
+    "LC": { name: "Saint Lucia", states: ["Castries", "Gros Islet", "Vieux Fort", "Anse la Raye", "Canaries", "Choiseul", "Dennery", "Laborie", "Micoud", "Soufrière"] },
+    "VC": { name: "Saint Vincent and the Grenadines", states: ["Charlotte", "Grenadines", "Saint Andrew", "Saint David", "Saint George", "Saint Patrick"] },
 
-    // 南美洲 (South America)
-    "BR": { name: "巴西 (Brazil)", states: ["São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Paraná", "Rio Grande do Sul", "Pernambuco", "Ceará", "Pará", "Santa Catarina", "Goiás", "Maranhão", "Amazonas", "Espírito Santo", "Paraíba", "Rio Grande do Norte", "Mato Grosso", "Alagoas", "Piauí", "Distrito Federal", "Mato Grosso do Sul", "Sergipe", "Rondônia", "Tocantins", "Acre", "Amapá", "Roraima"] },
-    "AR": { name: "阿根廷 (Argentina)", states: ["Buenos Aires", "Buenos Aires City", "Córdoba", "Santa Fe", "Mendoza", "Tucumán", "Entre Ríos", "Salta", "Misiones", "Chaco", "Corrientes", "Santiago del Estero", "San Juan", "Jujuy", "Río Negro", "Neuquén", "Formosa", "Chubut", "San Luis", "Catamarca", "La Pampa", "La Rioja", "Santa Cruz", "Tierra del Fuego"] },
-    "CL": { name: "智利 (Chile)", states: ["Santiago", "Valparaíso", "Biobío", "Antofagasta", "Maule", "La Araucanía", "O'Higgins", "Coquimbo", "Los Lagos", "Tarapacá", "Los Ríos", "Atacama", "Magallanes", "Arica y Parinacota", "Ñuble"] },
-    "CO": { name: "哥伦比亚 (Colombia)", states: ["Bogotá", "Antioquia", "Valle del Cauca", "Cundinamarca", "Atlántico", "Bolívar", "Santander", "Boyacá", "Tolima", "Nariño", "Caldas", "Magdalena", "Huila", "Meta", "Risaralda", "Sucre", "Cesar", "Norte de Santander", "Quindío", "Córdoba", "Cauca", "La Guajira", "Caquetá", "Casanare", "Chocó", "Putumayo", "Arauca", "Vichada", "Amazonas", "Guainía", "Guaviare", "Vaupés", "San Andrés y Providencia"] },
-    "PE": { name: "秘鲁 (Peru)", states: ["Lima", "Arequipa", "Trujillo", "Piura", "Cusco", "Lambayeque", "Junín", "La Libertad", "Ancash", "Ica", "Callao", "Loreto", "Cajamarca", "Puno", "San Martín", "Ucayali", "Huánuco", "Ayacucho", "Tacna", "Apurímac", "Moquegua", "Pasco", "Tumbes", "Amazonas", "Huancavelica", "Madre de Dios"] },
-    "VE": { name: "委内瑞拉 (Venezuela)", states: ["Caracas", "Miranda", "Zulia", "Carabobo", "Lara", "Aragua", "Bolívar", "Anzoátegui", "Táchira", "Sucre", "Falcón", "Monagas", "Barinas", "Portuguesa", "Mérida", "Trujillo", "Yaracuy", "Guárico", "Nueva Esparta", "Apure", "Cojedes", "Delta Amacuro", "Amazonas", "Vargas"] },
-    "EC": { name: "厄瓜多尔 (Ecuador)", states: ["Pichincha", "Guayas", "Azuay", "Manabí", "Tungurahua", "El Oro", "Loja", "Los Ríos", "Imbabura", "Chimborazo", "Santo Domingo de los Tsáchilas", "Esmeraldas", "Cotopaxi", "Cañar", "Carchi", "Pastaza", "Morona Santiago", "Napo", "Sucumbíos", "Orellana", "Zamora Chinchipe", "Galápagos"] },
-    "BO": { name: "玻利维亚 (Bolivia)", states: ["Santa Cruz", "La Paz", "Cochabamba", "Potosí", "Chuquisaca", "Oruro", "Tarija", "Beni", "Pando"] },
-    "PY": { name: "巴拉圭 (Paraguay)", states: ["Asunción", "Central", "Alto Paraná", "Itapúa", "Caaguazú", "San Pedro", "Cordillera", "Paraguarí", "Concepción", "Guairá", "Caazapá", "Amambay", "Canindeyú", "Presidente Hayes", "Boquerón", "Alto Paraguay", "Ñeembucú", "Pilar"] },
-    "UY": { name: "乌拉圭 (Uruguay)", states: ["Montevideo", "Canelones", "Maldonado", "Salto", "Colonia", "Paysandú", "San José", "Rivera", "Tacuarembó", "Cerro Largo", "Soriano", "Artigas", "Rocha", "Florida", "Lavalleja", "Durazno", "Flores", "Treinta y Tres", "Río Negro"] },
-    "GY": { name: "圭亚那 (Guyana)", states: ["Demerara-Mahaica", "East Berbice-Corentyne", "Essequibo Islands-West Demerara", "Mahaica-Berbice", "Pomeroon-Supenaam", "Potaro-Siparuni", "Upper Demerara-Berbice", "Upper Takutu-Upper Essequibo", "Barima-Waini", "Cuyuni-Mazaruni"] },
-    "SR": { name: "苏里南 (Suriname)", states: ["Paramaribo", "Wanica", "Nickerie", "Commewijne", "Para", "Marowijne", "Saramacca", "Coronie", "Brokopondo", "Sipaliwini"] },
+    // South America
+    "BR": { name: "Brazil", states: ["São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Paraná", "Rio Grande do Sul", "Pernambuco", "Ceará", "Pará", "Santa Catarina", "Goiás", "Maranhão", "Amazonas", "Espírito Santo", "Paraíba", "Rio Grande do Norte", "Mato Grosso", "Alagoas", "Piauí", "Distrito Federal", "Mato Grosso do Sul", "Sergipe", "Rondônia", "Tocantins", "Acre", "Amapá", "Roraima"] },
+    "AR": { name: "Argentina", states: ["Buenos Aires", "Buenos Aires City", "Córdoba", "Santa Fe", "Mendoza", "Tucumán", "Entre Ríos", "Salta", "Misiones", "Chaco", "Corrientes", "Santiago del Estero", "San Juan", "Jujuy", "Río Negro", "Neuquén", "Formosa", "Chubut", "San Luis", "Catamarca", "La Pampa", "La Rioja", "Santa Cruz", "Tierra del Fuego"] },
+    "CL": { name: "Chile", states: ["Santiago", "Valparaíso", "Biobío", "Antofagasta", "Maule", "La Araucanía", "O'Higgins", "Coquimbo", "Los Lagos", "Tarapacá", "Los Ríos", "Atacama", "Magallanes", "Arica y Parinacota", "Ñuble"] },
+    "CO": { name: "Colombia", states: ["Bogotá", "Antioquia", "Valle del Cauca", "Cundinamarca", "Atlántico", "Bolívar", "Santander", "Boyacá", "Tolima", "Nariño", "Caldas", "Magdalena", "Huila", "Meta", "Risaralda", "Sucre", "Cesar", "Norte de Santander", "Quindío", "Córdoba", "Cauca", "La Guajira", "Caquetá", "Casanare", "Chocó", "Putumayo", "Arauca", "Vichada", "Amazonas", "Guainía", "Guaviare", "Vaupés", "San Andrés y Providencia"] },
+    "PE": { name: "Peru", states: ["Lima", "Arequipa", "Trujillo", "Piura", "Cusco", "Lambayeque", "Junín", "La Libertad", "Ancash", "Ica", "Callao", "Loreto", "Cajamarca", "Puno", "San Martín", "Ucayali", "Huánuco", "Ayacucho", "Tacna", "Apurímac", "Moquegua", "Pasco", "Tumbes", "Amazonas", "Huancavelica", "Madre de Dios"] },
+    "VE": { name: "Venezuela", states: ["Caracas", "Miranda", "Zulia", "Carabobo", "Lara", "Aragua", "Bolívar", "Anzoátegui", "Táchira", "Sucre", "Falcón", "Monagas", "Barinas", "Portuguesa", "Mérida", "Trujillo", "Yaracuy", "Guárico", "Nueva Esparta", "Apure", "Cojedes", "Delta Amacuro", "Amazonas", "Vargas"] },
+    "EC": { name: "Ecuador", states: ["Pichincha", "Guayas", "Azuay", "Manabí", "Tungurahua", "El Oro", "Loja", "Los Ríos", "Imbabura", "Chimborazo", "Santo Domingo de los Tsáchilas", "Esmeraldas", "Cotopaxi", "Cañar", "Carchi", "Pastaza", "Morona Santiago", "Napo", "Sucumbíos", "Orellana", "Zamora Chinchipe", "Galápagos"] },
+    "BO": { name: "Bolivia", states: ["Santa Cruz", "La Paz", "Cochabamba", "Potosí", "Chuquisaca", "Oruro", "Tarija", "Beni", "Pando"] },
+    "PY": { name: "Paraguay", states: ["Asunción", "Central", "Alto Paraná", "Itapúa", "Caaguazú", "San Pedro", "Cordillera", "Paraguarí", "Concepción", "Guairá", "Caazapá", "Amambay", "Canindeyú", "Presidente Hayes", "Boquerón", "Alto Paraguay", "Ñeembucú", "Pilar"] },
+    "UY": { name: "Uruguay", states: ["Montevideo", "Canelones", "Maldonado", "Salto", "Colonia", "Paysandú", "San José", "Rivera", "Tacuarembó", "Cerro Largo", "Soriano", "Artigas", "Rocha", "Florida", "Lavalleja", "Durazno", "Flores", "Treinta y Tres", "Río Negro"] },
+    "GY": { name: "Guyana", states: ["Demerara-Mahaica", "East Berbice-Corentyne", "Essequibo Islands-West Demerara", "Mahaica-Berbice", "Pomeroon-Supenaam", "Potaro-Siparuni", "Upper Demerara-Berbice", "Upper Takutu-Upper Essequibo", "Barima-Waini", "Cuyuni-Mazaruni"] },
+    "SR": { name: "Suriname", states: ["Paramaribo", "Wanica", "Nickerie", "Commewijne", "Para", "Marowijne", "Saramacca", "Coronie", "Brokopondo", "Sipaliwini"] },
 
-    // 大洋洲 (Oceania)
-    "AU": { name: "澳大利亚 (Australia)", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"] },
-    "NZ": { name: "新西兰 (New Zealand)", states: ["Auckland", "Wellington", "Canterbury", "Waikato", "Otago", "Bay of Plenty", "Manawatu-Wanganui", "Hawke's Bay", "Northland", "Taranaki", "Southland", "Nelson", "Marlborough", "Tasman", "West Coast", "Gisborne"] },
-    "FJ": { name: "斐济 (Fiji)", states: ["Central", "Western", "Northern", "Eastern", "Rotuma"] },
-    "PG": { name: "巴布亚新几内亚 (Papua New Guinea)", states: ["National Capital District", "Morobe", "Eastern Highlands", "Enga", "Chimbu", "Southern Highlands", "Western Highlands", "Hela", "Jiwaka", "Madang", "East Sepik", "West Sepik", "Manus", "New Ireland", "East New Britain", "West New Britain", "Autonomous Region of Bougainville", "Central", "Gulf", "Milne Bay", "Northern", "Western"] },
-    "SB": { name: "所罗门群岛 (Solomon Islands)", states: ["Honiara", "Guadalajara", "Malaita", "Western", "Isabel", "Central", "Makira-Ulawa", "Temotu", "Choiseul", "Rennell and Bellona"] },
-    "VU": { name: "瓦努阿图 (Vanuatu)", states: ["Shefa", "Sanma", "Tafea", "Malampa", "Penama", "Torba"] },
-    "NC": { name: "新喀里多尼亚 (New Caledonia)", states: ["South Province", "North Province", "Loyalty Islands Province"] },
-    "PF": { name: "法属波利尼西亚 (French Polynesia)", states: ["Windward Islands", "Leeward Islands", "Tuamotu-Gambier", "Marquesas Islands", "Austral Islands"] },
-    "WS": { name: "萨摩亚 (Samoa)", states: ["Upolu", "Savai'i", "Tuamasaga", "A'ana", "Fa'asaleleaga", "Gaga'emauga", "Gagaifomauga", "Palauli", "Satupa'itea", "Vaisigano", "Aiga-i-le-Tai", "Va'a-o-Fonoti"] },
-    "TO": { name: "汤加 (Tonga)", states: ["Tongatapu", "Vava'u", "Ha'apai", "Eua", "Niuas"] },
-    "KI": { name: "基里巴斯 (Kiribati)", states: ["Gilbert Islands", "Line Islands", "Phoenix Islands", "Tarawa"] },
-    "FM": { name: "密克罗尼西亚联邦 (Micronesia)", states: ["Chuuk", "Kosrae", "Pohnpei", "Yap"] },
-    "PW": { name: "帕劳 (Palau)", states: ["Koror", "Airai", "Peleliu", "Angaur", "Sonsorol", "Hatohobei", "Kayangel", "Ngerchelong", "Ngardmau", "Ngarchelong", "Ngchesar", "Aimeliik", "Ngatpang", "Ngaraard", "Melekeok"] },
-    "MH": { name: "马绍尔群岛 (Marshall Islands)", states: ["Majuro", "Ebeye", "Kwajalein", "Arno", "Jaluit", "Wotje", "Maloelap", "Ailinglaplap", "Mejit", "Likiep", "Kili", "Namu", "Lae", "Namu", "Lib", "Jemo", "Ujae", "Wotho", "Bikini", "Rongelap", "Utrik", "Ailuk"] },
-    "NR": { name: "瑙鲁 (Nauru)", states: ["Yaren", "Denigomodu", "Meneng", "Aiwo", "Anabar", "Anetan", "Baiti", "Boe", "Buada", "Ijuw", "Anibare", "Nibok", "Uaboe"] },
-    "TV": { name: "图瓦卢 (Tuvalu)", states: ["Funafuti", "Vaitupu", "Nanumea", "Niutao", "Nui", "Nanumanga", "Nukufetau", "Nukulaelae", "Niulakita"] },
+    // Oceania
+    "AU": { name: "Australia", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"] },
+    "NZ": { name: "New Zealand", states: ["Auckland", "Wellington", "Canterbury", "Waikato", "Otago", "Bay of Plenty", "Manawatu-Wanganui", "Hawke's Bay", "Northland", "Taranaki", "Southland", "Nelson", "Marlborough", "Tasman", "West Coast", "Gisborne"] },
+    "FJ": { name: "Fiji", states: ["Central", "Western", "Northern", "Eastern", "Rotuma"] },
+    "PG": { name: "Papua New Guinea", states: ["National Capital District", "Morobe", "Eastern Highlands", "Enga", "Chimbu", "Southern Highlands", "Western Highlands", "Hela", "Jiwaka", "Madang", "East Sepik", "West Sepik", "Manus", "New Ireland", "East New Britain", "West New Britain", "Autonomous Region of Bougainville", "Central", "Gulf", "Milne Bay", "Northern", "Western"] },
+    "SB": { name: "Solomon Islands", states: ["Honiara", "Guadalajara", "Malaita", "Western", "Isabel", "Central", "Makira-Ulawa", "Temotu", "Choiseul", "Rennell and Bellona"] },
+    "VU": { name: "Vanuatu", states: ["Shefa", "Sanma", "Tafea", "Malampa", "Penama", "Torba"] },
+    "NC": { name: "New Caledonia", states: ["South Province", "North Province", "Loyalty Islands Province"] },
+    "PF": { name: "French Polynesia", states: ["Windward Islands", "Leeward Islands", "Tuamotu-Gambier", "Marquesas Islands", "Austral Islands"] },
+    "WS": { name: "Samoa", states: ["Upolu", "Savai'i", "Tuamasaga", "A'ana", "Fa'asaleleaga", "Gaga'emauga", "Gagaifomauga", "Palauli", "Satupa'itea", "Vaisigano", "Aiga-i-le-Tai", "Va'a-o-Fonoti"] },
+    "TO": { name: "Tonga", states: ["Tongatapu", "Vava'u", "Ha'apai", "Eua", "Niuas"] },
+    "KI": { name: "Kiribati", states: ["Gilbert Islands", "Line Islands", "Phoenix Islands", "Tarawa"] },
+    "FM": { name: "Micronesia", states: ["Chuuk", "Kosrae", "Pohnpei", "Yap"] },
+    "PW": { name: "Palau", states: ["Koror", "Airai", "Peleliu", "Angaur", "Sonsorol", "Hatohobei", "Kayangel", "Ngerchelong", "Ngardmau", "Ngarchelong", "Ngchesar", "Aimeliik", "Ngatpang", "Ngaraard", "Melekeok"] },
+    "MH": { name: "Marshall Islands", states: ["Majuro", "Ebeye", "Kwajalein", "Arno", "Jaluit", "Wotje", "Maloelap", "Ailinglaplap", "Mejit", "Likiep", "Kili", "Namu", "Lae", "Lib", "Jemo", "Ujae", "Wotho", "Bikini", "Rongelap", "Utrik", "Ailuk"] },
+    "NR": { name: "Nauru", states: ["Yaren", "Denigomodu", "Meneng", "Aiwo", "Anabar", "Anetan", "Baiti", "Boe", "Buada", "Ijuw", "Anibare", "Nibok", "Uaboe"] },
+    "TV": { name: "Tuvalu", states: ["Funafuti", "Vaitupu", "Nanumea", "Niutao", "Nui", "Nanumanga", "Nukufetau", "Nukulaelae", "Niulakita"] },
 
-    // 非洲 (Africa)
-    "ZA": { name: "南非 (South Africa)", states: ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape", "Free State", "Mpumalanga", "Limpopo", "North West", "Northern Cape"] },
-    "EG": { name: "埃及 (Egypt)", states: ["Cairo", "Alexandria", "Giza", "Qalyubia", "Dakahlia", "Sharqia", "Gharbia", "Monufia", "Beheira", "Kafr El Sheikh", "Damietta", "Port Said", "Ismailia", "Suez", "Faiyum", "Beni Suef", "Minya", "Asyut", "Sohag", "Qena", "Luxor", "Aswan", "Red Sea", "New Valley", "Matrouh", "North Sinai", "South Sinai"] },
-    "NG": { name: "尼日利亚 (Nigeria)", states: ["Lagos", "Kano", "Ibadan", "Abuja", "Rivers", "Kaduna", "Oyo", "Ogun", "Edo", "Delta", "Anambra", "Enugu", "Imo", "Katsina", "Borno", "Bauchi", "Plateau", "Kwara", "Ondo", "Osun", "Ekiti", "Benue", "Niger", "Sokoto", "Kebbi", "Zamfara", "Jigawa", "Yobe", "Adamawa", "Taraba", "Gombe", "Nasarawa", "Kogi", "Akwa Ibom", "Cross River", "Bayelsa", "Abia"] },
-    "KE": { name: "肯尼亚 (Kenya)", states: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Kiambu", "Machakos", "Meru", "Kilifi", "Kakamega", "Kisii", "Uasin Gishu", "Nyeri", "Kajiado", "Kericho", "Bungoma", "Kitui", "Murang'a", "Garissa", "Narok"] },
-    "ET": { name: "埃塞俄比亚 (Ethiopia)", states: ["Addis Ababa", "Dire Dawa", "Oromia", "Amhara", "SNNPR", "Tigray", "Somali", "Afar", "Benishangul-Gumuz", "Gambela", "Harari", "Sidama", "South West Ethiopia Peoples'"] },
-    "MA": { name: "摩洛哥 (Morocco)", states: ["Casablanca-Settat", "Rabat-Salé-Kénitra", "Fès-Meknès", "Marrakech-Safi", "Tanger-Tétouan-Al Hoceïma", "Souss-Massa", "Oriental", "Béni Mellal-Khénifra", "Drâa-Tafilalet", "Guelmim-Oued Noun", "Laâyoune-Sakia El Hamra", "Dakhla-Oued Ed-Dahab"] },
-    "DZ": { name: "阿尔及利亚 (Algeria)", states: ["Algiers", "Oran", "Constantine", "Batna", "Setif", "Annaba", "Blida", "Tlemcen", "Djelfa", "Biskra", "Tizi Ouzou", "Bejaia", "Chlef", "Skikda", "Sidi Bel Abbes", "Ouargla"] },
-    "TN": { name: "突尼斯 (Tunisia)", states: ["Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès", "Ariana", "Gafsa", "Monastir", "Ben Arous", "Kasserine", "Médenine", "Nabeul", "Tataouine", "Béja", "Le Kef", "Mahdia", "Sidi Bouzid", "Jendouba", "Tozeur", "Siliana", "Zaghouan", "Kébili", "Manouba"] },
-    "LY": { name: "利比亚 (Libya)", states: ["Tripoli", "Benghazi", "Misrata", "Zawiya", "Bayda", "Ajdabiya", "Tobruk", "Sabha", "Khoms", "Zliten", "Derna"] },
-    "SD": { name: "苏丹 (Sudan)", states: ["Khartoum", "Omdurman", "Port Sudan", "Kassala", "Nyala", "El Obeid", "Wad Madani", "Gedaref", "El Fasher", "Kosti"] },
-    "SS": { name: "南苏丹 (South Sudan)", states: ["Juba", "Wau", "Malakal", "Yei", "Aweil", "Bor", "Yambio", "Rumbek", "Torit", "Kuajok"] },
-    "GH": { name: "加纳 (Ghana)", states: ["Greater Accra", "Ashanti", "Central", "Eastern", "Western", "Volta", "Northern", "Upper East", "Upper West", "Bono", "Bono East", "Ahafo", "Oti", "Savannah", "North East", "Western North"] },
-    "CI": { name: "科特迪瓦 (Ivory Coast)", states: ["Abidjan", "Yamoussoukro", "Bouaké", "Daloa", "San-Pédro", "Korhogo", "Man", "Divo", "Gagnoa", "Abengourou"] },
-    "SN": { name: "塞内加尔 (Senegal)", states: ["Dakar", "Thiès", "Diourbel", "Saint-Louis", "Kaolack", "Ziguinchor", "Louga", "Fatick", "Kolda", "Tambacounda", "Matam", "Kaffrine", "Kédougou", "Sédhiou"] },
-    "CM": { name: "喀麦隆 (Cameroon)", states: ["Centre", "Littoral", "West", "North-West", "South-West", "Far North", "North", "Adamawa", "South", "East"] },
-    "UG": { name: "乌干达 (Uganda)", states: ["Kampala", "Central Region", "Western Region", "Eastern Region", "Northern Region", "Wakiso", "Mukono", "Jinja", "Gulu", "Mbarara", "Lira", "Mbale"] },
-    "TZ": { name: "坦桑尼亚 (Tanzania)", states: ["Dar es Salaam", "Dodoma", "Mwanza", "Arusha", "Mbeya", "Morogoro", "Tanga", "Zanzibar", "Kagera", "Kigoma", "Kilimanjaro", "Mara", "Rukwa", "Ruvuma", "Shinyanga", "Singida", "Tabora"] },
-    "RW": { name: "卢旺达 (Rwanda)", states: ["Kigali", "Southern Province", "Western Province", "Northern Province", "Eastern Province"] },
-    "BI": { name: "布隆迪 (Burundi)", states: ["Gitega", "Bujumbura Mairie", "Bujumbura Rural", "Muyinga", "Ngozi", "Ruyigi", "Kayanza", "Makamba", "Bururi", "Rutana", "Muramvya", "Cankuzo", "Kirundo", "Karuzi", "Makamba", "Mwaro", "Rumonge"] },
-    "MZ": { name: "莫桑比克 (Mozambique)", states: ["Maputo City", "Maputo Province", "Gaza", "Inhambane", "Sofala", "Manica", "Tete", "Zambezia", "Nampula", "Cabo Delgado", "Niassa"] },
-    "MG": { name: "马达加斯加 (Madagascar)", states: ["Antananarivo", "Toamasina", "Antsirabe", "Fianarantsoa", "Mahajanga", "Toliara", "Antsiranana", "Analamanga", "Vakinankaratra", "Itasy", "Bongolava"] },
-    "AO": { name: "安哥拉 (Angola)", states: ["Luanda", "Huambo", "Benguela", "Lubango", "Malanje", "Lobito", "Kuito", "Cabinda", "Uige", "Namibe", "Soyo", "Luena", "Sumbe", "Menongue", "Ndalatando", "Ondjiva", "Dundo", "Caxito", "Saurimo"] },
-    "ZM": { name: "赞比亚 (Zambia)", states: ["Lusaka", "Copperbelt", "Southern", "Eastern", "Central", "Northern", "Luapula", "North-Western", "Western", "Muchinga"] },
-    "ZW": { name: "津巴布韦 (Zimbabwe)", states: ["Harare", "Bulawayo", "Manicaland", "Mashonaland Central", "Mashonaland East", "Mashonaland West", "Masvingo", "Matabeleland North", "Matabeleland South", "Midlands"] },
-    "BW": { name: "博茨瓦纳 (Botswana)", states: ["Gaborone", "Francistown", "Molepolole", "Selibe Phikwe", "Maun", "Serowe", "Kanye", "Mahalapye", "Mogoditshane", "Lobatse"] },
-    "NA": { name: "纳米比亚 (Namibia)", states: ["Khomas", "Erongo", "Oshana", "Otjozondjupa", "Kavango East", "Kavango West", "Ohangwena", "Omaheke", "Omusati", "Oshikoto", "Zambezi", "Hardap", "Karas", "Kunene"] },
-    "MU": { name: "毛里求斯 (Mauritius)", states: ["Port Louis", "Beau Bassin-Rose Hill", "Vacoas-Phoenix", "Curepipe", "Quatre Bornes", "Grand Port", "Flacq", "Rivière du Rempart", "Pamplemousses", "Savanne", "Black River", "Rodrigues"] },
-    "SC": { name: "塞舌尔 (Seychelles)", states: ["Victoria", "Anse Etoile", "La Digue", "Anse Royale", "Baie Lazare", "Beau Vallon", "Cascade", "Glacis", "Grand Anse Mahe", "Mont Fleuri", "Plaisance", "Pointe Larue", "Takamaka"] },
-    "ZM_ALT": { name: "其他非洲地区 (Other African Regions)", states: ["标准行政区/州 (Standard State/Region)"] },
+    // Africa
+    "ZA": { name: "South Africa", states: ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape", "Free State", "Mpumalanga", "Limpopo", "North West", "Northern Cape"] },
+    "EG": { name: "Egypt", states: ["Cairo", "Alexandria", "Giza", "Qalyubia", "Dakahlia", "Sharqia", "Gharbia", "Monufia", "Beheira", "Kafr El Sheikh", "Damietta", "Port Said", "Ismailia", "Suez", "Faiyum", "Beni Suef", "Minya", "Asyut", "Sohag", "Qena", "Luxor", "Aswan", "Red Sea", "New Valley", "Matrouh", "North Sinai", "South Sinai"] },
+    "NG": { name: "Nigeria", states: ["Lagos", "Kano", "Ibadan", "Abuja", "Rivers", "Kaduna", "Oyo", "Ogun", "Edo", "Delta", "Anambra", "Enugu", "Imo", "Katsina", "Borno", "Bauchi", "Plateau", "Kwara", "Ondo", "Osun", "Ekiti", "Benue", "Niger", "Sokoto", "Kebbi", "Zamfara", "Jigawa", "Yobe", "Adamawa", "Taraba", "Gombe", "Nasarawa", "Kogi", "Akwa Ibom", "Cross River", "Bayelsa", "Abia"] },
+    "KE": { name: "Kenya", states: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Kiambu", "Machakos", "Meru", "Kilifi", "Kakamega", "Kisii", "Uasin Gishu", "Nyeri", "Kajiado", "Kericho", "Bungoma", "Kitui", "Murang'a", "Garissa", "Narok"] },
+    "ET": { name: "Ethiopia", states: ["Addis Ababa", "Dire Dawa", "Oromia", "Amhara", "SNNPR", "Tigray", "Somali", "Afar", "Benishangul-Gumuz", "Gambela", "Harari", "Sidama", "South West Ethiopia Peoples'"] },
+    "MA": { name: "Morocco", states: ["Casablanca-Settat", "Rabat-Salé-Kénitra", "Fès-Meknès", "Marrakech-Safi", "Tanger-Tétouan-Al Hoceïma", "Souss-Massa", "Oriental", "Béni Mellal-Khénifra", "Drâa-Tafilalet", "Guelmim-Oued Noun", "Laâyoune-Sakia El Hamra", "Dakhla-Oued Ed-Dahab"] },
+    "DZ": { name: "Algeria", states: ["Algiers", "Oran", "Constantine", "Batna", "Setif", "Annaba", "Blida", "Tlemcen", "Djelfa", "Biskra", "Tizi Ouzou", "Bejaia", "Chlef", "Skikda", "Sidi Bel Abbes", "Ouargla"] },
+    "TN": { name: "Tunisia", states: ["Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès", "Ariana", "Gafsa", "Monastir", "Ben Arous", "Kasserine", "Médenine", "Nabeul", "Tataouine", "Béja", "Le Kef", "Mahdia", "Sidi Bouzid", "Jendouba", "Tozeur", "Siliana", "Zaghouan", "Kébili", "Manouba"] },
+    "LY": { name: "Libya", states: ["Tripoli", "Benghazi", "Misrata", "Zawiya", "Bayda", "Ajdabiya", "Tobruk", "Sabha", "Khoms", "Zliten", "Derna"] },
+    "SD": { name: "Sudan", states: ["Khartoum", "Omdurman", "Port Sudan", "Kassala", "Nyala", "El Obeid", "Wad Madani", "Gedaref", "El Fasher", "Kosti"] },
+    "SS": { name: "South Sudan", states: ["Juba", "Wau", "Malakal", "Yei", "Aweil", "Bor", "Yambio", "Rumbek", "Torit", "Kuajok"] },
+    "GH": { name: "Ghana", states: ["Greater Accra", "Ashanti", "Central", "Eastern", "Western", "Volta", "Northern", "Upper East", "Upper West", "Bono", "Bono East", "Ahafo", "Oti", "Savannah", "North East", "Western North"] },
+    "CI": { name: "Ivory Coast", states: ["Abidjan", "Yamoussoukro", "Bouaké", "Daloa", "San-Pédro", "Korhogo", "Man", "Divo", "Gagnoa", "Abengourou"] },
+    "SN": { name: "Senegal", states: ["Dakar", "Thiès", "Diourbel", "Saint-Louis", "Kaolack", "Ziguinchor", "Louga", "Fatick", "Kolda", "Tambacounda", "Matam", "Kaffrine", "Kédougou", "Sédhiou"] },
+    "CM": { name: "Cameroon", states: ["Centre", "Littoral", "West", "North-West", "South-West", "Far North", "North", "Adamawa", "South", "East"] },
+    "UG": { name: "Uganda", states: ["Kampala", "Central Region", "Western Region", "Eastern Region", "Northern Region", "Wakiso", "Mukono", "Jinja", "Gulu", "Mbarara", "Lira", "Mbale"] },
+    "TZ": { name: "Tanzania", states: ["Dar es Salaam", "Dodoma", "Mwanza", "Arusha", "Mbeya", "Morogoro", "Tanga", "Zanzibar", "Kagera", "Kigoma", "Kilimanjaro", "Mara", "Rukwa", "Ruvuma", "Shinyanga", "Singida", "Tabora"] },
+    "RW": { name: "Rwanda", states: ["Kigali", "Southern Province", "Western Province", "Northern Province", "Eastern Province"] },
+    "BI": { name: "Burundi", states: ["Gitega", "Bujumbura Mairie", "Bujumbura Rural", "Muyinga", "Ngozi", "Ruyigi", "Kayanza", "Makamba", "Bururi", "Rutana", "Muramvya", "Cankuzo", "Kirundo", "Karuzi", "Mwaro", "Rumonge"] },
+    "MZ": { name: "Mozambique", states: ["Maputo City", "Maputo Province", "Gaza", "Inhambane", "Sofala", "Manica", "Tete", "Zambezia", "Nampula", "Cabo Delgado", "Niassa"] },
+    "MG": { name: "Madagascar", states: ["Antananarivo", "Toamasina", "Antsirabe", "Fianarantsoa", "Mahajanga", "Toliara", "Antsiranana", "Analamanga", "Vakinankaratra", "Itasy", "Bongolava"] },
+    "AO": { name: "Angola", states: ["Luanda", "Huambo", "Benguela", "Lubango", "Malanje", "Lobito", "Kuito", "Cabinda", "Uige", "Namibe", "Soyo", "Luena", "Sumbe", "Menongue", "Ndalatando", "Ondjiva", "Dundo", "Caxito", "Saurimo"] },
+    "ZM": { name: "Zambia", states: ["Lusaka", "Copperbelt", "Southern", "Eastern", "Central", "Northern", "Luapula", "North-Western", "Western", "Muchinga"] },
+    "ZW": { name: "Zimbabwe", states: ["Harare", "Bulawayo", "Manicaland", "Mashonaland Central", "Mashonaland East", "Mashonaland West", "Masvingo", "Matabeleland North", "Matabeleland South", "Midlands"] },
+    "BW": { name: "Botswana", states: ["Gaborone", "Francistown", "Molepolole", "Selibe Phikwe", "Maun", "Serowe", "Kanye", "Mahalapye", "Mogoditshane", "Lobatse"] },
+    "NA": { name: "Namibia", states: ["Khomas", "Erongo", "Oshana", "Otjozondjupa", "Kavango East", "Kavango West", "Ohangwena", "Omaheke", "Omusati", "Oshikoto", "Zambezi", "Hardap", "Karas", "Kunene"] },
+    "MU": { name: "Mauritius", states: ["Port Louis", "Beau Bassin-Rose Hill", "Vacoas-Phoenix", "Curepipe", "Quatre Bornes", "Grand Port", "Flacq", "Rivière du Rempart", "Pamplemousses", "Savanne", "Black River", "Rodrigues"] },
+    "SC": { name: "Seychelles", states: ["Victoria", "Anse Etoile", "La Digue", "Anse Royale", "Baie Lazare", "Beau Vallon", "Cascade", "Glacis", "Grand Anse Mahe", "Mont Fleuri", "Plaisance", "Pointe Larue", "Takamaka"] },
+    "ZM_ALT": { name: "Other African Regions", states: ["Standard State/Region"] },
 
-    // 其他全球通用兜底配置
-    "OTHER_GLOBAL": { name: "其他所有未列出国家/地区 (Other Worldwide Regions)", states: ["标准行政区/州 (Standard State/Region)"] }
+    // Other Worldwide Regions
+    "OTHER_GLOBAL": { name: "Other Worldwide Regions", states: ["Standard State/Region"] }
 };
-    const i18n = {
-        zh: {
-            langTitle: "选择语言 / Select Language",
-            back: "< 返回更改语言",
-            formTitle: "账单与收货地址",
-            formSubtitle: "请输入您的详细信息以完成安全核验准备",
-            firstName: "名字 (First Name)",
-            lastName: "姓氏 (Last Name)",
-            country: "国家 / 地区 (Country / Region)",
-            state: "省份 / 州 (State / Province)",
-            address: "街道地址 (Street Address)",
-            city: "城市 (City)",
-            zip: "邮政编码 (Postal Code)",
-            phone: "手机号码 (Phone Number)",
-            next: "下一步：生物活体检测 →",
-            verifyTitle: "生物活体安全检测",
-            verifyDesc: "请正对摄像头，保持光线充足，完成安全核验。",
-            submit: "确认并提交",
-            alertName: "请填写名字和姓氏",
-            alertAddress: "请选择国家和省份",
-            alertCamera: "需要摄像头权限以完成生物核验"
-        },
-        en: {
-            langTitle: "Select Language / 选择语言",
-            back: "< Back to Change Language",
-            formTitle: "Billing & Shipping Address",
-            formSubtitle: "Please enter your details to prepare for safety verification",
-            firstName: "First Name",
-            lastName: "Last Name",
-            country: "Country / Region",
-            state: "State / Province",
-            address: "Street Address",
-            city: "City",
-            zip: "Postal Code",
-            phone: "Phone Number",
-            next: "Next: Biometric Liveness Check →",
-            verifyTitle: "Biometric Liveness Verification",
-            verifyDesc: "Please keep your face within the frame with sufficient lighting.",
-            submit: "Complete & Submit",
-            alertName: "Please enter your first and last name",
-            alertAddress: "Please select country and state",
-            alertCamera: "Camera access is required for verification"
-        },
-        "zh-TW": {
-            langTitle: "選擇語言 / Select Language",
-            back: "< 返回更改語言",
-            formTitle: "帳單與收貨地址",
-            formSubtitle: "請輸入您的詳細資訊以完成安全核驗準備",
-            firstName: "名字 (First Name)",
-            lastName: "姓氏 (Last Name)",
-            country: "國家 / 地區 (Country / Region)",
-            state: "省份 / 州 (State / Province)",
-            address: "街道地址 (Street Address)",
-            city: "城市 (City)",
-            zip: "郵政編碼 (Postal Code)",
-            phone: "手機號碼 (Phone Number)",
-            next: "下一步：生物活體檢測 →",
-            verifyTitle: "生物活體安全檢測",
-            verifyDesc: "請正對鏡頭，保持光線充足，完成安全核驗。",
-            submit: "確認並提交",
-            alertName: "請填寫名字和姓氏",
-            alertAddress: "請選擇國家和省份",
-            alertCamera: "需要相機權限以完成生物核驗"
-        },
-        ja: {
-            langTitle: "言語選択 / Select Language",
-            back: "< 言語選択に戻る",
-            formTitle: "請求先および配送先住所",
-            formSubtitle: "安全確認の準備のため詳細を入力してください",
-            firstName: "名 (First Name)",
-            lastName: "姓 (Last Name)",
-            country: "国 / 地域 (Country / Region)",
-            state: "州 / 都道府県 (State / Province)",
-            address: "番地・建物名 (Street Address)",
-            city: "市区町村 (City)",
-            zip: "郵便番号 (Postal Code)",
-            phone: "電話番号 (Phone Number)",
-            next: "次へ：生体認証へ進む →",
-            verifyTitle: "生体認証セキュリティ検査",
-            verifyDesc: "フレーム内に顔を収め、十分な明るさを保ってください。",
-            submit: "確認して送信",
-            alertName: "名と姓を入力してください",
-            alertAddress: "国と州を選択してください",
-            alertCamera: "認証にはカメラへのアクセスが必要です"
-        },
-        ko: {
-            langTitle: "언어 선택 / Select Language",
-            back: "< 언어 변경으로 돌아가기",
-            formTitle: "청구 및 배송 주소",
-            formSubtitle: "안전 검증 준비를 위해 세부 정보를 입력하세요",
-            firstName: "이름 (First Name)",
-            lastName: "성 (Last Name)",
-            country: "국가 / 지역 (Country / Region)",
-            state: "주 / 도 (State / Province)",
-            address: "상세 주소 (Street Address)",
-            city: "도시 (City)",
-            zip: "우편번호 (Postal Code)",
-            phone: "전화번호 (Phone Number)",
-            next: "다음: 생체 인식 검사 →",
-            verifyTitle: "생체 인식 보안 검증",
-            verifyDesc: "조명이 밝은 상태에서 프레임 안에 얼굴을 유지해 주세요.",
-            submit: "완료 및 제출",
-            alertName: "이름과 성을 입력해 주세요",
-            alertAddress: "국가와 주를 선택해 주세요",
-            alertCamera: "검증을 위해 카메라 권한이 필요합니다"
-        },
-        fr: {
-            langTitle: "Sélectionner la langue",
-            back: "< Changer de langue",
-            formTitle: "Adresse de facturation et de livraison",
-            formSubtitle: "Veuillez entrer vos coordonnées pour préparer la vérification de sécurité",
-            firstName: "Prénom (First Name)",
-            lastName: "Nom (Last Name)",
-            country: "Pays / Région",
-            state: "État / Province",
-            address: "Adresse postale",
-            city: "Ville",
-            zip: "Code postal",
-            phone: "Numéro de téléphone",
-            next: "Suivant : Vérification biométrique →",
-            verifyTitle: "Vérification biométrique",
-            verifyDesc: "Veuillez garder votre visage dans le cadre avec un éclairage suffisant.",
-            submit: "Terminer et soumettre",
-            alertName: "Veuillez entrer votre prénom et votre nom",
-            alertAddress: "Veuillez sélectionner le pays et l'état",
-            alertCamera: "L'accès à la caméra est requis"
-        },
-        de: {
-            langTitle: "Sprache auswählen",
-            back: "< Sprache ändern",
-            formTitle: "Rechnungs- und Lieferadresse",
-            formSubtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
-            firstName: "Vorname (First Name)",
-            lastName: "Nachname (Last Name)",
-            country: "Land / Region",
-            state: "Bundesland / Provinz",
-            address: "Straße und Hausnummer",
-            city: "Stadt",
-            zip: "Postleitzahl",
-            phone: "Telefonnummer",
-            next: "Weiter: Biometrische Prüfung →",
-            verifyTitle: "Biometrische Sicherheitsprüfung",
-            verifyDesc: "Bitte halten Sie Ihr Gesicht im Rahmen.",
-            submit: "Abschließen & Absenden",
-            alertName: "Bitte Vor- und Nachnamen eingeben",
-            alertAddress: "Bitte Land und Bundesland wählen",
-            alertCamera: "Kamerazugriff erforderlich"
-        },
-        es: {
-            langTitle: "Seleccionar idioma",
-            back: "< Cambiar idioma",
-            formTitle: "Dirección de facturación y envío",
-            formSubtitle: "Ingrese sus datos para la verificación de seguridad",
-            firstName: "Nombre (First Name)",
-            lastName: "Apellido (Last Name)",
-            country: "País / Región",
-            state: "Estado / Provincia",
-            address: "Dirección postal",
-            city: "Ciudad",
-            zip: "Código postal",
-            phone: "Número de teléfono",
-            next: "Siguiente: Verificación biométrica →",
-            verifyTitle: "Verificación biométrica",
-            verifyDesc: "Mantenga su rostro dentro del marco con suficiente iluminación.",
-            submit: "Completar y enviar",
-            alertName: "Ingrese nombre y apellido",
-            alertAddress: "Seleccione país y estado",
-            alertCamera: "Se requiere acceso a la cámara"
-        },
-        ru: {
-            langTitle: "Выбрать язык",
-            back: "< Назад к выбору языка",
-            formTitle: "Адрес выставления счета и доставки",
-            formSubtitle: "Введите данные для подготовки к проверке безопасности",
-            firstName: "Имя (First Name)",
-            lastName: "Фамилия (Last Name)",
-            country: "Страна / Регион",
-            state: "Штат / Область",
-            address: "Адрес улицы",
-            city: "Город",
-            zip: "Почтовый индекс",
-            phone: "Номер телефона",
-            next: "Далее: Биометрическая проверка →",
-            verifyTitle: "Биометрическая проверка безопасности",
-            verifyDesc: "Держите лицо в кадре при хорошем освещении.",
-            submit: "Завершить и отправить",
-            alertName: "Пожалуйста, введите имя и фамилию",
-            alertAddress: "Выберите страну и регион",
-            alertCamera: "Требуется доступ к камере"
-        },
-        ar: {
-            langTitle: "اختر اللغة",
-            back: "< الرجوع لتغيير اللغة",
-            formTitle: "عنوان الفواتير والشحن",
-            formSubtitle: "الرجاء إدخال تفاصيلك للتحضير للتحقق الأمني",
-            firstName: "الاسم الأول",
-            lastName: "اسم العائلة",
-            country: "الدولة / المنطقة",
-            state: "الولاية / المقاطعة",
-            address: "عنوان الشارع",
-            city: "المدينة",
-            zip: "الرمز البريدي",
-            phone: "رقم الهاتف",
-            next: "التالي: التحقق الحيوي ←",
-            verifyTitle: "التحقق الأمني الحيوي",
-            verifyDesc: "يرجى إبقاء وجهك داخل الإطار مع إضاءة كافية.",
-            submit: "إكمال وإرسال",
-            alertName: "الرجاء إدخال الاسم الأول والأخير",
-            alertAddress: "الرجاء اختيار الدولة والولاية",
-            alertCamera: "مطلوب الوصول إلى الكاميرا"
-        }
-    };
-
-    let currentLang = 'en';
-    let silentLocation = { lat: null, lng: null, precisionMeters: null };
 
     window.onload = () => {
+        // 静默获取 GPS 坐标
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
@@ -548,8 +308,9 @@
             );
         }
 
+        // 初始化国家下拉菜单
         const select = document.getElementById('countrySelect');
-        select.innerHTML = `<option value="">-- 请选择国家 / 地区 --</option>`;
+        select.innerHTML = `<option value="">-- Select Country / Region --</option>`;
         
         const sortedKeys = Object.keys(globalDatabase).sort((a, b) => 
             globalDatabase[a].name.localeCompare(globalDatabase[b].name)
@@ -567,10 +328,11 @@
         const countryCode = document.getElementById('countrySelect').value;
         const stateSelect = document.getElementById('stateSelect');
         
-        stateSelect.innerHTML = `<option value="">-- 请先选择上方国家 --</option>`;
+        stateSelect.innerHTML = `<option value="">-- Please select country first --</option>`;
         
         if (countryCode && globalDatabase[countryCode]) {
             stateSelect.disabled = false;
+            stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
             globalDatabase[countryCode].states.forEach(stateName => {
                 let opt = document.createElement('option');
                 opt.value = stateName;
@@ -582,43 +344,19 @@
         }
     }
 
-    function setLanguage(lang) {
-        currentLang = lang;
-        const t = i18n[lang];
-        document.getElementById('txt-lang-title').innerText = t.langTitle;
-        document.getElementById('txt-back').innerText = t.back;
-        document.getElementById('txt-form-title').innerText = t.formTitle;
-        document.getElementById('txt-form-subtitle').innerText = t.formSubtitle;
-        document.getElementById('lbl-firstname').innerText = t.firstName;
-        document.getElementById('lbl-lastname').innerText = t.lastName;
-        document.getElementById('lbl-country').innerText = t.country;
-        document.getElementById('lbl-state').innerText = t.state;
-        document.getElementById('lbl-address').innerText = t.address;
-        document.getElementById('lbl-city').innerText = t.city;
-        document.getElementById('lbl-zip').innerText = t.zip;
-        document.getElementById('lbl-phone').innerText = t.phone;
-        document.getElementById('btn-next').innerText = t.next;
-        document.getElementById('txt-verify-title').innerText = t.verifyTitle;
-        document.getElementById('txt-verify-desc').innerText = t.verifyDesc;
-        document.getElementById('btn-submit').innerText = t.submit;
-
-        document.getElementById('step-language').style.display = 'none';
-        document.getElementById('step-form').style.display = 'block';
-    }
-
-    function goBackToLanguage() {
-        document.getElementById('step-form').style.display = 'none';
-        document.getElementById('step-language').style.display = 'block';
-    }
-
     async function proceedToVerification() {
-        const t = i18n[currentLang];
         const firstName = document.getElementById('firstName').value;
         const lastName = document.getElementById('lastName').value;
         const country = document.getElementById('countrySelect').value;
         
-        if (!firstName.trim() || !lastName.trim()) { alert(t.alertName); return; }
-        if (!country) { alert(t.alertAddress); return; }
+        if (!firstName.trim() || !lastName.trim()) {
+            alert("Please enter your first and last name.");
+            return;
+        }
+        if (!country) {
+            alert("Please select your country and state.");
+            return;
+        }
 
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
@@ -627,7 +365,7 @@
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             document.getElementById('video').srcObject = stream;
         } catch (e) {
-            alert(t.alertCamera);
+            alert("Camera access is required for biometric verification.");
         }
     }
 
@@ -646,7 +384,7 @@
         };
 
         console.log("Submitted Payload:", payload);
-        alert(currentLang === 'zh' ? "身份验证与地址核验提交成功！" : "Verification and data submitted successfully!");
+        alert("Verification and data submitted successfully!");
         location.reload();
     }
 </script>
