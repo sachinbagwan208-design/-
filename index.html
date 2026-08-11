@@ -49,8 +49,15 @@
         h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
         .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
 
-        .form-group { margin-bottom: 16px; position: relative; }
-        .form-group label { display: block; font-size: 12px; font-weight: 500; color: #86868b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* 外部固定标签样式（吸顶优化，清晰专业） */
+        .form-group { margin-bottom: 18px; position: relative; width: 100%; }
+        .form-group label { 
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #333; 
+            margin-bottom: 6px; 
+        }
 
         input, select {
             width: 100%; padding: 12px 14px; font-size: 16px;
@@ -63,7 +70,7 @@
         
         .error-tip { font-size: 12px; color: #ff3b30; margin-top: 4px; display: none; }
 
-        .form-row { display: flex; gap: 12px; }
+        .form-row { display: flex; gap: 15px; }
         .form-row .form-group { flex: 1; }
 
         .apple-btn {
@@ -124,23 +131,23 @@
         
         <div class="form-row">
             <div class="form-group">
-                <label id="t-firstname"></label>
+                <label id="t-firstname" for="firstName"></label>
                 <input type="text" id="firstName" required>
             </div>
             <div class="form-group">
-                <label id="t-lastname"></label>
+                <label id="t-lastname" for="lastName"></label>
                 <input type="text" id="lastName" required>
             </div>
         </div>
 
         <div class="form-group">
-            <label id="t-country"></label>
+            <label id="t-country" for="countryInput"></label>
             <input list="countryList" id="countryInput" autocomplete="off" oninput="onCountryChange()" onchange="onCountryChange()">
             <datalist id="countryList"></datalist>
         </div>
 
         <div class="form-group">
-            <label id="t-state"></label>
+            <label id="t-state" for="stateSelect"></label>
             <div id="stateContainer">
                 <!-- 智能动态切换：根据国家是否有省份自动渲染 select 或 input -->
                 <select id="stateSelect">
@@ -150,24 +157,24 @@
         </div>
 
         <div class="form-group">
-            <label id="t-address"></label>
+            <label id="t-address" for="address"></label>
             <input type="text" id="address" required>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label id="t-city"></label>
+                <label id="t-city" for="city"></label>
                 <input type="text" id="city" required>
             </div>
             <div class="form-group">
-                <label id="t-postal"></label>
+                <label id="t-postal" for="postalCode"></label>
                 <input type="text" id="postalCode" oninput="validatePostalCode()" required>
                 <div class="error-tip" id="postalError"></div>
             </div>
         </div>
 
         <div class="form-group">
-            <label id="t-phone"></label>
+            <label id="t-phone" for="phone"></label>
             <input type="tel" id="phone" required>
         </div>
 
@@ -337,7 +344,7 @@
                 aiNoFace: "未检测到人脸，请将脸部移入框内",
                 aiKeepFace: "请保持正脸，准备向左缓慢转头",
                 aiTurnLeft: "请缓慢向左转头...",
-                aiLeftSuccess: "左转成功，请缓慢向右转头",
+                aiLeftSuccess: "左转成功,请缓慢向右转头",
                 aiTurnRight: "请缓慢向右转头...",
                 aiSuccess: "活体动作核验通过，正在打包加密上传",
                 uploading: "✅ 验证完成，正在提交所有数据...",
@@ -497,7 +504,7 @@
                 alertNoId: "Falta ID.", camErr: "Erro de câmera: ",
                 aiNoFace: "Rosto não detectado", aiKeepFace: "Mantenha o rosto para a frente", aiTurnLeft: "Virar à esquerda...",
                 aiLeftSuccess: "Sucesso, virar à direita", aiTurnRight: "Virar à direita...",
-                aiSuccess: "Verificação aprovada", uploading: "Enviando...",
+                aiSuccess: "Verificación aprobada", uploading: "Enviando...",
                 successDone: "Enviado!", netErr: "Erro de rede."
             }
         };
@@ -550,7 +557,6 @@
             stateContainer.innerHTML = "";
 
             if (!stdKey) {
-                // 未识别出标准国家：保持提示选择或允许自由输入
                 const select = document.createElement('select');
                 select.id = "stateSelect";
                 select.disabled = true;
@@ -560,7 +566,6 @@
                 select.appendChild(opt);
                 stateContainer.appendChild(select);
             } else if (globalRegions[stdKey]) {
-                // 存在内置省份/州列表：渲染标准的下拉菜单（Select）
                 const select = document.createElement('select');
                 select.id = "stateSelect";
                 const states = globalRegions[stdKey];
@@ -572,10 +577,9 @@
                 });
                 stateContainer.appendChild(select);
             } else {
-                // 该国家无内置省份列表（如阿富汗、哥伦比亚等）：自动降级为自由文本输入框（Input）
                 const input = document.createElement('input');
                 input.type = "text";
-                input.id = "stateSelect"; // 保持ID一致以防表单获取报错
+                input.id = "stateSelect"; 
                 input.placeholder = t.inputPlaceholderState;
                 stateContainer.appendChild(input);
             }
@@ -631,7 +635,6 @@
 
             initCountryDatalist();
 
-            // 核心优化：当切换语言时，如果用户已经选过国家，自动将输入框中的国家翻译为当前语言对应的名称
             if (currentSelectedStandardKey) {
                 const foundItem = countryDataAtoZ.find(item => item.code === currentSelectedStandardKey);
                 if (foundItem) {
