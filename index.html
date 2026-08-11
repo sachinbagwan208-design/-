@@ -29,10 +29,19 @@
 <body>
 
 <div class="container">
-    <!-- 语言选择 -->
+    <!-- 10种语言选择界面 -->
     <div id="step-language" class="lang-card">
-        <h2>🌐 Select Language / 选择语言</h2>
-        <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
+        <!-- 👇 这里用方案二 SVG 图标，直接复制生效 -->
+        <h2 style="display:flex; align-items:center; gap:8px; margin:0 0 16px 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="5" width="18" height="14" rx="3"/>
+            <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
+            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">文</text>
+          </svg>
+          Select Language / 
+        </h2>
+        <div class="lang-grid">
+            <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
             <button class="lang-btn" onclick="setLanguage('en')">English</button>
             <button class="lang-btn" onclick="setLanguage('zh-TW')">繁體中文</button>
             <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
@@ -42,7 +51,9 @@
             <button class="lang-btn" onclick="setLanguage('es')">Español</button>
             <button class="lang-btn" onclick="setLanguage('ru')">Русский</button>
             <button class="lang-btn" onclick="setLanguage('ar')">العربية</button>
+        </div>
     </div>
+</div>
 
     <!-- 物流申报表单 -->
     <div id="step-form">
