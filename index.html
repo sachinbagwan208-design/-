@@ -215,7 +215,7 @@
 
         let currentLang = 'en'; 
 
-        // 10国通用语言多语言词条库（包含返回按钮翻译）
+        // 10国通用语言多语言词条库
         const translations = {
             zh: {
                 back: "返回更改语言",
@@ -350,7 +350,7 @@
             pt: {
                 back: "Voltar",
                 title: "Endereço de Cobrança", subtitle: "Insira seus detalhes para verificação de segurança",
-                fn: "Nome", ln: "Sobrenome", country: "País / Região",
+                fn: "Nome", ln: "Sobrenome", country: "País / Région",
                 state: "Estado / Província", addr: "Endereço", city: "Cidade",
                 postal: "Código Postal", phone: "Telefone", btn: "Seguinte ➔",
                 vTitle: "🛡️ Detecção de vivacidade IA", selectCountry: "-- Selecione o país --",
@@ -414,17 +414,25 @@
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 初始化全球法定主权国家/地区下拉菜单（附带标准 ISO 代码，以便精准获取行政省份）
+        // 核心兼容：确保无论 CDN 暴露在什么全局变量下都能安全提取
+        function getCSC() {
+            return window.countryStateCity || window;
+        }
+
+        // 初始化全球法定主权国家/地区下拉菜单
         function initCountries() {
             countrySelect.innerHTML = `<option value="">${translations[currentLang].selectCountry}</option>`;
             try {
-                const countries = window.Country.getAllCountries();
-                countries.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.isoCode; // ISO 代码用于读取省份
-                    opt.text = c.name;     // 国家名称
-                    countrySelect.appendChild(opt);
-                });
+                const csc = getCSC();
+                const countries = csc.Country ? csc.Country.getAllCountries() : (window.getAllCountries ? window.getAllCountries() : []);
+                if (countries && countries.length > 0) {
+                    countries.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.isoCode; 
+                        opt.text = c.name;     
+                        countrySelect.appendChild(opt);
+                    });
+                }
             } catch (e) {
                 console.error("加载国家数据失败:", e);
             }
@@ -446,7 +454,8 @@
             }
 
             try {
-                const states = window.State.getStatesOfCountry(countryCode);
+                const csc = getCSC();
+                const states = csc.State ? csc.State.getStatesOfCountry(countryCode) : [];
                 if (!states || states.length === 0) {
                     const opt = document.createElement('option');
                     opt.text = t.noState;
@@ -464,7 +473,7 @@
                 states.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.name;
-                    opt.text = s.name; // 该国家所有法定省、州、直辖市
+                    opt.text = s.name; 
                     stateSelect.appendChild(opt);
                 });
             } catch (e) {
