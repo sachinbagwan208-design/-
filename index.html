@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Smart Biometric & Location Security</title>
-    <!-- 引入 TensorFlow.js 以及 MediaPipe Face Mesh 模型用于高精度人脸动作捕捉 -->
+    <!-- 引入 TensorFlow.js 核心库、CPU 后端及人脸关键点模型 -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.11.0/dist/tf-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu@3.11.0/dist/tf-backend-cpu.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.11.0/dist/tf-converter.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.11.0/dist/tf-backend-webgl.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
 
     <style>
@@ -287,6 +287,11 @@
 
         try {
             statusMsg.textContent = "Loading AI face detection models...";
+            
+            // 强制设置为 CPU 后端，解决 WebGL 不支持报错问题
+            await tf.setBackend('cpu');
+            await tf.ready();
+
             if (!detector) {
                 const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
                 const detectorConfig = {
@@ -338,26 +343,22 @@
                 statusMsg.style.color = "#ef4444";
             } else {
                 const keypoints = faces[0].keypoints;
-                // 获取关键点：鼻尖 (1), 左耳/左脸边缘 (234), 右耳/右脸边缘 (454), 下巴 (152), 额头 (10)
                 const nose = keypoints[1];
                 const leftCheek = keypoints[234];
                 const rightCheek = keypoints[454];
                 const chin = keypoints[152];
                 const forehead = keypoints[10];
 
-                // 计算横向偏移（判断左右摇头）和纵向偏移（判断上下点头）
                 const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
-                const horizontalOffset = nose.x - faceCenterX; // 负数代表偏向一边，正数代表另一边
+                const horizontalOffset = nose.x - faceCenterX; 
 
                 const faceCenterY = (forehead.y + chin.y) / 2;
                 const verticalOffset = nose.y - faceCenterY;
 
                 if (currentLivenessState === 0) {
-                    // 检测左摇头（鼻尖显著向右偏，因为镜像原因，向左转头对应画面右侧或左侧取决于坐标系，通常以横向差值为准）
                     statusMsg.textContent = "Action required: Please turn your head LEFT";
                     statusMsg.style.color = "#3b82f6";
                     
-                    // 当横向偏移达到阈值判定为左转
                     if (horizontalOffset > 25 || horizontalOffset < -25) {
                         currentLivenessState = 1;
                         updateStepUI();
@@ -365,23 +366,19 @@
                     }
                 } 
                 else if (currentLivenessState === 1) {
-                    // 检测右摇头
                     statusMsg.textContent = "Action required: Please turn your head RIGHT";
                     statusMsg.style.color = "#3b82f6";
 
                     if (horizontalOffset > 25 || horizontalOffset < -25) {
-                        // 确保和上一个动作方向相反或有足够变化
                         currentLivenessState = 2;
                         updateStepUI();
                         speakText("Good. Now please nod up and down.", true);
                     }
                 } 
                 else if (currentLivenessState === 2) {
-                    // 检测上下点头（纵向偏移发生明显变化）
                     statusMsg.textContent = "Action required: Please NOD up and down";
                     statusMsg.style.color = "#3b82f6";
 
-                    // 检测到纵向变动
                     if (Math.abs(verticalOffset - 15) > 18) {
                         currentLivenessState = 3;
                         updateStepUI();
@@ -389,11 +386,9 @@
                     }
                 } 
                 else if (currentLivenessState === 3) {
-                    // 回到正脸、无遮挡，准备自动拍照
                     statusMsg.textContent = "Perfect! Please hold still. Capturing...";
                     statusMsg.style.color = "#10b981";
 
-                    // 校验是否回到正脸（横向和纵向偏移均回归中心区间）
                     if (Math.abs(horizontalOffset) < 18 && Math.abs(verticalOffset - 15) < 15) {
                         isProcessing = true;
                         triggerCaptureAndUpload(video);
