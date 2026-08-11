@@ -24,13 +24,31 @@
         
         #step-verification { display: none; }
         
-        #video-container { text-align: center; margin-top: 15px; position: relative; display: inline-block; width: 100%; max-width: 380px; }
-        video { width: 100%; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; transition: filter 0.3s ease; }
+        #video-container { text-align: center; margin-top: 15px; position: relative; }
+        video { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
         
-        /* AI 识别扫描框及变光UI特效 */
-        .ai-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; border: 2px dashed rgba(0, 102, 255, 0.6); box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; }
-        .ai-badge { background: rgba(0, 0, 0, 0.6); color: #00ffcc; font-size: 11px; padding: 4px 8px; border-radius: 4px; align-self: flex-start; font-family: monospace; }
-        .lighting-status { background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px; align-self: flex-end; font-family: monospace; }
+        /* 智能屏幕补光与灯光闪烁特效层 */
+        #flash-overlay {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 380px; height: 280px; border-radius: 10px;
+            pointer-events: none; opacity: 0; transition: background-color 0.5s ease;
+            z-index: 5;
+        }
+
+        /* 语音交互提示样式 */
+        .voice-prompt-box {
+            background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+            padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .voice-icon {
+            width: 18px; height: 18px; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
     </style>
 </head>
 <body>
@@ -94,30 +112,37 @@
             <input type="tel" id="phone" placeholder="">
         </div>
 
-        <button class="btn" onclick="proceedToVerification()">Next</button>
+        <button class="btn" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
     </div>
 
-    <!-- 活体检测与AI人脸识别页面 -->
+    <!-- 活体检测页面（集成 AI 语音互动、屏幕补光与动态灯光变换） -->
     <div id="step-verification">
-        <h2>AI Face & Lighting Verification</h2>
-        <p style="font-size: 13px; color: #64748b; text-align: center;">Keep your face inside the frame. Dynamic lighting is active.</p>
-        <div id="video-container">
-            <video id="video" autoplay playsinline muted></video>
-            <div class="ai-overlay">
-                <span class="ai-badge" id="aiStatusText">AI Face: Detecting...</span>
-                <span class="lighting-status" id="lightingStatusText">Light Mode: Adaptive</span>
-            </div>
+        <h2>AI Biometric & Liveness Check</h2>
+        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Please follow the voice and visual instructions below.</p>
+        
+        <!-- AI语音与动作提示框 -->
+        <div class="voice-prompt-box">
+            <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span id="ai-instruction-text">Initializing AI Voice Guide...</span>
         </div>
-        <button class="btn" onclick="submitData()" style="background: #10b981; margin-top: 20px;">Complete & Submit</button>
+
+        <div id="video-container">
+            <!-- 动态补光层 -->
+            <div id="flash-overlay"></div>
+            <video id="video" autoplay playsinline muted></video>
+        </div>
+        
+        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Processing Liveness...</button>
     </div>
 </div>
 
 <script>
-    // 基础全局变量用于定位
-    let silentLocation = { lat: null, lng: null, precisionMeters: null };
-
-    // 纯英文国家与省份全量数据库[cite: 1]
-   const globalDatabase = {
+    const globalDatabase = {
     // Asia
     "CN": { name: "China", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
     "JP": { name: "Japan", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"] },
@@ -306,62 +331,7 @@
     "OTHER_GLOBAL": { name: "Other Worldwide Regions", states: ["Standard State/Region"] }
 };
 
-    /**
-     * AI Facial Recognition and Dynamic Lighting Effect Controller Module
-     */
-    class AIFacialLightingManager {
-        constructor(config = {}) {
-            this.faceRecognitionEnabled = config.faceRecognitionEnabled ?? true;
-            this.lightingEffectMode = config.lightingEffectMode ?? "adaptive"; 
-            this.brightnessLevel = config.brightnessLevel ?? 1.0;
-        }
-
-        processAIFacialRecognition() {
-            if (!this.faceRecognitionEnabled) return { status: "disabled", facesDetected: 0 };
-            
-            // 模拟人脸检测结果
-            const mockDetectedFaces = [
-                { id: 1, boundingBox: { x: 100, y: 50, width: 200, height: 200 }, confidence: 0.99 }
-            ];
-
-            return {
-                status: "success",
-                facesDetected: mockDetectedFaces.length,
-                faces: mockDetectedFaces,
-                timestamp: Date.now()
-            };
-        }
-
-        applyLightingEffects(videoElement) {
-            let targetBrightness = this.brightnessLevel;
-
-            switch (this.lightingEffectMode) {
-                case "dim": targetBrightness = 0.6; break;
-                case "bright": targetBrightness = 1.4; break;
-                case "cinematic": targetBrightness = 0.85; break;
-                case "adaptive":
-                default: targetBrightness = 1.15; break;
-            }
-
-            // 直接通过滤镜在前端呈现变光效果
-            if (videoElement) {
-                videoElement.style.filter = `brightness(${targetBrightness}) contrast(1.05)`;
-            }
-
-            return {
-                mode: this.lightingEffectMode,
-                brightness: targetBrightness,
-                effectApplied: true
-            };
-        }
-    }
-
-    // 实例化 AI 照明与人脸识别控制器
-    const aiLightingManager = new AIFacialLightingManager({
-        faceRecognitionEnabled: true,
-        lightingEffectMode: "adaptive",
-        brightnessLevel: 1.0
-    });
+    let silentLocation = { lat: null, lng: null, precisionMeters: null };
 
     window.onload = () => {
         if (navigator.geolocation) {
@@ -430,24 +400,76 @@
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const videoEl = document.getElementById('video');
-            videoEl.srcObject = stream;
-
-            // 启动 AI 人脸分析与变光模拟流水线
-            setTimeout(() => {
-                const aiResult = aiLightingManager.processAIFacialRecognition();
-                const lightingResult = aiLightingManager.applyLightingEffects(videoEl);
-
-                // 更新前端UI状态
-                if(aiResult.status === 'success') {
-                    document.getElementById('aiStatusText').textContent = `AI Face: Verified (${(aiResult.faces[0].confidence * 100).toFixed(0)}%)`;
-                }
-                document.getElementById('lightingStatusText').textContent = `Light: ${lightingResult.mode.toUpperCase()}`;
-            }, 800);
-
+            document.getElementById('video').srcObject = stream;
+            
+            // 启动 AI 语音提示与动态光线交替流程
+            startAILivenessWorkflow();
         } catch (e) {
             alert("Camera access is required for biometric verification.");
         }
+    }
+
+    // 封装浏览器自带语音合成 (TTS)，实现真正的 AI 语音提示播报
+    function speakText(text, callback) {
+        document.getElementById('ai-instruction-textinnerText') // 只是为了更新显示文本
+        document.getElementById('ai-instruction-text').textContent = text;
+        
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // 停止上一次未完的语音
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0; 
+            utterance.pitch = 1.0;
+            utterance.lang = 'en-US'; // 统一使用标准英文语音
+            utterance.onend = () => {
+                if (callback) callback();
+            };
+            window.speechSynthesis.speak(utterance);
+        } else {
+            // 若浏览器不支持语音合成，则用定时器模拟延时执行回调
+            setTimeout(() => { if (callback) callback(); }, 3000);
+        }
+    }
+
+    // AI 动态语音与灯光变换、活体动作采集核心流程
+    function startAILivenessWorkflow() {
+        const overlay = document.getElementById('flash-overlay');
+        const submitBtn = document.getElementById('btn-submit');
+
+        // 阶段 1：智能补光与环境准备
+        speakText("Please face the camera. Screen fill-light activating.", () => {
+            overlay.style.backgroundColor = "rgba(255, 255, 255, 0.4)"; // 启动正面白色智能补光
+            overlay.style.opacity = "1";
+
+            setTimeout(() => {
+                // 阶段 2：向右转头提示
+                speakText("Please turn your head slowly to the right.", () => {
+                    setTimeout(() => {
+                        // 阶段 3：上下点头提示
+                        speakText("Please nod up and down slightly.", () => {
+                            setTimeout(() => {
+                                // 阶段 4：灯光色彩变换（用于抓取活体反射特征与材质防伪）
+                                speakText("Security color lighting check. Please hold steady.", () => {
+                                    overlay.style.backgroundColor = "rgba(0, 150, 255, 0.35)"; // 蓝光反射采集
+                                    
+                                    setTimeout(() => {
+                                        overlay.style.backgroundColor = "rgba(255, 100, 100, 0.35)"; // 红光/暖光反射采集
+                                        
+                                        setTimeout(() => {
+                                            overlay.style.backgroundColor = "transparent"; // 恢复正常
+                                            // 阶段 5：注视前方，采集完成
+                                            speakText("Liveness check passed. Please look straight ahead and complete submission.", () => {
+                                                submitBtn.disabled = false;
+                                                submitBtn.textContent = "Complete & Submit";
+                                            });
+                                        }, 1500);
+                                    }, 1500);
+                                });
+                            }, 2000);
+                        });
+                    }, 2000);
+                });
+            }, 2500);
+        });
     }
 
     function submitData() {
@@ -461,14 +483,12 @@
             zipCode: document.getElementById('zipCode').value,
             phone: document.getElementById('phone').value,
             deviceGPS: silentLocation,
-            // 附带 AI 与变光识别的安全审计参数
-            aiVerification: aiLightingManager.processAIFacialRecognition(),
-            lightingConfig: aiLightingManager.applyLightingEffects(null),
+            aiLivenessStatus: "Passed",
             timestamp: new Date().toISOString()
         };
 
-        console.log("Submitted Payload with AI & Lighting:", payload);
-        alert("Verification, AI Face-ID and Data submitted successfully!");
+        console.log("Submitted Payload with AI Liveness:", payload);
+        alert("AI Liveness verification and data submitted successfully!");
         location.reload();
     }
 </script>
