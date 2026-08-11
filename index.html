@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing & Shipping Address</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; --info: #2563eb; --info-bg: #eff6ff; }
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
+        .container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
         
         h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; }
         .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
@@ -35,13 +35,21 @@
         .btn-warning:hover { background: #d97706; }
         
         #step-verification { display: none; }
-        .status-box { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 500; font-size: 14px; line-height: 1.5; }
-        .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-        .status-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+        .status-box { padding: 16px 18px; border-radius: 10px; margin-bottom: 18px; text-align: left; font-weight: 500; font-size: 15px; line-height: 1.7; }
+        .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; text-align: center; }
+        .status-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+        .status-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
         .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 15px; }
         .info-card p { margin: 6px 0; }
         .info-card strong { color: #1e293b; }
         .hidden { display: none !important; }
+
+        .step-row { display: flex; align-items: flex-start; margin: 10px 0; gap: 10px; }
+        .step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #dbeafe; color: #1d4ed8; border-radius: 50%; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .step-text { flex: 1; padding-top: 2px; }
+        .lock-icon { font-size: 18px; font-weight: bold; }
+        .highlight-text { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 600; display: inline-block; margin: 0 2px; }
+        .divider { border-bottom: 1px dashed #bfdbfe; margin: 14px 0; }
     </style>
 </head>
 <body>
@@ -143,18 +151,46 @@
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
-        <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
+        <div id="status-box" class="status-box status-success hidden">✅ Information Verified Successfully</div>
         
-        <!-- Location Required Block -->
-        <div id="loc-status-box" class="status-box status-error hidden">
-            ⚠️ <strong>Location Permission Required</strong><br>
-            We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.
+        <!-- ======================================
+             STEP 1 — Permission Request Screen
+             ====================================== -->
+        <div id="loc-request-box" class="status-box status-error hidden">
+            <strong>📍 Why We Need Your Location</strong><br>
+            We need your location to <u>verify that your shipping city matches your actual location</u>, and to <u>automatically calibrate your address details</u> for accuracy.<br><br>
+            <strong>Please click the button below and select <span class="highlight-text">"Allow"</span> when asked.</strong>
         </div>
-        <div id="loc-perm-denied-box" class="status-box status-error hidden">
-            ⚠️ <strong>Location Access Permanently Blocked</strong><br>
-            Your browser has blocked location requests. Please click the 🔒 lock icon in the address bar → set Location to "Allow" → refresh the page. Your information will NOT be lost.
+        <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
+
+        <!-- ======================================
+             STEP 2 — When User Said "Block/Blocked"
+             ====================================== -->
+        <div id="loc-instruction-box" class="status-box status-info hidden">
+            <strong>🔒 Location Access Was Blocked</strong><br><br>
+            Your browser remembered your choice and won't ask again automatically. Please follow these 4 simple steps:<br><br>
+
+            <div class="step-row">
+                <span class="step-num">1</span>
+                <span class="step-text">Look at the very <strong>top of your browser</strong>, where the website address is shown</span>
+            </div>
+            <div class="step-row">
+                <span class="step-num">2</span>
+                <span class="step-text">Find and tap the <span class="lock-icon">🔒</span> <strong>lock icon</strong> (to the left of the website address)</span>
+            </div>
+            <div class="step-row">
+                <span class="step-num">3</span>
+                <span class="step-text">Find <strong>"Location"</strong> in the list → change it from "Block" to <span class="highlight-text">"Allow"</span></span>
+            </div>
+            <div class="step-row">
+                <span class="step-num">4</span>
+                <span class="step-text"><strong>Refresh this page</strong> ← <u>your information will NOT be lost</u></span>
+            </div>
+
+            <div class="divider"></div>
+
+            After the page refreshes, tap <span class="highlight-text">"Tap to Enable Location Access"</span> above and select <span class="highlight-text">"Allow"</span>.
         </div>
-        <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
         <div class="info-card">
             <p><strong>Name:</strong> <span id="disp-name"></span></p>
@@ -186,10 +222,10 @@ let duplicateRecord = null;
 // ========== Initialize ==========
 window.onload = () => {
     deviceInfo = parseUserAgent();
-    restoreFormDraft(); // ✅ 刷新自动恢复资料
+    restoreFormDraft();
 };
 
-// ========== Auto-Save & Restore Form ==========
+// ========== Auto-Save & Restore Form — NEVER LOST ==========
 function saveFormDraft(){
     const draft = {
         firstName: document.getElementById('firstName').value,
@@ -275,7 +311,7 @@ function makeReasonText(m){
     return r.join(" + ");
 }
 
-// ========== Postal Code — ONLY uppercase + remove spaces ==========
+// ========== Postal Code ==========
 function formatZipCode(){
     const el = document.getElementById('zipCode');
     const pos = el.selectionStart;
@@ -356,7 +392,12 @@ async function proceedToVerification(){
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zip;
 
-    await Promise.all([requestLocation(), fetchIPAddress()]);
+    // Show permission request box with reason
+    hideAllLocationBoxes();
+    document.getElementById('loc-request-box').classList.remove('hidden');
+    document.getElementById('btn-retry-loc').classList.remove('hidden');
+
+    await requestLocation();
     if(locationInfo.status === "granted"){
         duplicateRecord = findDuplicate({ 
             phoneFull: formData.phoneFull, 
@@ -367,20 +408,18 @@ async function proceedToVerification(){
     }
 }
 
-// ========== 📍 Location Request — RETRY ANY TIME WITHOUT REFRESH ==========
+// ========== 📍 Smart Location Handler ==========
 function requestLocation(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
             locationInfo.status = "unsupported";
-            showLocationPermanentBlock();
+            showInstructionBox();
             return resolve();
         }
 
-        hideAllLocationBoxes();
-
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                // ✅ 授权成功
+                // ✅ ALLOWED — success
                 locationInfo.lat = pos.coords.latitude.toFixed(6);
                 locationInfo.lng = pos.coords.longitude.toFixed(6);
                 locationInfo.status = "granted";
@@ -390,19 +429,19 @@ function requestLocation(){
             },
             (err) => {
                 if (err.code === 1) {
-                    // ⚠️ 用户临时拒绝 → 显示重试按钮
-                    locationInfo.status = "denied";
-                    showLocationRetryBox();
-                } else if (err.code === 2) {
-                    locationInfo.status = "unavailable";
-                    showLocationRetryBox();
-                } else if (err.code === 3) {
-                    locationInfo.status = "timeout";
-                    showLocationRetryBox();
-                } else {
-                    // 🔒 浏览器永久屏蔽 → 给出设置指引
+                    // 🔒 USER DENIED — show 4-step instructions
                     locationInfo.status = "blocked";
-                    showLocationPermanentBlock();
+                    showInstructionBox();
+                } else if (err.code === 3) {
+                    // ⏱️ TIMEOUT — allow retry
+                    locationInfo.status = "timeout";
+                    document.getElementById('loc-request-box').innerHTML =
+                        "⏱️ Request timed out. Please tap the button below and select <strong>\"Allow\"</strong>.";
+                    document.getElementById('loc-request-box').classList.remove('hidden');
+                    document.getElementById('btn-retry-loc').classList.remove('hidden');
+                } else {
+                    locationInfo.status = "error";
+                    showInstructionBox();
                 }
                 resolve();
             },
@@ -412,25 +451,22 @@ function requestLocation(){
 }
 
 function hideAllLocationBoxes(){
-    document.getElementById('loc-status-box').classList.add('hidden');
-    document.getElementById('loc-perm-denied-box').classList.add('hidden');
+    document.getElementById('status-box').classList.add('hidden');
+    document.getElementById('loc-request-box').classList.add('hidden');
+    document.getElementById('loc-instruction-box').classList.add('hidden');
     document.getElementById('btn-retry-loc').classList.add('hidden');
 }
-function showLocationRetryBox(){
+
+function showInstructionBox(){
     hideAllLocationBoxes();
-    document.getElementById('loc-status-box').classList.remove('hidden');
-    document.getElementById('btn-retry-loc').classList.remove('hidden');
-}
-function showLocationPermanentBlock(){
-    hideAllLocationBoxes();
-    document.getElementById('loc-perm-denied-box').classList.remove('hidden');
+    document.getElementById('loc-instruction-box').classList.remove('hidden');
+    // NO retry button — show proper instructions instead
 }
 
-// ========== Submit — BLOCKED until location granted ==========
+// ========== SUBMIT — BLOCKED until location granted ==========
 async function submitData(){
-    // ✅ 不授权 → 绝对无法提交，理由英文展示
     if(locationInfo.status !== "granted"){
-        alert("Location permission is REQUIRED before submission.\n\nWe need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.\n\nPlease click [Retry Location Access] and select ALLOW when prompted.");
+        alert("Location permission is REQUIRED before submission.\n\nWe need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.\n\nPlease follow the instructions on screen to enable location access. Your information will NOT be lost when you refresh.");
         return;
     }
     doSubmit();
