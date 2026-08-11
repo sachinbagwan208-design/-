@@ -46,7 +46,7 @@
             <text x="7" y="15" font-size="9" font-weight="bold" fill="currentColor" stroke="none">A</text>
             <text x="13.5" y="10.5" font-size="6.5" fill="currentColor" stroke="none" opacity="0.8">文</text>
           </svg>
-          <span id="txt-lang-title">Select Language / 选择语言</span>
+          <span id="txt-lang-title">Select Language / </span>
         </h2>
         <div class="lang-grid">
             <button class="lang-btn" onclick="setLanguage('zh')">简体中文</button>
@@ -115,12 +115,12 @@
             <input type="tel" id="phone" placeholder="">
         </div>
 
-        <button class="btn" id="btn-next" onclick="proceedToVerification()">下一步：生物活体检测 →</button>
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">下一步</button>
     </div>
 
-    <!-- 活体检测页面 -->
+    <!-- 身份检测页面 -->
     <div id="step-verification">
-        <h2 id="txt-verify-title">生物活体安全检测</h2>
+        <h2 id="txt-verify-title">身份安全检测</h2>
         <p id="txt-verify-desc" style="font-size: 13px; color: #64748b; text-align: center;">请正对摄像头，保持光线充足，完成安全核验。</p>
         <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
@@ -646,7 +646,7 @@
         };
 
         console.log("Submitted Payload:", payload);
-        alert(currentLang === 'zh' ? "生物活体检测与地址核验提交成功！" : "Verification and data submitted successfully!");
+        alert(currentLang === 'zh' ? "身份验证与地址核验提交成功！" : "Verification and data submitted successfully!");
         location.reload();
     }
 </script>
