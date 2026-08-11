@@ -7,6 +7,8 @@
     <!-- 引入 MediaPipe 视觉库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <!-- 引入全球国家与省份精准联动库 -->
+    <script src="https://cdn.jsdelivr.net/npm/country-state-city-js@latest/dist/country-state-city.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f7;
@@ -49,14 +51,9 @@
         h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
         .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
 
-        /* 外部固定标签样式（吸顶优化，清晰专业） */
         .form-group { margin-bottom: 18px; position: relative; width: 100%; }
         .form-group label { 
-            display: block; 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: #333; 
-            margin-bottom: 6px; 
+            display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; 
         }
 
         input, select {
@@ -114,13 +111,7 @@
         <button class="lang-btn" onclick="setLanguage('zh')">中文</button>
         <button class="lang-btn active" onclick="setLanguage('en')">English</button>
         <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
-        <button class="lang-btn" onclick="setLanguage('fr')">Français</button>
-        <button class="lang-btn" onclick="setLanguage('de')">Deutsch</button>
-        <button class="lang-btn" onclick="setLanguage('ru')">Русский</button>
-        <button class="lang-btn" onclick="setLanguage('uk')">Українська</button>
-        <button class="lang-btn" onclick="setLanguage('vi')">Tiếng Việt</button>
         <button class="lang-btn" onclick="setLanguage('es')">Español</button>
-        <button class="lang-btn" onclick="setLanguage('pt')">Português</button>
     </div>
 
     <div class="fill-light" id="fillLight"></div>
@@ -140,20 +131,20 @@
             </div>
         </div>
 
+        <!-- 智能联动国家下拉框 -->
         <div class="form-group">
-            <label id="t-country" for="countryInput"></label>
-            <input list="countryList" id="countryInput" autocomplete="off" oninput="onCountryChange()" onchange="onCountryChange()">
-            <datalist id="countryList"></datalist>
+            <label id="t-country" for="countrySelect"></label>
+            <select id="countrySelect" onchange="onCountryChange()">
+                <option value="" id="t-select-country">-- Select Country --</option>
+            </select>
         </div>
 
+        <!-- 智能联动省份/直辖市下拉框 -->
         <div class="form-group">
             <label id="t-state" for="stateSelect"></label>
-            <div id="stateContainer">
-                <!-- 智能动态切换：根据国家是否有省份自动渲染 select 或 input -->
-                <select id="stateSelect">
-                    <option value="" id="t-select-first">-- Please select a country first --</option>
-                </select>
-            </div>
+            <select id="stateSelect" disabled>
+                <option value="" id="t-select-first">-- Please select a country first --</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -196,147 +187,15 @@
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
         let currentLang = 'en'; 
-        let currentSelectedStandardKey = null; // 记录当前选择的标准国家Key，用于多语言无缝翻译切换
-
-        const countryDataAtoZ = [
-            { code: "Afghanistan", zh: "阿富汗", en: "Afghanistan", ja: "アフガニスタン", fr: "Afghanistan", de: "Afghanistan", ru: "Афганистан", uk: "Афганістан", vi: "Afghanistan", es: "Afganistán", pt: "Afeganistão" },
-            { code: "Albania", zh: "阿尔巴尼亚", en: "Albania", ja: "アルバニア", fr: "Albanie", de: "Albanien", ru: "Албания", uk: "Албанія", vi: "Albania", es: "Albania", pt: "Albânia" },
-            { code: "Algeria", zh: "阿尔及利亚", en: "Algeria", ja: "アルジェリア", fr: "Algérie", de: "Algerien", ru: "Алжир", uk: "Алжир", vi: "Algeria", es: "Argelia", pt: "Argélia" },
-            { code: "Andorra", zh: "安道尔", en: "Andorra", ja: "アンドラ", fr: "Andorre", de: "Andorra", ru: "Андорра", uk: "Андорра", vi: "Andorra", es: "Andorra", pt: "Andorra" },
-            { code: "Angola", zh: "安哥拉", en: "Angola", ja: "アンゴラ", fr: "Angola", de: "Angola", ru: "Ангола", uk: "Ангола", vi: "Angola", es: "Angola", pt: "Angola" },
-            { code: "Argentina", zh: "阿根廷", en: "Argentina", ja: "アルゼンチン", fr: "Argentine", de: "Argentinien", ru: "Аргентина", uk: "Аргентина", vi: "Argentina", es: "Argentina", pt: "Argentina" },
-            { code: "Armenia", zh: "亚美尼亚", en: "Armenia", ja: "アルメニア", fr: "Arménie", de: "Armenien", ru: "Армения", uk: "Вірменія", vi: "Armenia", es: "Armenia", pt: "Armênia" },
-            { code: "Australia", zh: "澳大利亚", en: "Australia", ja: "オーストラリア", fr: "Australie", de: "Australien", ru: "Австралия", uk: "Австралія", vi: "Úc", es: "Australia", pt: "Austrália" },
-            { code: "Austria", zh: "奥地利", en: "Austria", ja: "オーストリア", fr: "Autriche", de: "Österreich", ru: "Австрия", uk: "Австрія", vi: "Áo", es: "Austria", pt: "Áustria" },
-            { code: "Azerbaijan", zh: "阿塞拜疆", en: "Azerbaijan", ja: "アゼルバイジャン", fr: "Azerbaïdjan", de: "Aserbaidschan", ru: "Азербайджан", uk: "Азербайджан", vi: "Azerbaijan", es: "Azerbaiyán", pt: "Azerbaijão" },
-            { code: "Bahamas", zh: "巴哈马", en: "Bahamas", ja: "バハマ", fr: "Bahamas", de: "Bahamas", ru: "Багамы", uk: "Багами", vi: "Bahamas", es: "Bahamas", pt: "Bahamas" },
-            { code: "Bahrain", zh: "巴林", en: "Bahrain", ja: "バーレーン", fr: "Bahreïn", de: "Bahrain", ru: "Бахрейн", uk: "Бахрейн", vi: "Bahrain", es: "Baréin", pt: "Bahrein" },
-            { code: "Bangladesh", zh: "孟加拉国", en: "Bangladesh", ja: "バングラデシュ", fr: "Bangladesh", de: "Bangladesch", ru: "Бангладеш", uk: "Бангладеш", vi: "Bangladesh", es: "Bangladés", pt: "Bangladesh" },
-            { code: "Belarus", zh: "白俄罗斯", en: "Belarus", ja: "ベラルーシ", fr: "Biélorussie", de: "Belarus", ru: "Беларусь", uk: "Білорусь", vi: "Belarus", es: "Bielorrusia", pt: "Bielorrússia" },
-            { code: "Belgium", zh: "比利时", en: "Belgium", ja: "ベルギー", fr: "Belgique", de: "Belgien", ru: "Бельгия", uk: "Бельгія", vi: "Bỉ", es: "Bélgica", pt: "Bélgica" },
-            { code: "Belize", zh: "伯利兹", en: "Belize", ja: "ベリーズ", fr: "Belize", de: "Belize", ru: "Белиз", uk: "Беліз", vi: "Belize", es: "Belice", pt: "Belize" },
-            { code: "Benin", zh: "贝宁", en: "Benin", ja: "ベナン", fr: "Bénin", de: "Benin", ru: "Бенин", uk: "Бенін", vi: "Benin", es: "Benín", pt: "Benin" },
-            { code: "Bhutan", zh: "不丹", en: "Bhutan", ja: "ブータン", fr: "Bhoutan", de: "Bhutan", ru: "Бутан", uk: "Бутан", vi: "Bhutan", es: "Bután", pt: "Butão" },
-            { code: "Bolivia", zh: "玻利维亚", en: "Bolivia", ja: "ボリビア", fr: "Bolivie", de: "Bolivien", ru: "Боливия", uk: "Болівія", vi: "Bolivia", es: "Bolivia", pt: "Bolívia" },
-            { code: "Bosnia and Herzegovina", zh: "波斯尼亚和黑塞哥维那", en: "Bosnia and Herzegovina", ja: "ボスニア・ヘルツェゴビナ", fr: "Bosnie-Herzégovine", de: "Bosnien und Herzegowina", ru: "Босния и Герцеговина", uk: "Боснія і Герцеговина", vi: "Bosnia và Herzegovina", es: "Bosnia y Herzegovina", pt: "Bósnia e Herzegovina" },
-            { code: "Botswana", zh: "博茨瓦纳", en: "Botswana", ja: "ボツワナ", fr: "Botswana", de: "Botswana", ru: "Ботсвана", uk: "Ботсвана", vi: "Botswana", es: "Botsuana", pt: "Botsuana" },
-            { code: "Brazil", zh: "巴西", en: "Brazil", ja: "ブラジル", fr: "Brésil", de: "Brasilien", ru: "Бразилия", uk: "Бразилія", vi: "Brazil", es: "Brasil", pt: "Brasil" },
-            { code: "Brunei", zh: "文莱", en: "Brunei", ja: "ブルネイ", fr: "Brunéi", de: "Brunei", ru: "Бруней", uk: "Бруней", vi: "Brunei", es: "Brunéi", pt: "Brunei" },
-            { code: "Bulgaria", zh: "保加利亚", en: "Bulgaria", ja: "ブルガリア", fr: "Bulgarie", de: "Bulgarien", ru: "Болгария", uk: "Болгарія", vi: "Bulgaria", es: "Bulgaria", pt: "Bulgária" },
-            { code: "Burkina Faso", zh: "布基纳法索", en: "Burkina Faso", ja: "ブルキナファソ", fr: "Burkina Faso", de: "Burkina Faso", ru: "Буркина-Фасо", uk: "Буркіна-Фасо", vi: "Burkina Faso", es: "Burkina Faso", pt: "Burquina Faso" },
-            { code: "Burundi", zh: "布隆迪", en: "Burundi", ja: "ブルンジ", fr: "Burundi", de: "Burundi", ru: "Бурунди", uk: "Бурунді", vi: "Burundi", es: "Burundi", pt: "Burundi" },
-            { code: "Cambodia", zh: "柬埔寨", en: "Cambodia", ja: "カンボジア", fr: "Cambodge", de: "Kambodscha", ru: "Камбоджа", uk: "Камбоджа", vi: "Campuchia", es: "Camboya", pt: "Camboja" },
-            { code: "Cameroon", zh: "喀麦隆", en: "Cameroon", ja: "カメルーン", fr: "Cameroun", de: "Kamerun", ru: "Камерун", uk: "Камерун", vi: "Cameroon", es: "Camerún", pt: "Camarões" },
-            { code: "Canada", zh: "加拿大", en: "Canada", ja: "カナダ", fr: "Canada", de: "Kanada", ru: "Канада", uk: "Канада", vi: "Canada", es: "Canadá", pt: "Canadá" },
-            { code: "Chile", zh: "智利", en: "Chile", ja: "チリ", fr: "Chili", de: "Chile", ru: "Чили", uk: "Чилі", vi: "Chile", es: "Chile", pt: "Chile" },
-            { code: "China", zh: "中国", en: "China", ja: "中国", fr: "Chine", de: "China", ru: "Китай", uk: "Китай", vi: "Trung Quốc", es: "China", pt: "China" },
-            { code: "Colombia", zh: "哥伦比亚", en: "Colombia", ja: "コロンビア", fr: "Colombie", de: "Kolumbien", ru: "Колумбия", uk: "Колумбія", vi: "Colombia", es: "Colombia", pt: "Colômbia" },
-            { code: "Costa Rica", zh: "哥斯达黎加", en: "Costa Rica", ja: "コスタリカ", fr: "Costa Rica", de: "Costa Rica", ru: "Коста-Рика", uk: "Коста-Рика", vi: "Costa Rica", es: "Costa Rica", pt: "Costa Rica" },
-            { code: "Croatia", zh: "克罗地亚", en: "Croatia", ja: "クロアチア", fr: "Croatie", de: "Kroatien", ru: "Хорватия", uk: "Хорватія", vi: "Croatia", es: "Croacia", pt: "Croácia" },
-            { code: "Cuba", zh: "古巴", en: "Cuba", ja: "キューバ", fr: "Cuba", de: "Kuba", ru: "Куба", uk: "Куба", vi: "Cuba", es: "Cuba", pt: "Cuba" },
-            { code: "Cyprus", zh: "塞浦路斯", en: "Cyprus", ja: "キプロス", fr: "Chypre", de: "Zypern", ru: "Кипр", uk: "Кіпр", vi: "Síp", es: "Chipre", pt: "Chipre" },
-            { code: "Czech Republic", zh: "捷克", en: "Czech Republic", ja: "チェコ", fr: "Tchéquie", de: "Tschechien", ru: "Чехия", uk: "Чехія", vi: "Séc", es: "Chequia", pt: "Chéquia" },
-            { code: "Denmark", zh: "丹麦", en: "Denmark", ja: "デンマーク", fr: "Danemark", de: "Dänemark", ru: "Дания", uk: "Данія", vi: "Đan Mạch", es: "Dinamarca", pt: "Dinamarca" },
-            { code: "Djibouti", zh: "吉布提", en: "Djibouti", ja: "ジブチ", fr: "Djibouti", de: "Dschibuti", ru: "Джибути", uk: "Джибуті", vi: "Djibouti", es: "Yibuti", pt: "Djibuti" },
-            { code: "Dominican Republic", zh: "多米尼加共和国", en: "Dominican Republic", ja: "ドミニカ共和国", fr: "République dominicaine", de: "Dominikanische Republik", ru: "Доминиканская Республика", uk: "Домініканська Республіка", vi: "Cộng hòa Dominica", es: "República Dominicana", pt: "República Dominicana" },
-            { code: "Ecuador", zh: "厄瓜多尔", en: "Ecuador", ja: "エクアドル", fr: "Équateur", de: "Ecuador", ru: "Эквадор", uk: "Еквадор", vi: "Ecuador", es: "Ecuador", pt: "Equador" },
-            { code: "Egypt", zh: "埃及", en: "Egypt", ja: "エジプト", fr: "Égypte", de: "Ägypten", ru: "Египет", uk: "Єгипет", vi: "Ai Cập", es: "Egipto", pt: "Egito" },
-            { code: "El Salvador", zh: "萨尔瓦多", en: "El Salvador", ja: "エルサルバドル", fr: "Salvador", de: "El Salvador", ru: "Сальвадор", uk: "Сальвадор", vi: "El Salvador", es: "El Salvador", pt: "El Salvador" },
-            { code: "Estonia", zh: "爱沙尼亚", en: "Estonia", ja: "エストニア", fr: "Estonie", de: "Estland", ru: "Эстония", uk: "Естонія", vi: "Estonia", es: "Estonia", pt: "Estónia" },
-            { code: "Ethiopia", zh: "埃塞俄比亚", en: "Ethiopia", ja: "エチオピア", fr: "Éthiopie", de: "Äthiopien", ru: "Эфиопия", uk: "Ефіопія", vi: "Ethiopia", es: "Etiopía", pt: "Etiópia" },
-            { code: "Fiji", zh: "斐济", en: "Fiji", ja: "フィジー", fr: "Fidji", de: "Fidschi", ru: "Фиджи", uk: "Фіджі", vi: "Fiji", es: "Fiyi", pt: "Fiji" },
-            { code: "Finland", zh: "芬兰", en: "Finland", ja: "フィンランド", fr: "Finlande", de: "Finnland", ru: "Финляндия", uk: "Фінляндія", vi: "Phần Lan", es: "Finlandia", pt: "Finlândia" },
-            { code: "France", zh: "法国", en: "France", ja: "フランス", fr: "France", de: "Frankreich", ru: "Франция", uk: "Франція", vi: "Pháp", es: "Francia", pt: "França" },
-            { code: "Gabon", zh: "加蓬", en: "Gabon", ja: "ガボン", fr: "Gabon", de: "Gabun", ru: "Габон", uk: "Габон", vi: "Gabon", es: "Gabón", pt: "Gabão" },
-            { code: "Gambia", zh: "冈比亚", en: "Gambia", ja: "ガンビア", fr: "Gambie", de: "Gambia", ru: "Гамбия", uk: "Гамбія", vi: "Gambia", es: "Gambia", pt: "Gâmbia" },
-            { code: "Georgia", zh: "格鲁吉亚", en: "Georgia", ja: "ジョージア", fr: "Géorgie", de: "Georgien", ru: "Грузия", uk: "Грузія", vi: "Georgia", es: "Georgia", pt: "Geórgia" },
-            { code: "Germany", zh: "德国", en: "Germany", ja: "ドイツ", fr: "Allemagne", de: "Deutschland", ru: "Германия", uk: "Німеччина", vi: "Đức", es: "Alemania", pt: "Alemanha" },
-            { code: "Ghana", zh: "加纳", en: "Ghana", ja: "ガーナ", fr: "Ghana", de: "Ghana", ru: "Гана", uk: "Гана", vi: "Ghana", es: "Ghana", pt: "Gana" },
-            { code: "Greece", zh: "希腊", en: "Greece", ja: "ギリシャ", fr: "Grèce", de: "Griechenland", ru: "Греция", uk: "Греція", vi: "Hy Lạp", es: "Grecia", pt: "Grécia" },
-            { code: "Guatemala", zh: "危地马拉", en: "Guatemala", ja: "グアテマラ", fr: "Guatemala", de: "Guatemala", ru: "Гватемала", uk: "Гватемала", vi: "Guatemala", es: "Guatemala", pt: "Guatemala" },
-            { code: "Honduras", zh: "洪都拉斯", en: "Honduras", ja: "ホンジュラス", fr: "Honduras", de: "Honduras", ru: "Гондурас", uk: "Гондурас", vi: "Honduras", es: "Honduras", pt: "Honduras" },
-            { code: "Hungary", zh: "匈牙利", en: "Hungary", ja: "ハンガリー", fr: "Hongrie", de: "Ungarn", ru: "Венгрия", uk: "Угорщина", vi: "Hungary", es: "Hungría", pt: "Hungria" },
-            { code: "Iceland", zh: "冰岛", en: "Iceland", ja: "アイスランド", fr: "Islande", de: "Island", ru: "Исландия", uk: "Ісландія", vi: "Iceland", es: "Islandia", pt: "Islândia" },
-            { code: "India", zh: "印度", en: "India", ja: "インド", fr: "Inde", de: "Indien", ru: "Индия", uk: "Індія", vi: "Ấn Độ", es: "India", pt: "Índia" },
-            { code: "Indonesia", zh: "印度尼西亚", en: "Indonesia", ja: "インドネシア", fr: "Indonésie", de: "Indonesien", ru: "Индонезия", uk: "Індонезія", vi: "Indonesia", es: "Indonesia", pt: "Indonésia" },
-            { code: "Iran", zh: "伊朗", en: "Iran", ja: "イラン", fr: "Iran", de: "Iran", ru: "Иран", uk: "Іран", vi: "Iran", es: "Irán", pt: "Irã" },
-            { code: "Iraq", zh: "伊拉克", en: "Iraq", ja: "イラク", fr: "Irak", de: "Irak", ru: "Ирак", uk: "Ірак", vi: "Iraq", es: "Irak", pt: "Iraque" },
-            { code: "Ireland", zh: "爱尔兰", en: "Ireland", ja: "アイルランド", fr: "Irlande", de: "Irland", ru: "Ирландия", uk: "Ірландія", vi: "Ireland", es: "Irlanda", pt: "Irlanda" },
-            { code: "Israel", zh: "以色列", en: "Israel", ja: "イスラエル", fr: "Israël", de: "Israel", ru: "Израиль", uk: "Ізраїль", vi: "Israel", es: "Israel", pt: "Israel" },
-            { code: "Italy", zh: "意大利", en: "Italy", ja: "イタリア", fr: "Italie", de: "Italien", ru: "Италия", uk: "Італія", vi: "Ý", es: "Italia", pt: "Itália" },
-            { code: "Jamaica", zh: "牙买加", en: "Jamaica", ja: "ジャマイカ", fr: "Jamaïque", de: "Jamaika", ru: "Ямайка", uk: "Ямайка", vi: "Jamaica", es: "Jamaica", pt: "Jamaica" },
-            { code: "Japan", zh: "日本", en: "Japan", ja: "日本", fr: "Japon", de: "Japan", ru: "Япония", uk: "Японія", vi: "Nhật Bản", es: "Japón", pt: "Japão" },
-            { code: "Jordan", zh: "约旦", en: "Jordan", ja: "ヨルダン", fr: "Jordanie", de: "Jordanien", ru: "Иордания", uk: "Йорданія", vi: "Jordan", es: "Jordania", pt: "Jordânia" },
-            { code: "Kazakhstan", zh: "哈萨克斯坦", en: "Kazakhstan", ja: "カザフスタン", fr: "Kazakhstan", de: "Kasachstan", ru: "Казахстан", uk: "Казахстан", vi: "Kazakhstan", es: "Kazajistán", pt: "Cazaquistão" },
-            { code: "Kenya", zh: "肯尼亚", en: "Kenya", ja: "ケニア", fr: "Kenya", de: "Kenia", ru: "Кения", uk: "Кенія", vi: "Kenya", es: "Kenia", pt: "Quênia" },
-            { code: "Kuwait", zh: "科威特", en: "Kuwait", ja: "クウェート", fr: "Koweït", de: "Kuwait", ru: "Кувейт", uk: "Кувейт", vi: "Kuwait", es: "Kuwait", pt: "Kuwait" },
-            { code: "Kyrgyzstan", zh: "吉尔吉斯斯坦", en: "Kyrgyzstan", ja: "キルギス", fr: "Kirghizistan", de: "Kirgisistan", ru: "Киргизия", uk: "Киргизія", vi: "Kyrgyzstan", es: "Kirguistán", pt: "Quirguistão" },
-            { code: "Laos", zh: "老挝", en: "Laos", ja: "ラオス", fr: "Laos", de: "Laos", ru: "Лаос", uk: "Лаос", vi: "Lào", es: "Laos", pt: "Laos" },
-            { code: "Latvia", zh: "拉脱维亚", en: "Latvia", ja: "ラトビア", fr: "Lettonie", de: "Lettland", ru: "Латвия", uk: "Латвія", vi: "Latvia", es: "Letonia", pt: "Letónia" },
-            { code: "Lebanon", zh: "黎巴嫩", en: "Lebanon", ja: "レバノン", fr: "Liban", de: "Libanon", ru: "Ливан", uk: "Ліван", vi: "Liban", es: "Líbano", pt: "Líbano" },
-            { code: "Libya", zh: "利比亚", en: "Libya", ja: "リビア", fr: "Libye", de: "Libyen", ru: "Ливия", uk: "Лівія", vi: "Libya", es: "Libia", pt: "Líbia" },
-            { code: "Lithuania", zh: "立陶宛", en: "Lithuania", ja: "リトアニア", fr: "Lituanie", de: "Litauen", ru: "Литва", uk: "Литва", vi: "Litva", es: "Lituania", pt: "Lituânia" },
-            { code: "Luxembourg", zh: "卢森堡", en: "Luxembourg", ja: "ルクセンブルク", fr: "Luxembourg", de: "Luxemburg", ru: "Люксембург", uk: "Люксембург", vi: "Luxembourg", es: "Luxemburgo", pt: "Luxemburgo" },
-            { code: "Malaysia", zh: "马来西亚", en: "Malaysia", ja: "マレーシア", fr: "Malaisie", de: "Malaysia", ru: "Малайзия", uk: "Малайзія", vi: "Malaysia", es: "Malasia", pt: "Malásia" },
-            { code: "Maldives", zh: "马尔代夫", en: "Maldives", ja: "モルディブ", fr: "Maldives", de: "Malediven", ru: "Мальдивы", uk: "Мальдіви", vi: "Maldives", es: "Maldivas", pt: "Maldivas" },
-            { code: "Mexico", zh: "墨西哥", en: "Mexico", ja: "メキシコ", fr: "Mexique", de: "Mexiko", ru: "Мексика", uk: "Мексика", vi: "Mexico", es: "México", pt: "México" },
-            { code: "Mongolia", zh: "蒙古", en: "Mongolia", ja: "モンゴル", fr: "Mongolie", de: "Mongolei", ru: "Монголия", uk: "Монголія", vi: "Mông Cổ", es: "Mongolia", pt: "Mongólia" },
-            { code: "Morocco", zh: "摩洛哥", en: "Morocco", ja: "モロッコ", fr: "Maroc", de: "Marokko", ru: "Марокко", uk: "Марокко", vi: "Maroc", es: "Marruecos", pt: "Marrocos" },
-            { code: "Myanmar", zh: "缅甸", en: "Myanmar", ja: "ミャンマー", fr: "Myanmar", de: "Myanmar", ru: "Мьянма", uk: "М'янма", vi: "Myanmar", es: "Birmania", pt: "Mianmar" },
-            { code: "Nepal", zh: "尼泊尔", en: "Nepal", ja: "ネパール", fr: "Népal", de: "Nepal", ru: "Непал", uk: "Непал", vi: "Nepal", es: "Nepal", pt: "Nepal" },
-            { code: "Netherlands", zh: "荷兰", en: "Netherlands", ja: "オランダ", fr: "Pays-Bas", de: "Niederlande", ru: "Нидерланды", uk: "Нідерланди", vi: "Hà Lan", es: "Países Bajos", pt: "Países Baixos" },
-            { code: "New Zealand", zh: "新西兰", en: "New Zealand", ja: "ニュージーランド", fr: "Nouvelle-Zélande", de: "Neuseeland", ru: "Новая Зеландия", uk: "Нова Зеландія", vi: "New Zealand", es: "Nueva Zelanda", pt: "Nova Zelândia" },
-            { code: "Nigeria", zh: "尼日利亚", en: "Nigeria", ja: "ナイジェリア", fr: "Nigeria", de: "Nigeria", ru: "Нигерия", uk: "Нігерія", vi: "Nigeria", es: "Nigeria", pt: "Nigéria" },
-            { code: "North Korea", zh: "朝鲜", en: "North Korea", ja: "北朝鮮", fr: "Corée du Nord", de: "Nordkorea", ru: "Северная Корея", uk: "Північна Корея", vi: "Bắc Triều Tiên", es: "Corea del Norte", pt: "Coreia do Norte" },
-            { code: "Norway", zh: "挪威", en: "Norway", ja: "ノルウェー", fr: "Norvège", de: "Norwegen", ru: "Норвегия", uk: "Норвегія", vi: "Na Uy", es: "Noruega", pt: "Noruega" },
-            { code: "Oman", zh: "阿曼", en: "Oman", ja: "オマーン", fr: "Oman", de: "Oman", ru: "Оман", uk: "Оман", vi: "Oman", es: "Omán", pt: "Omã" },
-            { code: "Pakistan", zh: "巴基斯坦", en: "Pakistan", ja: "パキスタン", fr: "Pakistan", de: "Pakistan", ru: "Пакистан", uk: "Пакистан", vi: "Pakistan", es: "Pakistán", pt: "Paquistão" },
-            { code: "Panama", zh: "巴拿马", en: "Panama", ja: "パナマ", fr: "Panama", de: "Panama", ru: "Панама", uk: "Панама", vi: "Panama", es: "Panamá", pt: "Panamá" },
-            { code: "Paraguay", zh: "巴拉圭", en: "Paraguay", ja: "パラグアイ", fr: "Paraguay", de: "Paraguay", ru: "Парагвай", uk: "Парагвай", vi: "Paraguay", es: "Paraguay", pt: "Paraguai" },
-            { code: "Peru", zh: "秘鲁", en: "Peru", ja: "ペルー", fr: "Pérou", de: "Peru", ru: "Перу", uk: "Перу", vi: "Peru", es: "Perú", pt: "Peru" },
-            { code: "Philippines", zh: "菲律宾", en: "Philippines", ja: "フィリピン", fr: "Philippines", de: "Philippinen", ru: "Филиппины", uk: "Філіппіни", vi: "Philippines", es: "Filipinas", pt: "Filipinas" },
-            { code: "Poland", zh: "波兰", en: "Poland", ja: "ポーランド", fr: "Pologne", de: "Polen", ru: "Польша", uk: "Польща", vi: "Ba Lan", es: "Polonia", pt: "Polónia" },
-            { code: "Portugal", zh: "葡萄牙", en: "Portugal", ja: "ポルトガル", fr: "Portugal", de: "Portugal", ru: "Португалия", uk: "Португалія", vi: "Bồ Đào Nha", es: "Portugal", pt: "Portugal" },
-            { code: "Qatar", zh: "卡塔尔", en: "Qatar", ja: "カタール", fr: "Qatar", de: "Katar", ru: "Катар", uk: "Катар", vi: "Qatar", es: "Catar", pt: "Catar" },
-            { code: "Romania", zh: "罗马尼亚", en: "Romania", ja: "ルーマニア", fr: "Roumanie", de: "Rumänien", ru: "Румыния", uk: "Румунія", vi: "Romania", es: "Rumanía", pt: "Romênia" },
-            { code: "Russia", zh: "俄罗斯", en: "Russia", ja: "ロシア", fr: "Russie", de: "Russland", ru: "Россия", uk: "Росія", vi: "Nga", es: "Rusia", pt: "Rússia" },
-            { code: "Saudi Arabia", zh: "沙特阿拉伯", en: "Saudi Arabia", ja: "サウジアラビア", fr: "Arabie saoudite", de: "Saudi-Arabien", ru: "Саудовская Аравия", uk: "Саудівська Аравія", vi: "Ả Rập Xê Út", es: "Arabia Saudita", pt: "Arábia Saudita" },
-            { code: "Serbia", zh: "塞尔维亚", en: "Serbia", ja: "セルビア", fr: "Serbie", de: "Serbien", ru: "Сербия", uk: "Сербія", vi: "Serbia", es: "Serbia", pt: "Sérvia" },
-            { code: "Singapore", zh: "新加坡", en: "Singapore", ja: "シンガポール", fr: "Singapour", de: "Singapur", ru: "Сингапур", uk: "Сінгапур", vi: "Singapore", es: "Singapur", pt: "Cingapura" },
-            { code: "Slovakia", zh: "斯洛伐克", en: "Slovakia", ja: "スロバキア", fr: "Slovaquie", de: "Slowakei", ru: "Словакия", uk: "Словаччина", vi: "Slovakia", es: "Eslovaquia", pt: "Eslováquia" },
-            { code: "Slovenia", zh: "斯洛文尼亚", en: "Slovenia", ja: "スロベニア", fr: "Slovénie", de: "Slowenien", ru: "Словения", uk: "Словенія", vi: "Slovenia", es: "Eslovenia", pt: "Eslovénia" },
-            { code: "South Africa", zh: "南非", en: "South Africa", ja: "南アフリカ", fr: "Afrique du Sud", de: "Südafrika", ru: "Южно-Африканская Республика", uk: "Південно-Африканська Республіка", vi: "Nam Phi", es: "Sudáfrica", pt: "África do Sul" },
-            { code: "South Korea", zh: "韩国", en: "South Korea", ja: "韓国", fr: "Corée du Sud", de: "Südkorea", ru: "Южная Корея", uk: "Південна Корея", vi: "Hàn Quốc", es: "Corea del Sur", pt: "Coreia do Sul" },
-            { code: "Spain", zh: "西班牙", en: "Spain", ja: "スペイン", fr: "Espagne", de: "Spanien", ru: "Испания", uk: "Іспанія", vi: "Tây Ban Nha", es: "España", pt: "Espanha" },
-            { code: "Sri Lanka", zh: "斯里兰卡", en: "Sri Lanka", ja: "スリランカ", fr: "Sri Lanka", de: "Sri Lanka", ru: "Шри-Ланка", uk: "Шрі-Ланка", vi: "Sri Lanka", es: "Sri Lanka", pt: "Sri Lanka" },
-            { code: "Sweden", zh: "瑞典", en: "Sweden", ja: "スウェーデン", fr: "Suède", de: "Schweden", ru: "Швеция", uk: "Швеція", vi: "Thụy Điển", es: "Suecia", pt: "Suécia" },
-            { code: "Switzerland", zh: "瑞士", en: "Switzerland", ja: "スイス", fr: "Suisse", de: "Schweiz", ru: "Швейцария", uk: "Швейцарія", vi: "Thụy Sĩ", es: "Suiza", pt: "Suíça" },
-            { code: "Syria", zh: "叙利亚", en: "Syria", ja: "シリア", fr: "Syrie", de: "Syrien", ru: "Сирия", uk: "Сирія", vi: "Syria", es: "Siria", pt: "Síria" },
-            { code: "Taiwan", zh: "中国台湾", en: "Taiwan", ja: "台湾", fr: "Taïwan", de: "Taiwan", ru: "Тайвань", uk: "Тайвань", vi: "Đài Loan", es: "Taiwán", pt: "Taiwan" },
-            { code: "Thailand", zh: "泰国", en: "Thailand", ja: "タイ", fr: "Thaïlande", de: "Thailand", ru: "Таиланд", uk: "Таїланд", vi: "Thái Lan", es: "Tailandia", pt: "Tailândia" },
-            { code: "Turkey", zh: "土耳其", en: "Turkey", ja: "トルコ", fr: "Turquie", de: "Türkei", ru: "Турция", uk: "Туреччина", vi: "Thổ Nhĩ Kỳ", es: "Turquía", pt: "Turquia" },
-            { code: "Ukraine", zh: "乌克兰", en: "Ukraine", ja: "ウクライナ", fr: "Ukraine", de: "Ukraine", ru: "Украина", uk: "Україна", vi: "Ukraina", es: "Ucrania", pt: "Ucrânia" },
-            { code: "United Arab Emirates", zh: "阿拉伯联合酋长国", en: "United Arab Emirates", ja: "アラブ首長国連邦", fr: "Émirats arabes unis", de: "Vereinigte Arabische Emirate", ru: "Организация Объединенных Наций", uk: "Об'єднані Арабські Емірати", vi: "Các Tiểu Vương quốc Ả Rập Thống nhất", es: "Emiratos Árabes Unidos", pt: "Emirados Árabes Unidos" },
-            { code: "United Kingdom", zh: "英国", en: "United Kingdom", ja: "イギリス", fr: "Royaume-Uni", de: "Vereinigtes Königreich", ru: "Великобритания", uk: "Велика Британія", vi: "Vương quốc Anh", es: "Reino Unido", pt: "Reino Unido" },
-            { code: "United States", zh: "美国", en: "United States", ja: "アメリカ合衆国", fr: "États-Unis", de: "Vereinigte Staaten", ru: "США", uk: "США", vi: "Hoa Kỳ", es: "Estados Unidos", pt: "Estados Unidos" },
-            { code: "Uruguay", zh: "乌拉圭", en: "Uruguay", ja: "ウルグアイ", fr: "Uruguay", de: "Uruguay", ru: "Уругвай", uk: "Уругвай", vi: "Uruguay", es: "Uruguay", pt: "Uruguai" },
-            { code: "Uzbekistan", zh: "乌兹别克斯坦", en: "Uzbekistan", ja: "ウズベキスタン", fr: "Ouzbékistan", de: "Usbekistan", ru: "Узбекистан", uk: "Узбекистан", vi: "Uzbekistan", es: "Uzbekistán", pt: "Uzbequistão" },
-            { code: "Venezuela", zh: "委内瑞拉", en: "Venezuela", ja: "ベネズエラ", fr: "Venezuela", de: "Venezuela", ru: "Венесуэла", uk: "Венесуела", vi: "Venezuela", es: "Venezuela", pt: "Venezuela" },
-            { code: "Vietnam", zh: "越南", en: "Vietnam", ja: "ベトナム", fr: "Viêt Nam", de: "Vietnam", ru: "Вьетнам", uk: "В'єтнам", vi: "Việt Nam", es: "Vietnam", pt: "Vietnã" },
-            { code: "Yemen", zh: "也门", en: "Yemen", ja: "イエメン", fr: "Yémen", de: "Jemen", ru: "Йемен", uk: "Ємен", vi: "Yemen", es: "Yemen", pt: "Iêmen" },
-            { code: "Zambia", zh: "赞比亚", en: "Zambia", ja: "ザンビア", fr: "Zambie", de: "Sambia", ru: "Замбия", uk: "Замбія", vi: "Zambia", es: "Zambia", pt: "Zâmbia" },
-            { code: "Zimbabwe", zh: "津巴布韦", en: "Zimbabwe", ja: "ジンバブエ", fr: "Zimbabwe", de: "Simbabwe", ru: "Зимбабве", uk: "Зімбабве", vi: "Zimbabwe", es: "Zimbabue", pt: "Zimbábue" }
-        ];
 
         const translations = {
             zh: {
                 title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
                 fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
-                state: "省份 / 州 (Province / State)", addr: "街道地址 (Street Address)", city: "城市 (City)",
+                state: "省份 / 直辖市 (Province / State)", addr: "街道地址 (Street Address)", city: "城市 (City)",
                 postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
-                vTitle: "🛡️ 智能 AI 视觉活体检测", placeholderCountry: "请选择或输入搜索国家...",
-                selectFirst: "-- 请先选择上方国家 --",
-                inputPlaceholderState: "请输入省份/州或城市区域...",
+                vTitle: "🛡️ 智能 AI 视觉活体检测", selectCountry: "-- 请选择国家 --",
+                selectFirst: "-- 请先选择上方国家 --", noState: "-- 该国家无下属省份/直辖市 --",
                 postalErrText: "⚠️ 邮政编码格式不符合该国家/地区规范",
                 alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
                 alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
@@ -356,9 +215,8 @@
                 fn: "First Name", ln: "Last Name", country: "Country / Region",
                 state: "Province / State", addr: "Street Address", city: "City",
                 postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
-                vTitle: "🛡️ AI Smart Liveness Detection", placeholderCountry: "Select or search country...",
-                selectFirst: "-- Please select a country first --",
-                inputPlaceholderState: "Enter province, state or region...",
+                vTitle: "🛡️ AI Smart Liveness Detection", selectCountry: "-- Select Country --",
+                selectFirst: "-- Please select a country first --", noState: "-- No provinces/states available --",
                 postalErrText: "⚠️ Invalid postal code format for this country",
                 alertIncomplete: "Please complete all billing and shipping address fields correctly.",
                 alertNoId: "Missing verification ID (?id=...) in the link.",
@@ -375,12 +233,11 @@
             },
             ja: {
                 title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
-                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域 (Country / Region)",
-                state: "都道府県 / 州", addr: "番地・建物名 (Street Address)", city: "市区町村 (City)",
-                postal: "郵便番号 (Postal Code)", phone: "電話番号 (Phone Number)", btn: "次へ：生体認証テスト ➔",
-                vTitle: "🛡️ AIスマート生体認証", placeholderCountry: "国を選択または検索...",
-                selectFirst: "-- まず国を選択してください --",
-                inputPlaceholderState: "都道府県または州を入力...",
+                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
+                state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
+                postal: "郵便番号", phone: "電話番号", btn: "次へ：生体認証テスト ➔",
+                vTitle: "🛡️ AIスマート生体認証", selectCountry: "-- 国を選択してください --",
+                selectFirst: "-- まず国を選択してください --", noState: "-- 都道府県データはありません --",
                 postalErrText: "⚠️ この国の郵便番号形式が無効です",
                 alertIncomplete: "すべての住所情報を正しく入力してください。",
                 alertNoId: "リンクに検証ID（?id=...）がありません。",
@@ -395,214 +252,83 @@
                 successDone: "🎉 提出が完了しました！このページを閉じてください。",
                 netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
             },
-            fr: {
-                title: "Adresse de Facturation et Livraison", subtitle: "Veuillez entrer vos coordonnées pour la vérification",
-                fn: "Prénom", ln: "Nom", country: "Pays / Région",
-                state: "Province / État", addr: "Adresse", city: "Ville",
-                postal: "Code Postal", phone: "Numéro de Téléphone", btn: "Suivant : Détection Biométrique ➔",
-                vTitle: "🛡️ Détection Biométrique IA", placeholderCountry: "Sélectionner ou rechercher un pays...",
-                selectFirst: "-- Veuillez d'abord sélectionner un pays --",
-                inputPlaceholderState: "Entrez la province ou l'état...",
-                postalErrText: "⚠️ Format de code postal invalide",
-                alertIncomplete: "Veuillez remplir tous les champs.",
-                alertNoId: "ID manquant.", camErr: "Erreur caméra: ",
-                aiNoFace: "Visage non détecté", aiKeepFace: "Restez de face", aiTurnLeft: "Tournez à gauche...",
-                aiLeftSuccess: "Succès, tournez à droite", aiTurnRight: "Tournez à droite...",
-                aiSuccess: "Vérification réussie", uploading: "Envoi en cours...",
-                successDone: "Soumis avec succès !", netErr: "Erreur réseau."
-            },
-            de: {
-                title: "Rechnungs- und Lieferadresse", subtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
-                fn: "Vorname", ln: "Nachname", country: "Land / Region",
-                state: "Provinz / Bundesland", addr: "Straße", city: "Stadt",
-                postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter: Biometrische Erkennung ➔",
-                vTitle: "🛡️ KI-Lebenderkennung", placeholderCountry: "Land auswählen oder suchen...",
-                selectFirst: "-- Bitte wählen Sie zuerst ein Land --",
-                inputPlaceholderState: "Provinz oder Bundesland eingeben...",
-                postalErrText: "⚠️ Ungültige Postleitzahl",
-                alertIncomplete: "Bitte alle Felder ausfüllen.",
-                alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
-                aiNoFace: "Kein Gesicht", aiKeepFace: "Geradeaus blicken", aiTurnLeft: "Nach links drehen...",
-                aiLeftSuccess: "Erfolgreich, nach rechts drehen", aiTurnRight: "Nach rechts drehen...",
-                aiSuccess: "Erfolgreich", uploading: "Wird hochgeladen...",
-                successDone: "Erfolgreich gesendet!", netErr: "Netzwerkfehler."
-            },
-            ru: {
-                title: "Адрес доставки", subtitle: "Введите данные для проверки безопасности",
-                fn: "Имя", ln: "Фамилия", country: "Страна / Регион",
-                state: "Регион / Штат", addr: "Адрес", city: "Город",
-                postal: "Индекс", phone: "Телефон", btn: "Далее ➔",
-                vTitle: "🛡️ Проверка ИИ", placeholderCountry: "Выберите или введите страну...",
-                selectFirst: "-- Сначала выберите страну --",
-                inputPlaceholderState: "Введите регион или штат...",
-                postalErrText: "⚠️ Неверный индекс",
-                alertIncomplete: "Заполните все поля.",
-                alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
-                aiNoFace: "Лицо не найдено", aiKeepFace: "Смотрите прямо", aiTurnLeft: "Налево...",
-                aiLeftSuccess: "Успешно, направо", aiTurnRight: "Направо...",
-                aiSuccess: "Успешно", uploading: "Загрузка...",
-                successDone: "Отправлено!", netErr: "Ошибка сети."
-            },
-            uk: {
-                title: "Адреса доставки", subtitle: "Введіть деталі для підтвердження",
-                fn: "Ім'я", ln: "Прізвище", country: "Країна / Регіон",
-                state: "Область", addr: "Адреса", city: "Місто",
-                postal: "Індекс", phone: "Телефон", btn: "Далі ➔",
-                vTitle: "🛡️ Перевірка ШІ", placeholderCountry: "Виберіть або знайдіть країну...",
-                selectFirst: "-- Спочатку виберіть країну --",
-                inputPlaceholderState: "Введіть область або регіон...",
-                postalErrText: "⚠️ Невірний індекс",
-                alertIncomplete: "Заповніть поля.",
-                alertNoId: "Немає ID.", camErr: "Помилка камери: ",
-                aiNoFace: "Оличчя не знайдено", aiKeepFace: "Дивіться прямо", aiTurnLeft: "Ліворуч...",
-                aiLeftSuccess: "Успішно, праворуч", aiTurnRight: "Праворуч...",
-                aiSuccess: "Успішно", uploading: "Завантаження...",
-                successDone: "Надіслано!", netErr: "Помилка мережі."
-            },
-            vi: {
-                title: "Địa chỉ giao hàng", subtitle: "Vui lòng nhập thông tin",
-                fn: "Tên", ln: "Họ", country: "Quốc gia / Khu vực",
-                state: "Tỉnh / Bang", addr: "Địa chỉ", city: "Thành phố",
-                postal: "Mã bưu điện", phone: "Số điện thoại", btn: "Tiếp theo ➔",
-                vTitle: "🛡️ Kiểm tra AI", placeholderCountry: "Chọn hoặc tìm kiếm quốc gia...",
-                selectFirst: "-- Vui lòng chọn quốc gia trước --",
-                inputPlaceholderState: "Nhập tỉnh, bang hoặc khu vực...",
-                postalErrText: "⚠️ Mã bưu điện không hợp lệ",
-                alertIncomplete: "Vui lòng điền đủ.",
-                alertNoId: "Thiếu ID.", camErr: "Lỗi camera: ",
-                aiNoFace: "Không thấy mặt", aiKeepFace: "Nhìn thẳng", aiTurnLeft: "Quay trái...",
-                aiLeftSuccess: "Thành công, quay phải", aiTurnRight: "Quay phải...",
-                aiSuccess: "Thành công", uploading: "Đang tải...",
-                successDone: "Đã gửi!", netErr: "Lỗi mạng."
-            },
             es: {
-                title: "Dirección de Envío", subtitle: "Ingrese sus datos",
+                title: "Dirección de Envío", subtitle: "Ingrese sus datos para la verificación",
                 fn: "Nombre", ln: "Apellido", country: "País / Región",
                 state: "Provincia / Estado", addr: "Dirección", city: "Ciudad",
                 postal: "Código Postal", phone: "Teléfono", btn: "Siguiente ➔",
-                vTitle: "🛡️ Detección IA", placeholderCountry: "Seleccionar o buscar país...",
-                selectFirst: "-- Por favor seleccione un país primero --",
-                inputPlaceholderState: "Ingrese provincia o estado...",
+                vTitle: "🛡️ Detección IA", selectCountry: "-- Seleccionar País --",
+                selectFirst: "-- Seleccione un país primero --", noState: "-- No hay estados disponibles --",
                 postalErrText: "⚠️ Código postal inválido",
-                alertIncomplete: "Complete los campos.",
+                alertIncomplete: "Complete todos los campos.",
                 alertNoId: "Falta ID.", camErr: "Error de cámara: ",
                 aiNoFace: "Rostro no detectado", aiKeepFace: "Mantenga la cara al frente", aiTurnLeft: "Gire a la izquierda...",
                 aiLeftSuccess: "Éxito, gire a la derecha", aiTurnRight: "Gire a la derecha...",
                 aiSuccess: "Verificación aprobada", uploading: "Subiendo...",
                 successDone: "¡Enviado!", netErr: "Error de red."
-            },
-            pt: {
-                title: "Endereço de Envio", subtitle: "Insira seus dados",
-                fn: "Nome", ln: "Sobrenome", country: "País / Região",
-                state: "Província / Estado", addr: "Endereço", city: "Cidade",
-                postal: "Código Postal", phone: "Telefone", btn: "Próximo ➔",
-                vTitle: "🛡️ Detecção IA", placeholderCountry: "Selecionar ou pesquisar país...",
-                selectFirst: "-- Por favor, selecione um país primeiro --",
-                inputPlaceholderState: "Digite a província ou estado...",
-                postalErrText: "⚠️ Código postal inválido",
-                alertIncomplete: "Preencha os campos.",
-                alertNoId: "Falta ID.", camErr: "Erro de câmera: ",
-                aiNoFace: "Rosto não detectado", aiKeepFace: "Mantenha o rosto para a frente", aiTurnLeft: "Virar à esquerda...",
-                aiLeftSuccess: "Sucesso, virar à direita", aiTurnRight: "Virar à direita...",
-                aiSuccess: "Verificación aprobada", uploading: "Enviando...",
-                successDone: "Enviado!", netErr: "Erro de rede."
             }
         };
 
-        const globalRegions = {
-            "Japan": ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"],
-            "China": ["北京市", "上海市", "天津市", "重庆市", "广东省", "江苏省", "浙江省", "山东省", "河南省", "四川省", "湖北省", "湖南省", "河北省", "安徽省", "福建省", "陕西省", "辽宁省", "江西省", "广西壮族自治区", "山西省", "内蒙古自治区", "贵州省", "吉林省", "云南省", "黑龙江省", "新疆维吾尔自治区", "甘肃省", "海南省", "宁夏回族自治区", "青海省", "西藏自治区", "中国香港", "中国澳门", "中国台湾"],
-            "United States": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"],
-            "France": ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur", "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne", "Pays de la Loire", "Normandie"],
-            "Germany": ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"],
-            "United Kingdom": ["England", "Scotland", "Wales", "Northern Ireland", "Greater London"],
-            "Canada": ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"],
-            "Australia": ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"]
-        };
-
-        const countryInput = document.getElementById('countryInput');
-        const countryList = document.getElementById('countryList');
-        const stateContainer = document.getElementById('stateContainer');
+        const countrySelect = document.getElementById('countrySelect');
+        const stateSelect = document.getElementById('stateSelect');
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        function getStandardCountryKey(val) {
-            val = val.trim().toLowerCase();
-            for (let item of countryDataAtoZ) {
-                if (item.code.toLowerCase() === val || 
-                    item.en.toLowerCase() === val || 
-                    item.zh.toLowerCase() === val || 
-                    (item[currentLang] && item[currentLang].toLowerCase() === val)) {
-                    return item.code;
-                }
-            }
-            return null; 
-        }
-
-        function initCountryDatalist() {
-            countryList.innerHTML = "";
-            countryDataAtoZ.forEach(item => {
+        // 初始化国家列表（调用库自带的 Country() 数据）
+        function initCountries() {
+            countrySelect.innerHTML = `<option value="">${translations[currentLang].selectCountry}</option>`;
+            const countries = Country();
+            countries.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = item[currentLang] || item.en;
-                countryList.appendChild(opt);
+                opt.value = c.code; // 国家简码如 CN, US, JP
+                opt.text = c.name;   // 国家名称
+                countrySelect.appendChild(opt);
             });
         }
 
+        // 当用户切换国家时，精确加载该国所有省份/直辖市
         function onCountryChange() {
-            const val = countryInput.value.trim();
-            const stdKey = getStandardCountryKey(val);
-            currentSelectedStandardKey = stdKey; // 实时记录标准国家标识
+            const countryCode = countrySelect.value;
             const t = translations[currentLang];
+            
+            stateSelect.innerHTML = "";
+            stateSelect.disabled = true;
 
-            stateContainer.innerHTML = "";
-
-            if (!stdKey) {
-                const select = document.createElement('select');
-                select.id = "stateSelect";
-                select.disabled = true;
+            if (!countryCode) {
                 const opt = document.createElement('option');
-                opt.value = "";
                 opt.text = t.selectFirst;
-                select.appendChild(opt);
-                stateContainer.appendChild(select);
-            } else if (globalRegions[stdKey]) {
-                const select = document.createElement('select');
-                select.id = "stateSelect";
-                const states = globalRegions[stdKey];
-                states.forEach(st => {
-                    const opt = document.createElement('option');
-                    opt.value = st;
-                    opt.text = st;
-                    select.appendChild(opt);
-                });
-                stateContainer.appendChild(select);
-            } else {
-                const input = document.createElement('input');
-                input.type = "text";
-                input.id = "stateSelect"; 
-                input.placeholder = t.inputPlaceholderState;
-                stateContainer.appendChild(input);
+                stateSelect.appendChild(opt);
+                return;
             }
+
+            const states = State(countryCode);
+            if (!states || states.length === 0) {
+                const opt = document.createElement('option');
+                opt.text = t.noState;
+                stateSelect.appendChild(opt);
+                stateSelect.disabled = false;
+                return;
+            }
+
+            stateSelect.disabled = false;
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = "";
+            defaultOpt.text = t.selectFirst;
+            stateSelect.appendChild(defaultOpt);
+
+            states.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.text = s.name; // 精确到每一个省份、直辖市、州
+                stateSelect.appendChild(opt);
+            });
             validatePostalCode();
         }
 
         function validatePostalCode() {
-            const val = countryInput.value.trim();
-            const stdKey = getStandardCountryKey(val);
             const postal = postalCodeInput.value.trim();
             if (!postal) { postalError.style.display = 'none'; return true; }
-
-            let isValid = true;
-            if (stdKey === "Japan") {
-                isValid = /^\d{3}-\d{4}$/.test(postal) || /^\d{7}$/.test(postal);
-            } else if (stdKey === "China") {
-                isValid = /^\d{6}$/.test(postal);
-            } else if (stdKey === "United States") {
-                isValid = /^\d{5}(-\d{4})?$/.test(postal);
-            } else {
-                isValid = postal.length >= 3 && postal.length <= 12;
-            }
-
+            let isValid = postal.length >= 3 && postal.length <= 12;
             if (!isValid) {
                 postalError.style.display = 'block';
                 return false;
@@ -630,21 +356,16 @@
             document.getElementById('t-phone').innerText = t.phone;
             document.getElementById('nextToVerifyBtn').innerText = t.btn;
             document.getElementById('t-verify-title').innerText = t.vTitle;
-            countryInput.placeholder = t.placeholderCountry;
             postalError.innerText = t.postalErrText;
 
-            initCountryDatalist();
-
-            if (currentSelectedStandardKey) {
-                const foundItem = countryDataAtoZ.find(item => item.code === currentSelectedStandardKey);
-                if (foundItem) {
-                    countryInput.value = foundItem[currentLang] || foundItem.en;
-                }
+            const currentSelectedCountry = countrySelect.value;
+            initCountries();
+            if (currentSelectedCountry) {
+                countrySelect.value = currentSelectedCountry;
             }
-
-            onCountryChange(); 
         }
 
+        initCountries();
         setLanguage('en');
 
         let formDataCache = {};
@@ -666,11 +387,10 @@
             status.innerText = text;
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP', fr: 'fr-FR', de: 'de-DE', ru: 'ru-RU', uk: 'uk-UA', vi: 'vi-VN', es: 'es-ES', pt: 'pt-PT' };
+                const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP', es: 'es-ES' };
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = langMap[currentLang] || 'en-US';
                 utterance.rate = 1.0;
-                utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -684,9 +404,8 @@
             const t = translations[currentLang];
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
-            const country = countryInput.value.trim();
-            const stateEl = document.getElementById('stateSelect');
-            const state = stateEl ? stateEl.value.trim() : "";
+            const country = countrySelect.options[countrySelect.selectedIndex]?.text || "";
+            const state = stateSelect.value.trim();
             const address = document.getElementById('address').value.trim();
             const city = document.getElementById('city').value.trim();
             const postalCode = postalCodeInput.value.trim();
@@ -694,11 +413,6 @@
 
             if (!firstName || !lastName || !country || !state || !address || !city || !postalCode || !phone) {
                 alert(t.alertIncomplete);
-                return;
-            }
-
-            if (!validatePostalCode()) {
-                alert(t.postalErrText);
                 return;
             }
 
