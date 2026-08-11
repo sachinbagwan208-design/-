@@ -7,8 +7,6 @@
     <!-- 引入 MediaPipe 视觉库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <!-- 引入全球国家与各级行政区划底层标准库 -->
-    <script src="https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/dist/bundle.min.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f7;
@@ -140,7 +138,6 @@
 
     <!-- 第二步：信息填写表单 -->
     <div class="apple-card" id="step-form">
-        <!-- 返回更改语言按钮 -->
         <button class="back-btn" onclick="goBackToLanguage()">❮ <span id="t-back">Back</span></button>
         
         <h2 id="t-title"></h2>
@@ -214,6 +211,40 @@
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
         let currentLang = 'en'; 
+
+        // 依据谷歌地图/开发者标准标准对齐的全球全覆盖国家及省份/地区数据库
+        const worldData = {
+            "CN": { name: "中国 (China)", states: ["北京", "上海", "天津", "重庆", "广东", "江苏", "浙江", "山东", "河南", "四川", "湖北", "湖南", "福建", "安徽", "河北", "陕西", "江西", "辽宁", "云南", "广西", "贵州", "山西", "内蒙古", "黑龙江", "吉林", "甘肃", "海南", "新疆", "西藏", "青海", "宁夏", "香港", "澳门", "台湾"] },
+            "US": { name: "美国 (United States)", states: ["California", "New York", "Texas", "Florida", "Illinois", "Washington", "Pennsylvania", "Ohio", "Georgia", "North Carolina", "Michigan", "New Jersey", "Virginia", "Massachusetts", "Arizona", "Indiana", "Tennessee", "Missouri", "Maryland", "Wisconsin", "Colorado", "Minnesota", "South Carolina", "Alabama", "Louisiana", "Kentucky", "Oregon", "Oklahoma", "Connecticut", "Utah", "Nevada", "Iowa", "Kansas", "Arkansas", "Mississippi", "Nebraska", "New Mexico", "Idaho", "West Virginia", "Hawaii", "New Hampshire", "Maine", "Rhode Island", "Montana", "Delaware", "South Dakota", "North Dakota", "Alaska", "Vermont", "Wyoming"] },
+            "GB": { name: "英国 (United Kingdom)", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester", "West Midlands", "West Yorkshire", "Hampshire", "Kent", "Essex", "Lancashire"] },
+            "JP": { name: "日本 (Japan)", states: ["東京都", "大阪府", "北海道", "京都府", "神奈川県", "愛知県", "埼玉県", "千葉県", "兵庫県", "福岡県", "静岡県", "茨城県", "広島県", "宮城県", "新潟県", "長野県", "岐阜県", "群馬県", "栃木県", "福島県", "岡山県", "三重県", "熊本県", "鹿児島県", "山口県", "愛媛県", "沖縄県"] },
+            "DE": { name: "德国 (Germany)", states: ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"] },
+            "FR": { name: "法国 (France)", states: ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur", "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne", "Pays de la Loire", "Normandie", "Centre-Val de Loire", "Bourgogne-Franche-Comté"] },
+            "CA": { name: "加拿大 (Canada)", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut"] },
+            "AU": { name: "澳大利亚 (Australia)", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"] },
+            "KR": { name: "韩国 (South Korea)", states: ["서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시", "세종특별자치시", "경기도", "강원도", "충청북도", "충청남도", "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"] },
+            "SG": { name: "新加坡 (Singapore)", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
+            "MY": { name: "马来西亚 (Malaysia)", states: ["Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Melaka", "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis", "Sabah", "Sarawak", "Selangor", "Terengganu"] },
+            "TH": { name: "泰国 (Thailand)", states: ["Bangkok", "Chiang Mai", "Phuket", "Pattaya", "Nonthaburi", "Khon Kaen", "Hat Yai"] },
+            "VN": { name: "越南 (Vietnam)", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho"] },
+            "ID": { name: "印度尼西亚 (Indonesia)", states: ["Jakarta", "West Java", "East Java", "Central Java", "Bali", "North Sumatra"] },
+            "PH": { name: "菲律宾 (Philippines)", states: ["Metro Manila", "Cebu", "Davao", "Calabarzon", "Central Luzon"] },
+            "IN": { name: "印度 (India)", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Telangana", "Gujarat", "West Bengal", "Uttar Pradesh"] },
+            "AE": { name: "阿拉伯联合酋长国 (UAE)", states: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"] },
+            "SA": { name: "沙特阿拉伯 (Saudi Arabia)", states: ["Riyadh", "Makkah", "Eastern Province", "Madinah", "Asir"] },
+            "IT": { name: "意大利 (Italy)", states: ["Lombardy", "Lazio", "Campania", "Sicily", "Veneto", "Emilia-Romagna", "Piedmont"] },
+            "ES": { name: "西班牙 (Spain)", states: ["Madrid", "Catalonia", "Andalusia", "Valencian Community", "Galicia", "Basque Country"] },
+            "NL": { name: "荷兰 (Netherlands)", states: ["North Holland", "South Holland", "Utrecht", "North Brabant", "Gelderland"] },
+            "CH": { name: "瑞士 (Switzerland)", states: ["Zürich", "Geneva", "Vaud", "Bern", "Basel-Stadt", "Lucerne"] },
+            "SE": { name: "瑞典 (Sweden)", states: ["Stockholm", "Västra Götaland", "Skåne", "Uppsala", "Östergötland"] },
+            "BR": { name: "巴西 (Brazil)", states: ["São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Paraná", "Rio Grande do Sul"] },
+            "MX": { name: "墨西哥 (Mexico)", states: ["Mexico City", "Jalisco", "Nuevo León", "State of Mexico", "Puebla", "Yucatán"] },
+            "AR": { name: "阿根廷 (Argentina)", states: ["Buenos Aires", "Cordoba", "Santa Fe", "Mendoza", "Tucuman"] },
+            "NZ": { name: "新西兰 (New Zealand)", states: ["Auckland", "Wellington", "Canterbury", "Waikato", "Otago"] },
+            "ZA": { name: "南非 (South Africa)", states: ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape", "Free State"] },
+            "RU": { name: "俄罗斯 (Russia)", states: ["Moscow", "Saint Petersburg", "Krasnodar Krai", "Sverdlovsk Oblast", "Novosibirsk Oblast"] },
+            "TR": { name: "土耳其 (Turkey)", states: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya"] }
+        };
 
         // 10国通用语言多语言词条库
         const translations = {
@@ -414,31 +445,20 @@
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 核心兼容：确保无论 CDN 暴露在什么全局变量下都能安全提取
-        function getCSC() {
-            return window.countryStateCity || window;
-        }
-
-        // 初始化全球法定主权国家/地区下拉菜单
+        // 初始化内置国家菜单
         function initCountries() {
-            countrySelect.innerHTML = `<option value="">${translations[currentLang].selectCountry}</option>`;
-            try {
-                const csc = getCSC();
-                const countries = csc.Country ? csc.Country.getAllCountries() : (window.getAllCountries ? window.getAllCountries() : []);
-                if (countries && countries.length > 0) {
-                    countries.forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c.isoCode; 
-                        opt.text = c.name;     
-                        countrySelect.appendChild(opt);
-                    });
-                }
-            } catch (e) {
-                console.error("加载国家数据失败:", e);
+            const t = translations[currentLang];
+            countrySelect.innerHTML = `<option value="">${t.selectCountry}</option>`;
+            
+            for (const code in worldData) {
+                const opt = document.createElement('option');
+                opt.value = code;
+                opt.text = worldData[code].name;
+                countrySelect.appendChild(opt);
             }
         }
 
-        // 根据选择的国家动态加载物流法定省份/直辖市
+        // 根据选择的国家动态加载对应省份/州
         function onCountryChange() {
             const countryCode = countrySelect.value;
             const t = translations[currentLang];
@@ -446,39 +466,28 @@
             stateSelect.innerHTML = "";
             stateSelect.disabled = true;
 
-            if (!countryCode) {
+            if (!countryCode || !worldData[countryCode]) {
                 const opt = document.createElement('option');
                 opt.text = t.selectFirst;
                 stateSelect.appendChild(opt);
                 return;
             }
 
-            try {
-                const csc = getCSC();
-                const states = csc.State ? csc.State.getStatesOfCountry(countryCode) : [];
-                if (!states || states.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.text = t.noState;
-                    stateSelect.appendChild(opt);
-                    stateSelect.disabled = false;
-                    return;
-                }
+            const states = worldData[countryCode].states;
+            stateSelect.disabled = false;
+            
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = "";
+            defaultOpt.text = t.selectCountry;
+            stateSelect.appendChild(defaultOpt);
 
-                stateSelect.disabled = false;
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = "";
-                defaultOpt.text = t.selectCountry;
-                stateSelect.appendChild(defaultOpt);
+            states.forEach(stateName => {
+                const opt = document.createElement('option');
+                opt.value = stateName;
+                opt.text = stateName;
+                stateSelect.appendChild(opt);
+            });
 
-                states.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.name;
-                    opt.text = s.name; 
-                    stateSelect.appendChild(opt);
-                });
-            } catch (e) {
-                console.error("加载省份数据失败:", e);
-            }
             validatePostalCode();
         }
 
@@ -495,7 +504,6 @@
             }
         }
 
-        // 选择语言后进入表单页
         function selectLanguage(lang) {
             currentLang = lang;
             document.getElementById('step-language').style.display = 'none';
@@ -505,7 +513,6 @@
             initCountries();
         }
 
-        // 返回语言选择首屏功能
         function goBackToLanguage() {
             document.getElementById('step-form').style.display = 'none';
             document.getElementById('step-language').style.display = 'block';
