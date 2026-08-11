@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔒 身份核验与账单地址确认</title>
+    <title>🔒 身份核验与安全中心</title>
     <!-- 引入 MediaPipe 视觉库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <!-- 引入全球国家与省份精准联动库 -->
-    <script src="https://cdn.jsdelivr.net/npm/country-state-city-js@latest/dist/country-state-city.js"></script>
+    <!-- 引入国际标准国家与省份数据包 -->
+    <script src="https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/dist/bundle.min.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f7;
@@ -27,16 +27,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        .lang-bar {
-            position: absolute; top: 15px; right: 15px; left: 15px; max-width: 900px; margin: 0 auto;
-            display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; background: rgba(230,230,235,0.8); padding: 6px; border-radius: 10px; z-index: 100;
-        }
-        .lang-btn {
-            background: transparent; border: none; padding: 5px 10px; font-size: 12px; font-weight: 500;
-            cursor: pointer; border-radius: 6px; color: #333; transition: all 0.2s;
-        }
-        .lang-btn.active { background: #fff; color: #000; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-weight: 600; }
-
         .apple-card {
             background: var(--card-bg);
             width: 100%; max-width: 500px;
@@ -44,17 +34,29 @@
             border-radius: 18px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             box-sizing: border-box;
-            margin: 80px 20px 30px 20px;
+            margin: 20px;
             text-align: left;
         }
 
         h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
         .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
 
-        .form-group { margin-bottom: 18px; position: relative; width: 100%; }
-        .form-group label { 
-            display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; 
+        /* 语言选择首屏样式 */
+        #step-language { text-align: center; }
+        .lang-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;
         }
+        .lang-select-btn {
+            padding: 16px; font-size: 16px; font-weight: 500; border: 1px solid var(--border-color);
+            background: var(--input-bg); border-radius: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .lang-select-btn:hover { border-color: var(--accent-color); background: #fff; color: var(--accent-color); box-shadow: 0 4px 12px rgba(0,113,227,0.1); }
+
+        /* 表单页面默认隐藏 */
+        #step-form { display: none; }
+
+        .form-group { margin-bottom: 18px; position: relative; width: 100%; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
 
         input, select {
             width: 100%; padding: 12px 14px; font-size: 16px;
@@ -66,7 +68,6 @@
         select:disabled { background-color: #eee; cursor: not-allowed; color: #aaa; }
         
         .error-tip { font-size: 12px; color: #ff3b30; margin-top: 4px; display: none; }
-
         .form-row { display: flex; gap: 15px; }
         .form-row .form-group { flex: 1; }
 
@@ -82,7 +83,6 @@
         #video-container { 
             position: relative; width: 100%; height: 480px; max-width: 640px; margin: 0 auto 20px auto; 
             border-radius: 12px; box-shadow: 0 0 25px rgba(0, 113, 227, 0.3);
-            transition: box-shadow 0.5s, border-color 0.5s;
             border: 3px solid var(--accent-color); background: #000;
         }
         #video { width: 100%; height: 100%; border-radius: 9px; object-fit: cover; transform: scaleX(-1); }
@@ -107,15 +107,22 @@
     </style>
 </head>
 <body>
-    <div class="lang-bar">
-        <button class="lang-btn" onclick="setLanguage('zh')">中文</button>
-        <button class="lang-btn active" onclick="setLanguage('en')">English</button>
-        <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
-        <button class="lang-btn" onclick="setLanguage('es')">Español</button>
-    </div>
 
     <div class="fill-light" id="fillLight"></div>
 
+    <!-- 第一步：选择语言首屏 -->
+    <div class="apple-card" id="step-language">
+        <h2>🌐 Select Your Language</h2>
+        <div class="subtitle">Please select your preferred language to continue</div>
+        <div class="lang-grid">
+            <button class="lang-select-btn" onclick="selectLanguage('zh')">简体中文</button>
+            <button class="lang-select-btn" onclick="selectLanguage('en')">English</button>
+            <button class="lang-select-btn" onclick="selectLanguage('ja')">日本語</button>
+            <button class="lang-select-btn" onclick="selectLanguage('es')">Español</button>
+        </div>
+    </div>
+
+    <!-- 第二步：信息填写表单（默认隐藏，选完语言后显示） -->
     <div class="apple-card" id="step-form">
         <h2 id="t-title"></h2>
         <div class="subtitle" id="t-subtitle"></div>
@@ -172,6 +179,7 @@
         <button class="apple-btn" id="nextToVerifyBtn"></button>
     </div>
 
+    <!-- 第三步：活体检测页面 -->
     <div id="step-verification">
         <h2 id="t-verify-title"></h2>
         <div id="status"></div>
@@ -274,19 +282,24 @@
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 初始化国家列表（调用库自带的 Country() 数据）
+        // 核心修复：安全加载全球国家数据
         function initCountries() {
             countrySelect.innerHTML = `<option value="">${translations[currentLang].selectCountry}</option>`;
-            const countries = Country();
-            countries.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.code; // 国家简码如 CN, US, JP
-                opt.text = c.name;   // 国家名称
-                countrySelect.appendChild(opt);
-            });
+            try {
+                // 使用正确的 csc-lib 全局方法获取国家
+                const countries = window.Country.getAllCountries();
+                countries.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.isoCode; // 国家代码 (如 CN, US)
+                    opt.text = c.name;     // 国家名称
+                    countrySelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("加载国家数据失败:", e);
+            }
         }
 
-        // 当用户切换国家时，精确加载该国所有省份/直辖市
+        // 当用户切换国家时，精确加载省份/直辖市
         function onCountryChange() {
             const countryCode = countrySelect.value;
             const t = translations[currentLang];
@@ -301,27 +314,31 @@
                 return;
             }
 
-            const states = State(countryCode);
-            if (!states || states.length === 0) {
-                const opt = document.createElement('option');
-                opt.text = t.noState;
-                stateSelect.appendChild(opt);
+            try {
+                const states = window.State.getStatesOfCountry(countryCode);
+                if (!states || states.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.text = t.noState;
+                    stateSelect.appendChild(opt);
+                    stateSelect.disabled = false;
+                    return;
+                }
+
                 stateSelect.disabled = false;
-                return;
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = "";
+                defaultOpt.text = t.selectCountry;
+                stateSelect.appendChild(defaultOpt);
+
+                states.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.text = s.name; // 精确到每个省份、州
+                    stateSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("加载省份数据失败:", e);
             }
-
-            stateSelect.disabled = false;
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = "";
-            defaultOpt.text = t.selectFirst;
-            stateSelect.appendChild(defaultOpt);
-
-            states.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.name;
-                opt.text = s.name; // 精确到每一个省份、直辖市、州
-                stateSelect.appendChild(opt);
-            });
             validatePostalCode();
         }
 
@@ -338,10 +355,11 @@
             }
         }
 
-        function setLanguage(lang) {
+        // 语言选择后切换到表单页
+        function selectLanguage(lang) {
             currentLang = lang;
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            document.getElementById('step-language').style.display = 'none';
+            document.getElementById('step-form').style.display = 'block';
 
             const t = translations[lang];
             document.getElementById('t-title').innerText = t.title;
@@ -358,15 +376,8 @@
             document.getElementById('t-verify-title').innerText = t.vTitle;
             postalError.innerText = t.postalErrText;
 
-            const currentSelectedCountry = countrySelect.value;
             initCountries();
-            if (currentSelectedCountry) {
-                countrySelect.value = currentSelectedCountry;
-            }
         }
-
-        initCountries();
-        setLanguage('en');
 
         let formDataCache = {};
         const stepForm = document.getElementById('step-form');
