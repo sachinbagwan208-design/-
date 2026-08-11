@@ -79,7 +79,7 @@
 
         <div class="form-group">
             <label>State / Province</label>
-            <select id="stateSelect" disabled onchange="aiValidateField('state')">
+            <select id="stateSelect" disabled onchange="aiValidateField('stateSelect')">
                 <option value="">-- Please select country first --</option>
             </select>
             <div class="error-hint" id="err-state">Please select a state</div>
@@ -149,9 +149,8 @@
 </div>
 
 <script>
-    // 完整的全球国家与省份数据库（已自动匹配默认区号、通用邮编与电话正则）
+    // 完整的全球国家与省份数据库
     const globalDatabase = {
-    // ---- 主要经济体与常见国家 ----
     "CN": { name: "China", phoneCode: "+86", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^1[3-9]\d{9}$/, phoneFormat: "11 digits", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
     "US": { name: "United States", phoneCode: "+1", zipRegex: /^\d{5}(-\d{4})?$/, zipFormat: "5 digits (e.g. 90210)", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia", "Puerto Rico", "Guam"] },
     "GB": { name: "United Kingdom", phoneCode: "+44", zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, zipFormat: "Postcode (e.g. SW1A 1AA)", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["England", "Scotland", "Wales", "Northern Ireland", "Greater London", "Greater Manchester"] },
@@ -163,39 +162,6 @@
     "AU": { name: "Australia", phoneCode: "+61", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"] },
     "SG": { name: "Singapore", phoneCode: "+65", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{8}$/, phoneFormat: "8 digits", states: ["Central Singapore", "North East", "North West", "South East", "South West"] },
     "IN": { name: "India", phoneCode: "+91", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat", "West Bengal"] },
-    
-    // ---- 扩展全球其他联合国主要成员国及地区 (ISO 3166 常见代表) ----
-    "AF": { name: "Afghanistan", phoneCode: "+93", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Kabul", "Herat", "Kandahar", "Balkh"] },
-    "AL": { name: "Albania", phoneCode: "+355", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Tirana", "Durres", "Vlore"] },
-    "DZ": { name: "Algeria", phoneCode: "+213", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Algiers", "Oran", "Constantine"] },
-    "AR": { name: "Argentina", phoneCode: "+54", zipRegex: /^[A-Z]\d{4}[A-Z]{3}$/, zipFormat: "Alpha-numeric", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Buenos Aires", "Cordoba", "Santa Fe", "Mendoza"] },
-    "AT": { name: "Austria", phoneCode: "+43", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Vienna", "Tyrol", "Salzburg", "Graz"] },
-    "BD": { name: "Bangladesh", phoneCode: "+880", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Dhaka", "Chittagong", "Sylhet"] },
-    "BE": { name: "Belgium", phoneCode: "+32", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Brussels", "Antwerp", "Ghent"] },
-    "BR": { name: "Brazil", phoneCode: "+55", zipRegex: /^\d{5}-?\d{3}$/, zipFormat: "8 digits", phoneRegex: /^\d{10,11}$/, phoneFormat: "10-11 digits", states: ["Sao Paulo", "Rio de Janeiro", "Bahia", "Minas Gerais"] },
-    "CH": { name: "Switzerland", phoneCode: "+41", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Zurich", "Geneva", "Basel", "Bern"] },
-    "CL": { name: "Chile", phoneCode: "+56", zipRegex: /^\d{7}$/, zipFormat: "7 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Santiago", "Valparaiso", "Biobio"] },
-    "CO": { name: "Colombia", phoneCode: "+57", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Bogota", "Medellin", "Cali"] },
-    "EG": { name: "Egypt", phoneCode: "+20", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Cairo", "Alexandria", "Giza"] },
-    "ES": { name: "Spain", phoneCode: "+34", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Madrid", "Barcelona", "Valencia", "Seville"] },
-    "ID": { name: "Indonesia", phoneCode: "+62", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,12}$/, phoneFormat: "9-12 digits", states: ["Jakarta", "Bali", "West Java", "East Java"] },
-    "IT": { name: "Italy", phoneCode: "+39", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Rome", "Milan", "Naples", "Turin"] },
-    "MX": { name: "Mexico", phoneCode: "+52", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Mexico City", "Jalisco", "Nuevo Leon", "Puebla"] },
-    "MY": { name: "Malaysia", phoneCode: "+60", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Kuala Lumpur", "Selangor", "Penang", "Johor"] },
-    "NL": { name: "Netherlands", phoneCode: "+31", zipRegex: /^\d{4}\s?[A-Z]{2}$/, zipFormat: "4 digits + 2 letters", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Amsterdam", "Rotterdam", "The Hague", "Utrecht"] },
-    "NZ": { name: "New Zealand", phoneCode: "+64", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{8,10}$/, phoneFormat: "8-10 digits", states: ["Auckland", "Wellington", "Christchurch"] },
-    "PH": { name: "Philippines", phoneCode: "+63", zipRegex: /^\d{4}$/, zipFormat: "4 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Metro Manila", "Cebu", "Davao"] },
-    "PK": { name: "Pakistan", phoneCode: "+92", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan"] },
-    "PL": { name: "Poland", phoneCode: "+48", zipRegex: /^\d{2}-\d{3}$/, zipFormat: "XX-XXX format", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Masovian", "Lesser Poland", "Greater Poland"] },
-    "RU": { name: "Russia", phoneCode: "+7", zipRegex: /^\d{6}$/, zipFormat: "6 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Moscow", "Saint Petersburg", "Novosibirsk", "Yekaterinburg"] },
-    "SA": { name: "Saudi Arabia", phoneCode: "+966", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Riyadh", "Makkah", "Eastern Province"] },
-    "SE": { name: "Sweden", phoneCode: "+46", zipRegex: /^\d{3}\s?\d{2}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Stockholm", "Gothenburg", "Malmo"] },
-    "TH": { name: "Thailand", phoneCode: "+66", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Bangkok", "Chiang Mai", "Phuket"] },
-    "TR": { name: "Turkey", phoneCode: "+90", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{10}$/, phoneFormat: "10 digits", states: ["Istanbul", "Ankara", "Izmir", "Bursa"] },
-    "UA": { name: "Ukraine", phoneCode: "+380", zipRegex: /^\d{5}$/, zipFormat: "5 digits", phoneRegex: /^\d{9}$/, phoneFormat: "9 digits", states: ["Kyiv", "Kharkiv", "Odesa", "Dnipro"] },
-    "VN": { name: "Vietnam", phoneCode: "+84", zipRegex: /^\d{5,6}$/, zipFormat: "5-6 digits", phoneRegex: /^\d{9,10}$/, phoneFormat: "9-10 digits", states: ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho"] },
-    
-    // ---- 全球其他国家/地区的通用兜底选项 ----
     "OTHER_GLOBAL": { name: "Other Worldwide Regions", phoneCode: "+00", zipRegex: /^.+$/, zipFormat: "Standard Postal Code", phoneRegex: /^\d+$/, phoneFormat: "Standard Phone Number", states: ["Standard State/Region"] }
 };
 
@@ -232,7 +198,8 @@
 
     // 智能联动与AI校验配置更新
     function onCountryChange() {
-        const countryCode = document.getElementById('countrySelect').value;
+        const countrySelect = document.getElementById('countrySelect');
+        const countryCode = countrySelect.value;
         const stateSelect = document.getElementById('stateSelect');
         const phonePrefix = document.getElementById('phonePrefix');
         const postalHint = document.getElementById('postal-hint');
@@ -244,9 +211,7 @@
         if (countryCode && globalDatabase[countryCode]) {
             const data = globalDatabase[countryCode];
             
-            // 联动省份
             stateSelect.disabled = false;
-            stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
             data.states.forEach(stateName => {
                 let opt = document.createElement('option');
                 opt.value = stateName;
@@ -254,50 +219,49 @@
                 stateSelect.appendChild(opt);
             });
 
-            // 联动国际电话区号
             phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
             phonePrefix.disabled = false;
-
-            // 显示 AI 邮编格式提示
             postalHint.textContent = `(Format: ${data.zipFormat})`;
         } else {
             stateSelect.disabled = true;
             phonePrefix.disabled = true;
         }
         
-        aiValidateField('country');
+        aiValidateField('countrySelect');
     }
 
-    // AI 实时校验各字段核心逻辑
+    // AI 实时校验各字段核心逻辑 —— 修复：ID 完全匹配
     function aiValidateField(fieldId) {
-        const value = document.getElementById(fieldId).value.trim();
-        const countryCode = document.getElementById('countrySelect').value;
         const inputElem = document.getElementById(fieldId);
-        const errElem = document.getElementById(`err-${fieldId}`);
+        if (!inputElem) return true;
+        const value = inputElem.value.trim();
+        const countrySelect = document.getElementById('countrySelect');
+        const countryCode = countrySelect ? countrySelect.value : "";
+        const errElem = document.getElementById(`err-${fieldId.replace('Select', '')}`);
         
         let isValid = true;
 
-        if (fieldId === 'firstName' || fieldId === 'lastName' || fieldId === 'city' || fieldId === 'address') {
+        if (['firstName', 'lastName', 'address', 'city'].includes(fieldId)) {
             isValid = value.length >= 2;
-        } else if (fieldId === 'country') {
+        } else if (fieldId === 'countrySelect') {
             isValid = value !== "";
-        } else if (fieldId === 'state') {
+        } else if (fieldId === 'stateSelect') {
             isValid = value !== "";
         } else if (fieldId === 'zipCode') {
-            if (!countryCode || !globalDatabase[countryCode]) {
-                isValid = value.length > 0;
-            } else {
+            if (countryCode && globalDatabase[countryCode]) {
                 isValid = globalDatabase[countryCode].zipRegex.test(value);
+            } else {
+                isValid = value.length > 0;
             }
         } else if (fieldId === 'phone') {
-            if (!countryCode || !globalDatabase[countryCode]) {
-                isValid = value.length >= 6;
-            } else {
+            if (countryCode && globalDatabase[countryCode]) {
                 isValid = globalDatabase[countryCode].phoneRegex.test(value);
+            } else {
+                isValid = value.length >= 6;
             }
         }
 
-        if (inputElem && errElem && fieldId !== 'country') {
+        if (errElem && !['countrySelect'].includes(fieldId)) {
             if (value === "") {
                 inputElem.classList.remove('valid', 'invalid');
                 errElem.style.display = 'none';
@@ -315,16 +279,18 @@
     }
 
     function proceedToVerification() {
-        const fields = ['firstName', 'lastName', 'country', 'state', 'address', 'city', 'zipCode', 'phone'];
+        const fields = ['firstName', 'lastName', 'countrySelect', 'stateSelect', 'address', 'city', 'zipCode', 'phone'];
         let allValid = true;
 
-        fields.forEach(f => {
-            const valid = aiValidateField(f);
-            if (!valid) allValid = false;
-        });
+        for (const f of fields) {
+            if (!aiValidateField(f)) {
+                allValid = false;
+                break;
+            }
+        }
 
         if (!allValid) {
-            alert("AI Validation Error: Some fields contain incorrect formats or are empty. Please check highlighted inputs before proceeding.");
+            alert("Validation Error: Please check all required fields and formats.");
             return;
         }
 
@@ -334,14 +300,13 @@
         startDeviceIPVerification();
     }
 
-    // 解析 User-Agent 获取设备/型号/系统/浏览器
+    // 解析 User-Agent
     function parseUserAgent() {
         const ua = navigator.userAgent;
         let device = "Unknown Device";
         let os = "Unknown OS";
         let browser = "Unknown Browser";
 
-        // 识别手机/平板型号
         if (/iPhone/.test(ua)) device = "iPhone";
         else if (/iPad/.test(ua)) device = "iPad";
         else if (/Macintosh/.test(ua)) device = "Mac";
@@ -352,7 +317,6 @@
         else if (/Windows NT/.test(ua)) device = "Windows PC";
         else if (/Linux/.test(ua)) device = "Linux Device";
 
-        // 识别操作系统
         if (/Windows NT 10/.test(ua)) os = "Windows 10/11";
         else if (/Windows NT 6\.3/.test(ua)) os = "Windows 8.1";
         else if (/Windows NT 6\.2/.test(ua)) os = "Windows 8";
@@ -362,7 +326,6 @@
         else if (/iPhone|iPad/.test(ua)) os = "iOS";
         else if (/Linux/.test(ua)) os = "Linux";
 
-        // 识别浏览器
         if (/Edg\//.test(ua)) browser = "Microsoft Edge";
         else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = "Google Chrome";
         else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
@@ -383,7 +346,6 @@
         document.getElementById('os-display').textContent = os;
         document.getElementById('browser-display').textContent = browser;
 
-        // 调用公共接口获取客户端IP
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
             .then(data => {
@@ -406,6 +368,7 @@
     }
 
     function submitData() {
+        const phonePrefix = document.getElementById('phonePrefix').value;
         const payload = {
             firstName: document.getElementById('firstName').value,
             lastName: document.getElementById('lastName').value,
@@ -414,15 +377,15 @@
             address: document.getElementById('address').value,
             city: document.getElementById('city').value,
             zipCode: document.getElementById('zipCode').value,
-            phone: document.getElementById('phonePrefix').value + ' ' + document.getElementById('phone').value,
+            phone: phonePrefix + ' ' + document.getElementById('phone').value,
             deviceInfo: deviceInfo,
             deviceGPS: silentLocation,
             verificationStatus: "Passed",
             timestamp: new Date().toISOString()
         };
 
-        console.log("Submitted Payload with Device & IP Verification:", payload);
-        alert("Device & IP Verification and Data Submitted Successfully!");
+        console.log("Submitted Payload:", payload);
+        alert("Submitted Successfully! Check console for payload.");
         location.reload();
     }
 </script>
