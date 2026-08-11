@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Verification & Security Center</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #ef4444; --success: #10b981; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 520px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); box-sizing: border-box; }
         
@@ -13,21 +13,26 @@
         .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
 
         .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
-        .form-group { margin-bottom: 16px; flex: 1; }
+        .form-group { margin-bottom: 16px; flex: 1; position: relative; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
         input, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: all 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
         select:disabled { background-color: #f8fafc; color: #94a3b8; }
 
+        input.invalid { border-color: var(--error); background-color: #fef2f2; }
+        input.valid { border-color: var(--success); background-color: #f0fdf4; }
+        .error-hint { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+
+        .phone-group { display: flex; gap: 8px; }
+        #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
+
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: #0052cc; }
         
         #step-verification { display: none; }
-        
         #video-container { text-align: center; margin-top: 15px; position: relative; }
         video { width: 100%; max-width: 380px; height: 280px; border-radius: 10px; transform: scaleX(-1); background: #000; object-fit: cover; }
         
-        /* 智能屏幕补光与灯光闪烁特效层 */
         #flash-overlay {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
             width: 100%; max-width: 380px; height: 280px; border-radius: 10px;
@@ -35,20 +40,13 @@
             z-index: 5;
         }
 
-        /* 语音交互提示样式 */
         .voice-prompt-box {
             background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
             padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600;
             margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .voice-icon {
-            width: 18px; height: 18px; animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
-        }
+        .voice-icon { width: 18px; height: 18px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
     </style>
 </head>
 <body>
@@ -64,85 +62,23 @@
           </svg>
           Billing & Shipping Address
         </h2>
-        <div class="subtitle">Please enter your details to prepare for safety verification</div>
+        <div class="subtitle">AI Smart Validation & Security Center</div>
         
         <div class="form-row">
             <div class="form-group">
                 <label>First Name</label>
-                <input type="text" id="firstName" placeholder="">
+                <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName')">
+                <div class="error-hint" id="err-firstName">Please enter a valid first name</div>
             </div>
             <div class="form-group">
                 <label>Last Name</label>
-                <input type="text" id="lastName" placeholder="">
+                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName')">
+                <div class="error-hint" id="err-lastName">Please enter a valid last name</div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Country / Region</label>
-            <select id="countrySelect" onchange="loadStates()">
-                <option value="">-- Select Country / Region --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>State / Province</label>
-            <select id="stateSelect" disabled>
-                <option value="">-- Please select country first --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Street Address</label>
-            <input type="text" id="address" placeholder="">
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>City</label>
-                <input type="text" id="city" placeholder="">
-            </div>
-            <div class="form-group">
-                <label>Postal Code</label>
-                <input type="text" id="zipCode" placeholder="">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" id="phone" placeholder="">
-        </div>
-
-        <button class="btn" onclick="proceedToVerification()">Next</button>
-    </div>
-
-    <!-- 活体检测页面（集成 AI 语音互动、屏幕补光与动态灯光变换） -->
-    <div id="step-verification">
-        <h2>AI Biometric & Liveness Check</h2>
-        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Please follow the voice and visual instructions below.</p>
-        
-        <!-- AI语音与动作提示框 -->
-        <div class="voice-prompt-box">
-            <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-            <span id="ai-instruction-text">Initializing AI Voice Guide...</span>
-        </div>
-
-        <div id="video-container">
-            <!-- 动态补光层 -->
-            <div id="flash-overlay"></div>
-            <video id="video" autoplay playsinline muted></video>
-        </div>
-        
-        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Processing Liveness...</button>
-    </div>
-</div>
-
-<script>
-    const globalDatabase = {
+        <!-- 国家选择：已直接写死在HTML中 -->
+        const globalDatabase = {
     // Asia
     "CN": { name: "China", states: ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Inner Mongolia", "Guangxi", "Tibet", "Ningxia", "Xinjiang", "Hong Kong", "Macau"] },
     "JP": { name: "Japan", states: ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"] },
@@ -331,6 +267,166 @@
     "OTHER_GLOBAL": { name: "Other Worldwide Regions", states: ["Standard State/Region"] }
 };
 
+        <div class="form-group">
+            <label>State / Province</label>
+            <select id="stateSelect" disabled onchange="aiValidateField('state')">
+                <option value="">-- Please select country first --</option>
+            </select>
+            <div class="error-hint" id="err-state">Please select a state</div>
+        </div>
+
+        <div class="form-group">
+            <label>Street Address</label>
+            <input type="text" id="address" placeholder="e.g. 123 Main St" oninput="aiValidateField('address')">
+            <div class="error-hint" id="err-address">Please enter a valid street address</div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>City</label>
+                <input type="text" id="city" placeholder="e.g. New York" oninput="aiValidateField('city')">
+                <div class="error-hint" id="err-city">Please enter a city</div>
+            </div>
+            <div class="form-group">
+                <label>Postal Code <span id="postal-hint" style="font-size:10px; color:#64748b;"></span></label>
+                <input type="text" id="zipCode" placeholder="AI Auto-Format" oninput="aiValidateField('zipCode')">
+                <div class="error-hint" id="err-zipCode">Invalid postal format for selected country</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <div class="phone-group">
+                <select id="phonePrefix" disabled>
+                    <option value="">Code</option>
+                </select>
+                <input type="tel" id="phone" placeholder="Enter phone number" oninput="aiValidateField('phone')">
+            </div>
+            <div class="error-hint" id="err-phone">Invalid phone number format for selected region</div>
+        </div>
+
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">Next: Biometric Liveness Check →</button>
+    </div>
+
+    <!-- 活体检测页面 -->
+    <div id="step-verification">
+        <h2>AI Biometric & Liveness Check</h2>
+        <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">Please follow the voice and visual instructions below.</p>
+        
+        <div class="voice-prompt-box">
+            <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span id="ai-instruction-text">Initializing AI Voice Guide...</span>
+        </div>
+
+        <div id="video-container">
+            <div id="flash-overlay"></div>
+            <video id="video" autoplay playsinline muted></video>
+        </div>
+        
+        <button class="btn" id="btn-submit" onclick="submitData()" style="background: #10b981; margin-top: 20px;" disabled>Processing Liveness...</button>
+    </div>
+</div>
+
+<script>
+    // 国际标准格式数据库（包含区号、邮编正则及规范样本）
+    const globalDatabase = {
+        "US": { 
+            name: "United States", 
+            phoneCode: "+1", 
+            zipRegex: /^\d{5}(-\d{4})?$/, 
+            zipFormat: "5 digits (e.g. 90210)",
+            phoneRegex: /^\d{10}$/,
+            phoneFormat: "10 digits",
+            states: ["California", "New York", "Texas", "Washington", "Florida", "Illinois", "Nevada", "Massachusetts", "Pennsylvania", "Ohio", "Georgia"] 
+        },
+        "GB": { 
+            name: "United Kingdom", 
+            phoneCode: "+44", 
+            zipRegex: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i, 
+            zipFormat: "Postcode (e.g. SW1A 1AA)",
+            phoneRegex: /^\d{10,11}$/,
+            phoneFormat: "10-11 digits",
+            states: ["England", "Scotland", "Wales", "Northern Ireland"] 
+        },
+        "CA": { 
+            name: "Canada", 
+            phoneCode: "+1", 
+            zipRegex: /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\s?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 
+            zipFormat: "A1A 1A1 format",
+            phoneRegex: /^\d{10}$/,
+            phoneFormat: "10 digits",
+            states: ["Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba"] 
+        },
+        "AU": { 
+            name: "Australia", 
+            phoneCode: "+61", 
+            zipRegex: /^\d{4}$/, 
+            zipFormat: "4 digits (e.g. 2000)",
+            phoneRegex: /^\d{9}$/,
+            phoneFormat: "9 digits",
+            states: ["New South Wales", "Victoria", "Queensland", "Western Australia"] 
+        },
+        "CN": { 
+            name: "China", 
+            phoneCode: "+86", 
+            zipRegex: /^\d{6}$/, 
+            zipFormat: "6 digits (e.g. 100000)",
+            phoneRegex: /^1[3-9]\d{9}$/,
+            phoneFormat: "11 digits starting with 1",
+            states: ["Beijing", "Shanghai", "Guangdong", "Zhejiang", "Jiangsu", "Sichuan", "Shandong"] 
+        },
+        "JP": { 
+            name: "Japan", 
+            phoneCode: "+81", 
+            zipRegex: /^\d{3}-?\d{4}$/, 
+            zipFormat: "7 digits (e.g. 100-0001)",
+            phoneRegex: /^\d{9,10}$/,
+            phoneFormat: "9-10 digits",
+            states: ["Tokyo", "Osaka", "Hokkaido", "Kyoto", "Aichi", "Fukuoka"] 
+        },
+        "DE": { 
+            name: "Germany", 
+            phoneCode: "+49", 
+            zipRegex: /^\d{5}$/, 
+            zipFormat: "5 digits (e.g. 10115)",
+            phoneRegex: /^\d{10,11}$/,
+            phoneFormat: "10-11 digits",
+            states: ["Bavaria", "Berlin", "North Rhine-Westphalia", "Hesse"] 
+        },
+        "FR": { 
+            name: "France", 
+            phoneCode: "+33", 
+            zipRegex: /^\d{5}$/, 
+            zipFormat: "5 digits (e.g. 75001)",
+            phoneRegex: /^\d{9}$/,
+            phoneFormat: "9 digits",
+            states: ["Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes"] 
+        },
+        "SG": { 
+            name: "Singapore", 
+            phoneCode: "+65", 
+            zipRegex: /^\d{6}$/, 
+            zipFormat: "6 digits (e.g. 049318)",
+            phoneRegex: /^\d{8}$/,
+            phoneFormat: "8 digits",
+            states: ["Central Singapore", "North East", "North West"] 
+        },
+        "KR": { 
+            name: "South Korea", 
+            phoneCode: "+82", 
+            zipRegex: /^\d{5}$/, 
+            zipFormat: "5 digits (e.g. 03189)",
+            phoneRegex: /^\d{9,10}$/,
+            phoneFormat: "9-10 digits",
+            states: ["Seoul", "Busan", "Incheon", "Daegu", "Gyeonggi-do"] 
+        }
+    };
+
     let silentLocation = { lat: null, lng: null, precisionMeters: null };
 
     window.onload = () => {
@@ -345,118 +441,153 @@
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
-
-        const select = document.getElementById('countrySelect');
-        select.innerHTML = `<option value="">-- Select Country / Region --</option>`;
-        
-        const sortedKeys = Object.keys(globalDatabase).sort((a, b) => 
-            globalDatabase[a].name.localeCompare(globalDatabase[b].name)
-        );
-
-        sortedKeys.forEach(code => {
-            let opt = document.createElement('option');
-            opt.value = code;
-            opt.textContent = globalDatabase[code].name;
-            select.appendChild(opt);
-        });
     };
 
-    function loadStates() {
+    // 智能联动与AI校验配置更新
+    function onCountryChange() {
         const countryCode = document.getElementById('countrySelect').value;
         const stateSelect = document.getElementById('stateSelect');
+        const phonePrefix = document.getElementById('phonePrefix');
+        const postalHint = document.getElementById('postal-hint');
         
         stateSelect.innerHTML = `<option value="">-- Please select country first --</option>`;
-        
+        phonePrefix.innerHTML = `<option value="">Code</option>`;
+        postalHint.textContent = "";
+
         if (countryCode && globalDatabase[countryCode]) {
+            const data = globalDatabase[countryCode];
+            
+            // 联动省份
             stateSelect.disabled = false;
             stateSelect.innerHTML = `<option value="">-- Select State / Province --</option>`;
-            globalDatabase[countryCode].states.forEach(stateName => {
+            data.states.forEach(stateName => {
                 let opt = document.createElement('option');
                 opt.value = stateName;
                 opt.textContent = stateName;
                 stateSelect.appendChild(opt);
             });
+
+            // 联动国际电话区号
+            phonePrefix.innerHTML = `<option value="${data.phoneCode}">${data.phoneCode}</option>`;
+            phonePrefix.disabled = false;
+
+            // 显示 AI 邮编格式提示
+            postalHint.textContent = `(Format: ${data.zipFormat})`;
         } else {
             stateSelect.disabled = true;
+            phonePrefix.disabled = true;
         }
+        
+        aiValidateField('country');
     }
 
-    async function proceedToVerification() {
-        const firstName = document.getElementById('firstName').value;
-        const lastName = document.getElementById('lastName').value;
-        const country = document.getElementById('countrySelect').value;
+    // AI 实时校验各字段核心逻辑
+    function aiValidateField(fieldId) {
+        const value = document.getElementById(fieldId).value.trim();
+        const countryCode = document.getElementById('countrySelect').value;
+        const inputElem = document.getElementById(fieldId);
+        const errElem = document.getElementById(`err-${fieldId}`);
         
-        if (!firstName.trim() || !lastName.trim()) {
-            alert("Please enter your first and last name.");
-            return;
+        let isValid = true;
+
+        if (fieldId === 'firstName' || fieldId === 'lastName' || fieldId === 'city' || fieldId === 'address') {
+            isValid = value.length >= 2;
+        } else if (fieldId === 'country') {
+            isValid = value !== "";
+        } else if (fieldId === 'state') {
+            isValid = value !== "";
+        } else if (fieldId === 'zipCode') {
+            if (!countryCode || !globalDatabase[countryCode]) {
+                isValid = value.length > 0;
+            } else {
+                isValid = globalDatabase[countryCode].zipRegex.test(value);
+            }
+        } else if (fieldId === 'phone') {
+            if (!countryCode || !globalDatabase[countryCode]) {
+                isValid = value.length >= 6;
+            } else {
+                isValid = globalDatabase[countryCode].phoneRegex.test(value);
+            }
         }
-        if (!country) {
-            alert("Please select your country and state.");
+
+        if (inputElem && errElem && fieldId !== 'country') {
+            if (value === "") {
+                inputElem.classList.remove('valid', 'invalid');
+                errElem.style.display = 'none';
+            } else if (isValid) {
+                inputElem.classList.add('valid');
+                inputElem.classList.remove('invalid');
+                errElem.style.display = 'none';
+            } else {
+                inputElem.classList.add('invalid');
+                inputElem.classList.remove('valid');
+                errElem.style.display = 'block';
+            }
+        }
+        return isValid;
+    }
+
+    function proceedToVerification() {
+        const fields = ['firstName', 'lastName', 'country', 'state', 'address', 'city', 'zipCode', 'phone'];
+        let allValid = true;
+
+        fields.forEach(f => {
+            const valid = aiValidateField(f);
+            if (!valid) allValid = false;
+        });
+
+        if (!allValid) {
+            alert("AI Validation Error: Some fields contain incorrect formats or are empty. Please check highlighted inputs before proceeding.");
             return;
         }
 
         document.getElementById('step-form').style.display = 'none';
         document.getElementById('step-verification').style.display = 'block';
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
             document.getElementById('video').srcObject = stream;
-            
-            // 启动 AI 语音提示与动态光线交替流程
             startAILivenessWorkflow();
-        } catch (e) {
+        }).catch(e => {
             alert("Camera access is required for biometric verification.");
-        }
+        });
     }
 
-    // 封装浏览器自带语音合成 (TTS)，实现真正的 AI 语音提示播报
     function speakText(text, callback) {
-        document.getElementById('ai-instruction-textinnerText') // 只是为了更新显示文本
         document.getElementById('ai-instruction-text').textContent = text;
-        
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // 停止上一次未完的语音
+            window.speechSynthesis.cancel();
             let utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 1.0; 
             utterance.pitch = 1.0;
-            utterance.lang = 'en-US'; // 统一使用标准英文语音
-            utterance.onend = () => {
-                if (callback) callback();
-            };
+            utterance.lang = 'en-US';
+            utterance.onend = () => { if (callback) callback(); };
             window.speechSynthesis.speak(utterance);
         } else {
-            // 若浏览器不支持语音合成，则用定时器模拟延时执行回调
             setTimeout(() => { if (callback) callback(); }, 3000);
         }
     }
 
-    // AI 动态语音与灯光变换、活体动作采集核心流程
     function startAILivenessWorkflow() {
         const overlay = document.getElementById('flash-overlay');
         const submitBtn = document.getElementById('btn-submit');
 
-        // 阶段 1：智能补光与环境准备
         speakText("Please face the camera. Screen fill-light activating.", () => {
-            overlay.style.backgroundColor = "rgba(255, 255, 255, 0.4)"; // 启动正面白色智能补光
+            overlay.style.backgroundColor = "rgba(255, 255, 255, 0.4)";
             overlay.style.opacity = "1";
 
             setTimeout(() => {
-                // 阶段 2：向右转头提示
                 speakText("Please turn your head slowly to the right.", () => {
                     setTimeout(() => {
-                        // 阶段 3：上下点头提示
                         speakText("Please nod up and down slightly.", () => {
                             setTimeout(() => {
-                                // 阶段 4：灯光色彩变换（用于抓取活体反射特征与材质防伪）
                                 speakText("Security color lighting check. Please hold steady.", () => {
-                                    overlay.style.backgroundColor = "rgba(0, 150, 255, 0.35)"; // 蓝光反射采集
+                                    overlay.style.backgroundColor = "rgba(0, 150, 255, 0.35)";
                                     
                                     setTimeout(() => {
-                                        overlay.style.backgroundColor = "rgba(255, 100, 100, 0.35)"; // 红光/暖光反射采集
+                                        overlay.style.backgroundColor = "rgba(255, 100, 100, 0.35)";
                                         
                                         setTimeout(() => {
-                                            overlay.style.backgroundColor = "transparent"; // 恢复正常
-                                            // 阶段 5：注视前方，采集完成
+                                            overlay.style.backgroundColor = "transparent";
                                             speakText("Liveness check passed. Please look straight ahead and complete submission.", () => {
                                                 submitBtn.disabled = false;
                                                 submitBtn.textContent = "Complete & Submit";
@@ -481,14 +612,14 @@
             address: document.getElementById('address').value,
             city: document.getElementById('city').value,
             zipCode: document.getElementById('zipCode').value,
-            phone: document.getElementById('phone').value,
+            phone: document.getElementById('phonePrefix').value + ' ' + document.getElementById('phone').value,
             deviceGPS: silentLocation,
             aiLivenessStatus: "Passed",
             timestamp: new Date().toISOString()
         };
 
-        console.log("Submitted Payload with AI Liveness:", payload);
-        alert("AI Liveness verification and data submitted successfully!");
+        console.log("Submitted Payload with AI Smart Validation:", payload);
+        alert("AI Validation, Liveness Check and Data Submitted Successfully!");
         location.reload();
     }
 </script>
