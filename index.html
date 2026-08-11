@@ -7,6 +7,8 @@
     <!-- 引入 MediaPipe 视觉库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <!-- 引入全球国家与各级行政区划底层标准库 -->
+    <script src="https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/dist/bundle.min.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f7;
@@ -40,12 +42,14 @@
         h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; color: #111; }
         .subtitle { font-size: 14px; color: #86868b; text-align: center; margin-bottom: 24px; }
 
-        /* 返回更改语言按钮样式 */
-        .back-lang-btn {
-            display: inline-flex; align-items: center; font-size: 13px; color: var(--accent-color);
-            background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 15px; font-weight: 500;
+        /* 返回上一步按钮样式 */
+        .back-btn {
+            position: absolute; top: 20px; left: 20px; background: none; border: none;
+            color: var(--accent-color); font-size: 14px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px;
+            transition: background 0.2s;
         }
-        .back-lang-btn:hover { text-decoration: underline; }
+        .back-btn:hover { background: rgba(0,113,227,0.08); }
 
         /* 10国语言选择首屏样式 */
         #step-language { text-align: center; max-width: 580px; }
@@ -71,6 +75,7 @@
             box-sizing: border-box; outline: none; transition: all 0.3s;
         }
         input:focus, select:focus { border-color: var(--accent-color); background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
+        select:disabled { background-color: #eee; cursor: not-allowed; color: #aaa; }
         
         .error-tip { font-size: 12px; color: #ff3b30; margin-top: 4px; display: none; }
         .form-row { display: flex; gap: 15px; }
@@ -133,10 +138,10 @@
         </div>
     </div>
 
-    <!-- 第二步：信息填写表单（默认隐藏，选完语言后显示） -->
+    <!-- 第二步：信息填写表单 -->
     <div class="apple-card" id="step-form">
         <!-- 返回更改语言按钮 -->
-        <button class="back-lang-btn" onclick="goBackToLanguage()" id="t-back-btn">⬅ 返回更改语言</button>
+        <button class="back-btn" onclick="goBackToLanguage()">❮ <span id="t-back">Back</span></button>
         
         <h2 id="t-title"></h2>
         <div class="subtitle" id="t-subtitle"></div>
@@ -152,17 +157,20 @@
             </div>
         </div>
 
-        <!-- 严谨的国际法定国家下拉框 -->
+        <!-- 国际法定国家下拉框 -->
         <div class="form-group">
             <label id="t-country" for="countrySelect"></label>
-            <select id="countrySelect">
+            <select id="countrySelect" onchange="onCountryChange()">
                 <option value="" id="t-select-country">-- 请选择国家 / 地区 --</option>
             </select>
         </div>
 
+        <!-- 物流精准省份/直辖市联动下拉框 -->
         <div class="form-group">
-            <label id="t-state" for="stateInput"></label>
-            <input type="text" id="stateInput" required>
+            <label id="t-state" for="stateSelect"></label>
+            <select id="stateSelect" disabled>
+                <option value="" id="t-select-first">-- 请先选择上方国家 --</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -207,15 +215,16 @@
 
         let currentLang = 'en'; 
 
-        // 10国通用语言多语言词条库
+        // 10国通用语言多语言词条库（包含返回按钮翻译）
         const translations = {
             zh: {
-                back: "⬅ 返回更改语言",
+                back: "返回更改语言",
                 title: "账单与收货地址", subtitle: "请输入您的详细信息以完成安全核验准备",
                 fn: "名字 (First Name)", ln: "姓氏 (Last Name)", country: "国家 / 地区 (Country / Region)",
-                state: "省份 / 州 / 地区 (State / Province)", addr: "街道地址 (Street Address)", city: "城市 (City)",
+                state: "省份 / 直辖市 / 州 (State / Province)", addr: "街道地址 (Street Address)", city: "城市 (City)",
                 postal: "邮政编码 (Postal Code)", phone: "手机号码 (Phone Number)", btn: "下一步：生物活体检测 ➔",
-                vTitle: "🛡️ 智能 AI 视觉活体检测", selectCountry: "-- 请选择国际法定国家/地区 --",
+                vTitle: "🛡️ 智能 AI 视觉活体检测", selectCountry: "-- 请选择国家 / 地区 --",
+                selectFirst: "-- 请先选择上方国家 --", noState: "-- 该国家无下属行政省份/州 --",
                 postalErrText: "⚠️ 邮政编码格式不符合规范",
                 alertIncomplete: "请完整且正确填写所有账单与收货地址信息。",
                 alertNoId: "链接中缺少验证 ID (?id=...)，无法进行后续归档。",
@@ -231,12 +240,13 @@
                 netErr: "⚠️ 上传凭证时发生网络错误。"
             },
             en: {
-                back: "⬅ Back to change language",
+                back: "Back",
                 title: "Billing & Shipping Address", subtitle: "Please enter your details to prepare for security verification",
                 fn: "First Name", ln: "Last Name", country: "Country / Region",
                 state: "State / Province / Region", addr: "Street Address", city: "City",
                 postal: "Postal Code", phone: "Phone Number", btn: "Next: Biometric Liveness Detection ➔",
                 vTitle: "🛡️ AI Smart Liveness Detection", selectCountry: "-- Select Country / Region --",
+                selectFirst: "-- Please select a country first --", noState: "-- No provinces/states available --",
                 postalErrText: "⚠️ Invalid postal code format",
                 alertIncomplete: "Please complete all billing and shipping address fields correctly.",
                 alertNoId: "Missing verification ID (?id=...) in the link.",
@@ -252,12 +262,13 @@
                 netErr: "⚠️ Network error occurred while uploading."
             },
             ja: {
-                back: "⬅ 言語を変更する",
+                back: "戻る",
                 title: "請求先および配送先住所", subtitle: "セキュリティ確認の準備として詳細を入力してください",
                 fn: "名 (First Name)", ln: "姓 (Last Name)", country: "国 / 地域",
                 state: "都道府県 / 州", addr: "番地・建物名", city: "市区町村",
                 postal: "郵便番号", phone: "電話番号", btn: "次へ：生体認証テスト ➔",
                 vTitle: "🛡️ AIスマート生体認証", selectCountry: "-- 国 / 地域を選択してください --",
+                selectFirst: "-- まず国を選択してください --", noState: "-- 都道府県データはありません --",
                 postalErrText: "⚠️ 郵便番号の形式が無効です",
                 alertIncomplete: "すべての住所情報を正しく入力してください。",
                 alertNoId: "リンクに検証ID（?id=...）がありません。",
@@ -273,12 +284,13 @@
                 netErr: "⚠️ アップロード中にネットワークエラーが発生しました。"
             },
             es: {
-                back: "⬅ Volver a cambiar idioma",
+                back: "Volver",
                 title: "Dirección de Envío y Facturación", subtitle: "Ingrese sus datos para completar la verificación de seguridad",
                 fn: "Nombre", ln: "Apellido", country: "País / Región",
                 state: "Estado / Provincia / Región", addr: "Dirección", city: "Ciudad",
                 postal: "Código Postal", phone: "Número de Teléfono", btn: "Siguiente: Detección de Vida ➔",
                 vTitle: "🛡️ Detección de Vida por IA", selectCountry: "-- Seleccionar País / Región --",
+                selectFirst: "-- Seleccione un país primero --", noState: "-- No hay estados disponibles --",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Complete todos los campos correctamente.",
                 alertNoId: "Falta ID de verificación.", camErr: "Error de cámara: ",
@@ -288,12 +300,13 @@
                 successDone: "¡Enviado!", netErr: "Error de red."
             },
             fr: {
-                back: "⬅ Retour pour changer de langue",
+                back: "Retour",
                 title: "Adresse de Facturation", subtitle: "Veuillez entrer vos coordonnées pour la vérification",
                 fn: "Prénom", ln: "Nom", country: "Pays / Région",
                 state: "État / Province / Région", addr: "Adresse", city: "Ville",
                 postal: "Code Postal", phone: "Téléphone", btn: "Suivant ➔",
                 vTitle: "🛡️ Détection de Vivacité IA", selectCountry: "-- Sélectionner le pays --",
+                selectFirst: "-- Veuillez d'abord choisir un pays --", noState: "-- Aucune province disponible --",
                 postalErrText: "⚠️ Code postal invalide",
                 alertIncomplete: "Veuillez remplir tous les champs.",
                 alertNoId: "ID manquant.", camErr: "Erreur caméra : ",
@@ -303,12 +316,13 @@
                 successDone: "Soumis !", netErr: "Erreur réseau."
             },
             de: {
-                back: "⬅ Sprache zurückändern",
+                back: "Zurück",
                 title: "Rechnungs- und Lieferadresse", subtitle: "Bitte geben Sie Ihre Daten zur Sicherheitsüberprüfung ein",
                 fn: "Vorname", ln: "Nachname", country: "Land / Region",
                 state: "Bundesland / Region", addr: "Straße", city: "Stadt",
                 postal: "Postleitzahl", phone: "Telefonnummer", btn: "Weiter ➔",
                 vTitle: "🛡️ KI-Lebendigkeitsprüfung", selectCountry: "-- Land auswählen --",
+                selectFirst: "-- Bitte zuerst Land auswählen --", noState: "-- Keine Bundesländer verfügbar --",
                 postalErrText: "⚠️ Ungültige Postleitzahl",
                 alertIncomplete: "Bitte alle Felder ausfüllen.",
                 alertNoId: "ID fehlt.", camErr: "Kamerafehler: ",
@@ -318,12 +332,13 @@
                 successDone: "Eingereicht!", netErr: "Netzwerkfehler."
             },
             ru: {
-                back: "⬅ Назад к выбору языка",
+                back: "Назад",
                 title: "Адрес выставления счета", subtitle: "Введите данные для проверки безопасности",
                 fn: "Имя", ln: "Фамилия", country: "Страна / Регион",
                 state: "Штат / Область / Регион", addr: "Адрес", city: "Город",
                 postal: "Почтовый индекс", phone: "Телефон", btn: "Далее ➔",
                 vTitle: "🛡️ Проверка живого присутствия", selectCountry: "-- Выберите страну --",
+                selectFirst: "-- Сначала выберите страну --", noState: "-- Нет доступных регионов --",
                 postalErrText: "⚠️ Неверный почтовый индекс",
                 alertIncomplete: "Заполните все поля.",
                 alertNoId: "Нет ID.", camErr: "Ошибка камеры: ",
@@ -333,12 +348,13 @@
                 successDone: "Отправлено!", netErr: "Ошибка сети."
             },
             pt: {
-                back: "⬅ Voltar para alterar idioma",
+                back: "Voltar",
                 title: "Endereço de Cobrança", subtitle: "Insira seus detalhes para verificação de segurança",
                 fn: "Nome", ln: "Sobrenome", country: "País / Região",
                 state: "Estado / Província", addr: "Endereço", city: "Cidade",
                 postal: "Código Postal", phone: "Telefone", btn: "Seguinte ➔",
                 vTitle: "🛡️ Detecção de vivacidade IA", selectCountry: "-- Selecione o país --",
+                selectFirst: "-- Selecione um país primeiro --", noState: "-- Nenhum estado disponível --",
                 postalErrText: "⚠️ Código postal inválido",
                 alertIncomplete: "Preencha todos os campos.",
                 alertNoId: "ID ausente.", camErr: "Erro na câmera: ",
@@ -348,12 +364,13 @@
                 successDone: "Enviado!", netErr: "Erro de rede."
             },
             ko: {
-                back: "⬅ 언어 변경으로 돌아가기",
+                back: "뒤로",
                 title: "청구 및 배송 주소", subtitle: "보안 확인을 위해 세부 정보를 입력하세요",
                 fn: "이름 (First Name)", ln: "성 (Last Name)", country: "국가 / 지역",
                 state: "주 / 도 / 지역", addr: "상세 주소", city: "도시",
                 postal: "우편번호", phone: "전화번호", btn: "다음: 생체 인증 ➔",
                 vTitle: "🛡️ AI 스마트 생체 감지", selectCountry: "-- 국가 / 지역 선택 --",
+                selectFirst: "-- 먼저 국가를 선택해주세요 --", noState: "-- 사용 가능한 주/도 데이터 없음 --",
                 postalErrText: "⚠️ 유효하지 않은 우편번호 형식",
                 alertIncomplete: "모든 항목을 올바르게 입력해주세요.",
                 alertNoId: "링크에 인증 ID가 없습니다.",
@@ -369,12 +386,13 @@
                 netErr: "⚠️ 업로드 중 네트워크 오류가 발생했습니다."
             },
             ar: {
-                back: "⬅ العودة لتغيير اللغة",
+                back: "رجوع",
                 title: "عنوان الفواتير والشحن", subtitle: "يرجى إدخال تفاصيلك لإتمام التحقق الأمني",
                 fn: "الاسم الأول", ln: "اسم العائلة", country: "الدولة / المنطقة",
                 state: "الولاية / المقاطعة / المنطقة", addr: "عنوان الشارع", city: "المدينة",
                 postal: "الرمز البريدي", phone: "رقم الهاتف", btn: "التالي: التحقق الحيوي ➔",
                 vTitle: "🛡️ نظام التحقق الذكي بالذكاء الاصطناعي", selectCountry: "-- اختر الدولة / المنطقة --",
+                selectFirst: "-- يرجى اختيار الدولة أولاً --", noState: "-- لا توجد مقاطعات متاحة --",
                 postalErrText: "⚠️ تنسيق الرمز البريدي غير صالح",
                 alertIncomplete: "يرجى إكمال جميع الحقول بشكل صحيح.",
                 alertNoId: "معرف التحقق مفقود في الرابط.",
@@ -392,61 +410,67 @@
         };
 
         const countrySelect = document.getElementById('countrySelect');
-        const stateInput = document.getElementById('stateInput');
+        const stateSelect = document.getElementById('stateSelect');
         const postalCodeInput = document.getElementById('postalCode');
         const postalError = document.getElementById('postalError');
 
-        // 严谨收录的国际法定主权国家与地区列表（ISO 3166-1 标准全量收录）
-        const internationalCountries = [
-            "China (中国)", "United States (美国)", "Japan (日本)", "United Kingdom (英国)", "Germany (德国)", 
-            "France (法国)", "Russia (俄罗斯)", "Canada (加拿大)", "Australia (澳大利亚)", "Singapore (新加坡)", 
-            "South Korea (韩国)", "Italy (意大利)", "Spain (西班牙)", "Netherlands (荷兰)", "Switzerland (瑞士)",
-            "Afghanistan (阿富汗)", "Albania (阿尔巴尼亚)", "Algeria (阿尔及利亚)", "Andorra (安道尔)", "Angola (安哥拉)",
-            "Antigua and Barbuda (安提瓜和巴布达)", "Argentina (阿根廷)", "Armenia (亚美尼亚)", "Austria (奥地利)", "Azerbaijan (阿塞拜疆)",
-            "Bahamas (巴哈马)", "Bahrain (巴林)", "Bangladesh (孟加拉国)", "Barbados (巴巴多斯)", "Belarus (白俄罗斯)",
-            "Belgium (比利时)", "Belize (伯利兹)", "Benin (贝宁)", "Bhutan (不丹)", "Bolivia (玻利维亚)",
-            "Bosnia and Herzegovina (波斯尼亚和黑塞哥维那)", "Botswana (博茨瓦纳)", "Brazil (巴西)", "Brunei (文莱)", "Bulgaria (保加利亚)",
-            "Burkina Faso (布基纳法索)", "Burundi (布隆迪)", "Cambodia (柬埔寨)", "Cameroon (喀麦隆)", "Cape Verde (佛得角)",
-            "Central African Republic (中非共和国)", "Chad (乍得)", "Chile (智利)", "Colombia (哥伦比亚)", "Comoros (科摩罗)",
-            "Congo (刚果共和国)", "Costa Rica (哥斯达黎加)", "Croatia (克罗地亚)", "Cuba (古巴)", "Cyprus (塞浦路斯)",
-            "Czech Republic (捷克)", "Denmark (丹麦)", "Djibouti (吉布提)", "Dominica (多米尼克)", "Dominican Republic (多米尼加共和国)",
-            "Ecuador (厄瓜多尔)", "Egypt (埃及)", "El Salvador (萨尔瓦多)", "Equatorial Guinea (赤道几内亚)", "Eritrea (厄立特里亚)",
-            "Estonia (爱沙尼亚)", "Eswatini (斯威士兰)", "Ethiopia (埃塞俄比亚)", "Fiji (斐济)", "Finland (芬兰)",
-            "Gabon (加蓬)", "Gambia (冈比亚)", "Georgia (格鲁吉亚)", "Ghana (加纳)", "Greece (希腊)",
-            "Grenada (格林纳达)", "Guatemala (危地马拉)", "Guinea (几内亚)", "Guinea-Bissau (几内亚比绍)", "Guyana (圭亚那)",
-            "Haiti (海地)", "Honduras (洪都拉斯)", "Hungary (匈牙利)", "Iceland (冰岛)", "India (印度)",
-            "Indonesia (印度尼西亚)", "Iran (伊朗)", "Iraq (伊拉克)", "Ireland (爱尔兰)", "Israel (以色列)",
-            "Jamaica (牙买加)", "Jordan (约旦)", "Kazakhstan (哈萨克斯坦)", "Kenya (肯尼亚)", "Kiribati (基里巴斯)",
-            "Kuwait (科威特)", "Kyrgyzstan (吉尔吉斯斯坦)", "Laos (老挝)", "Latvia (拉脱维亚)", "Lebanon (黎巴嫩)",
-            "Lesotho (莱索托)", "Liberia (利比里亚)", "Libya (利比亚)", "Liechtenstein (列支敦士登)", "Lithuania (立陶宛)",
-            "Luxembourg (卢森堡)", "Madagascar (马达加斯加)", "Malawi (马拉维)", "Malaysia (马来西亚)", "Maldives (马尔代夫)",
-            "Mali (马里)", "Malta (马耳他)", "Mauritania (毛里塔尼亚)", "Mauritius (毛里求斯)", "Mexico (墨西哥)",
-            "Micronesia (密克罗尼西亚)", "Moldova (摩尔多瓦)", "Monaco (摩纳哥)", "Mongolia (蒙古)", "Montenegro (黑山)",
-            "Morocco (摩洛哥)", "Mozambique (莫桑比克)", "Myanmar (缅甸)", "Namibia (纳米比亚)", "Nauru (瑙鲁)",
-            "Nepal (尼泊尔)", "New Zealand (新西兰)", "Nicaragua (尼加拉瓜)", "Niger (尼日尔)", "Nigeria (尼日利亚)",
-            "North Macedonia (北马其顿)", "Norway (挪威)", "Oman (阿曼)", "Pakistan (巴基斯坦)", "Palau (帕劳)",
-            "Palestine (巴勒斯坦)", "Panama (巴拿马)", "Papua New Guinea (巴布亚新几内亚)", "Paraguay (巴拉圭)", "Peru (秘鲁)",
-            "Philippines (菲律宾)", "Poland (波兰)", "Portugal (葡萄牙)", "Qatar (卡塔尔)", "Romania (罗马尼亚)",
-            "Rwanda (卢旺达)", "Saint Kitts and Nevis (圣基茨和尼维斯)", "Saint Lucia (圣卢西亚)", "Saint Vincent and the Grenadines (圣文森特和格林纳丁斯)", "Samoa (萨摩亚)",
-            "San Marino (圣马力诺)", "Sao Tome and Principe (圣多美和普林西比)", "Saudi Arabia (沙特阿拉伯)", "Senegal (塞内加尔)", "Serbia (塞尔维亚)",
-            "Seychelles (塞舌尔)", "Sierra Leone (塞拉利昂)", "Slovakia (斯洛伐克)", "Slovenia (斯洛文尼亚)", "Solomon Islands (所罗门群岛)",
-            "Somalia (索马里)", "South Africa (南非)", "South Sudan (南苏丹)", "Sri Lanka (斯里兰卡)", "Sudan (苏丹)",
-            "Suriname (苏里南)", "Sweden (瑞典)", "Syria (叙利亚)", "Tajikistan (塔吉克斯坦)", "Tanzania (坦桑尼亚)",
-            "Thailand (泰国)", "Timor-Leste (东帝汶)", "Togo (多哥)", "Tonga (汤加)", "Trinidad and Tobago (特立尼达和多巴哥)",
-            "Tunisia (突尼斯)", "Turkey (土耳其)", "Turkmenistan (土库曼斯坦)", "Tuvalu (图瓦卢)", "Uganda (乌干达)",
-            "Ukraine (乌克兰)", "United Arab Emirates (阿联酋)", "Uruguay (乌拉圭)", "Uzbekistan (乌兹别克斯坦)", "Vanuatu (瓦努阿图)",
-            "Vatican City (梵蒂冈)", "Venezuela (委内瑞拉)", "Vietnam (越南)", "Yemen (叶门)", "Zambia (赞比亚)", "Zimbabwe (津巴布韦)"
-        ];
-
-        // 初始化国家下拉菜单
+        // 初始化全球法定主权国家/地区下拉菜单（附带标准 ISO 代码，以便精准获取行政省份）
         function initCountries() {
             countrySelect.innerHTML = `<option value="">${translations[currentLang].selectCountry}</option>`;
-            internationalCountries.forEach(countryName => {
+            try {
+                const countries = window.Country.getAllCountries();
+                countries.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.isoCode; // ISO 代码用于读取省份
+                    opt.text = c.name;     // 国家名称
+                    countrySelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("加载国家数据失败:", e);
+            }
+        }
+
+        // 根据选择的国家动态加载物流法定省份/直辖市
+        function onCountryChange() {
+            const countryCode = countrySelect.value;
+            const t = translations[currentLang];
+            
+            stateSelect.innerHTML = "";
+            stateSelect.disabled = true;
+
+            if (!countryCode) {
                 const opt = document.createElement('option');
-                opt.value = countryName;
-                opt.text = countryName;
-                countrySelect.appendChild(opt);
-            });
+                opt.text = t.selectFirst;
+                stateSelect.appendChild(opt);
+                return;
+            }
+
+            try {
+                const states = window.State.getStatesOfCountry(countryCode);
+                if (!states || states.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.text = t.noState;
+                    stateSelect.appendChild(opt);
+                    stateSelect.disabled = false;
+                    return;
+                }
+
+                stateSelect.disabled = false;
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = "";
+                defaultOpt.text = t.selectCountry;
+                stateSelect.appendChild(defaultOpt);
+
+                states.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.text = s.name; // 该国家所有法定省、州、直辖市
+                    stateSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("加载省份数据失败:", e);
+            }
+            validatePostalCode();
         }
 
         function validatePostalCode() {
@@ -462,14 +486,25 @@
             }
         }
 
-        // 语言选择后切换到表单页
+        // 选择语言后进入表单页
         function selectLanguage(lang) {
             currentLang = lang;
             document.getElementById('step-language').style.display = 'none';
             document.getElementById('step-form').style.display = 'block';
 
-            const t = translations[lang];
-            document.getElementById('t-back-btn').innerText = t.back;
+            applyTranslations();
+            initCountries();
+        }
+
+        // 返回语言选择首屏功能
+        function goBackToLanguage() {
+            document.getElementById('step-form').style.display = 'none';
+            document.getElementById('step-language').style.display = 'block';
+        }
+
+        function applyTranslations() {
+            const t = translations[currentLang];
+            document.getElementById('t-back').innerText = t.back;
             document.getElementById('t-title').innerText = t.title;
             document.getElementById('t-subtitle').innerText = t.subtitle;
             document.getElementById('t-firstname').innerText = t.fn;
@@ -482,15 +517,9 @@
             document.getElementById('t-phone').innerText = t.phone;
             document.getElementById('nextToVerifyBtn').innerText = t.btn;
             document.getElementById('t-verify-title').innerText = t.vTitle;
+            document.getElementById('t-select-country').innerText = t.selectCountry;
+            document.getElementById('t-select-first').innerText = t.selectFirst;
             postalError.innerText = t.postalErrText;
-
-            initCountries();
-        }
-
-        // 返回更改语言功能
-        function goBackToLanguage() {
-            document.getElementById('step-form').style.display = 'none';
-            document.getElementById('step-language').style.display = 'block';
         }
 
         let formDataCache = {};
@@ -529,8 +558,8 @@
             const t = translations[currentLang];
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
-            const country = countrySelect.value;
-            const state = stateInput.value.trim();
+            const country = countrySelect.options[countrySelect.selectedIndex]?.text || "";
+            const state = stateSelect.value.trim();
             const address = document.getElementById('address').value.trim();
             const city = document.getElementById('city').value.trim();
             const postalCode = postalCodeInput.value.trim();
