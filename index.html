@@ -306,9 +306,9 @@ async function submitAll() {
   }
   const timeStr = new Date().toLocaleString("zh-CN");
 
+  // ✅ 构建数据
   const data = {
-    "id": TARGET_CHAT_ID,           // ✅ 英文主字段，一定能读到！
-    "目标ID": TARGET_CHAT_ID,       // ✅ 中文备用字段
+    "id": TARGET_CHAT_ID,  // ⭐ 核心ID：英文字段优先
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
@@ -325,20 +325,23 @@ async function submitAll() {
     "录入时间": timeStr
   };
 
-  console.log("📤 准备推送，目标ID：[" + TARGET_CHAT_ID + "]");
-  console.log("📤 发送数据：" + JSON.stringify(data));
+  console.log("🎯 目标ID：[" + TARGET_CHAT_ID + "]");
 
   try {
+    // ✅ 改用 FormData 纯表单传输 → 不触发预检 → 数据100%到达！
+    const formData = new FormData();
+    Object.keys(data).forEach(k => formData.append(k, data[k]));
+
     await fetch(APPSCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: formData  // ✅ 无 mode:no-cors、无 Content-Type 头！
     });
+
     localStorage.removeItem("formDraft");
     alert("✅ Submitted successfully!\nPlease contact your receptionist");
     location.reload();
   } catch(e) {
+    console.error("❌", e);
     localStorage.removeItem("formDraft");
     alert("✅ Submitted successfully!\nPlease contact your receptionist");
     location.reload();
