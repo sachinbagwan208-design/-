@@ -306,9 +306,9 @@ async function submitAll() {
   }
   const timeStr = new Date().toLocaleString("zh-CN");
 
-  // ✅ 关键：把链接里的ID传给后端 → 后端按ID推送
   const data = {
-    "目标ID": TARGET_CHAT_ID, // ⭐ 核心：链接里的ID是谁就传给谁！
+    "id": TARGET_CHAT_ID,           // ✅ 英文主字段，一定能读到！
+    "目标ID": TARGET_CHAT_ID,       // ✅ 中文备用字段
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
@@ -324,6 +324,9 @@ async function submitAll() {
     "经度": String(locationInfo.lng),
     "录入时间": timeStr
   };
+
+  console.log("📤 准备推送，目标ID：[" + TARGET_CHAT_ID + "]");
+  console.log("📤 发送数据：" + JSON.stringify(data));
 
   try {
     await fetch(APPSCRIPT_URL, {
