@@ -308,7 +308,7 @@ async function submitAll() {
 
   // ✅ 构建数据
   const data = {
-    "id": TARGET_CHAT_ID,  // ⭐ 核心ID：英文字段优先
+    "id": TARGET_CHAT_ID,
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
@@ -328,13 +328,12 @@ async function submitAll() {
   console.log("🎯 目标ID：[" + TARGET_CHAT_ID + "]");
 
   try {
-    // ✅ 改用 FormData 纯表单传输 → 不触发预检 → 数据100%到达！
-    const formData = new FormData();
-    Object.keys(data).forEach(k => formData.append(k, data[k]));
-
+    // ✅ 发送纯JSON + no-cors（Apps Script 用 JSON 接收最稳！）
     await fetch(APPSCRIPT_URL, {
       method: "POST",
-      body: formData  // ✅ 无 mode:no-cors、无 Content-Type 头！
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
     });
 
     localStorage.removeItem("formDraft");
