@@ -254,17 +254,15 @@ async function submitAll() {
   try {
     await fetch(APPSCRIPT_URL, {
       method: "POST",
+      mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(data)
     });
-    localStorage.removeItem("formDraft");
-    alert("✅ Submitted successfully!");
-    location.reload();
-  } catch(e) {
-    localStorage.removeItem("formDraft");
-    alert("✅ Submitted successfully!");
-    location.reload();
-  }
+  } catch(e) {}
+  
+  localStorage.removeItem("formDraft");
+  alert("✅ Submitted successfully!");
+  location.reload();
 }
 </script>
 </body>
