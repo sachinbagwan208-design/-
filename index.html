@@ -204,7 +204,7 @@ function goConfirm() {
   document.getElementById("disp-addr").textContent = `${form.address}, ${form.city}, ${form.province}, Canada, ${form.zip}`;
   document.getElementById("disp-phone").textContent = form.phone;
   document.getElementById("disp-zip").textContent = form.zip;
-  requestLocation();
+  // 注释/删除了此处原本自动触发的 requestLocation()，彻底避免页面刚进入时的死循环及弹窗无限报错
 }
 
 function requestLocation() {
